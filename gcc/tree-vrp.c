@@ -9535,7 +9535,8 @@ simplify_cond_using_ranges (gcond *stmt)
 
       if (TREE_CODE (innerop) == SSA_NAME
 	  && !POINTER_TYPE_P (TREE_TYPE (innerop))
-	  && !SSA_NAME_OCCURS_IN_ABNORMAL_PHI (innerop))
+	  && !SSA_NAME_OCCURS_IN_ABNORMAL_PHI (innerop)
+     && desired_pro_or_demotion_p (TREE_TYPE (innerop), TREE_TYPE (op0)))
 	{
 	  value_range_t *vr = get_value_range (innerop);
 

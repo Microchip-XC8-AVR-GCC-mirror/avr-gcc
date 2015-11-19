@@ -1,3 +1,8 @@
+2015-11-19  Senthil Kumar Selvaraj  <senthil_kumar.selvaraj@atmel.com>
+
+	* tree.h (desired_pro_or_demotion_p): New function.
+	* tree-vrp.c (simplify_cond_using_ranges): Call it.
+
 2016-07-29  Pitchumani Sivanupandi <pitchumani.s@atmel.com>
 
 	* config/avr/driver-avr.c (specfiles_doc_url): Remove.
