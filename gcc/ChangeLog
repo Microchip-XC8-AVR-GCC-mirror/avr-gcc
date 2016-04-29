@@ -1,3 +1,10 @@
+2016-04-29  Senthil Kumar Selvaraj  <senthil_kumar.selvaraj@atmel.com>
+
+	PR target/60040
+	* reload1.c (reload): Call finish_spills before
+	restarting reload loop. Skip select_reload_regs
+	if update_eliminables_and_spill returns true.
+
 2015-11-19  Senthil Kumar Selvaraj  <senthil_kumar.selvaraj@atmel.com>
 
 	* tree.h (desired_pro_or_demotion_p): New function.
