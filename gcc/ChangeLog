@@ -1,3 +1,9 @@
+2016-05-21  Pitchumani Sivanupandi  <pitchumani.s@atmel.com>
+
+	PR target/71103
+	* config/avr/avr.md (define_expand "mov<mode>"): If the source
+	operand is subreg (symbol_ref) then move the symbol ref to register.
+
 2016-06-15  Pitchumani Sivanupandi  <pitchumani.s@atmel.com>
 
 	PR target/67353
