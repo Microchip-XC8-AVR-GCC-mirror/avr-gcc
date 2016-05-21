@@ -1509,7 +1509,7 @@ avr_expand_prologue (void)
   avr_prologue_setup_frame (size, set);
 
   if (flag_stack_usage_info)
-    current_function_static_stack_size = cfun->machine->stack_usage;
+    current_function_static_stack_size = cfun->machine->stack_usage + INCOMING_FRAME_SP_OFFSET;
 }
 
 
