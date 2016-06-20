@@ -1,3 +1,8 @@
+2016-06-20  Georg-Johann Lay  <avr@gjlay.de>
+
+	PR target/71103
+	* config/avr/avr.md (movqi): Handle loading subreg:qi (const).
+
 2016-05-21  Pitchumani Sivanupandi  <pitchumani.s@atmel.com>
 
 	PR target/71103
