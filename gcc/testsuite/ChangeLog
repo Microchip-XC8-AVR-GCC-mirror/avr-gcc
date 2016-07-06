@@ -1,3 +1,8 @@
+2016-07-06  Senthil Kumar Selvaraj  <senthil_kumar.selvaraj@atmel.com>
+
+	PR target/50739	
+	* gcc.target/avr/pr50739.c: New test.
+
 2016-04-29  Sebastian Huber  <sebastian.huber@embedded-brains.de>
 	    Matthijs Kooijman  <matthijs@stdin.nl>
 	    Senthil Kumar Selvaraj  <senthil_kumar.selvaraj@atmel.com>
