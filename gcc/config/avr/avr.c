@@ -1964,6 +1964,16 @@ avr_legitimize_address (rtx x, rtx oldx, machine_mode mode)
 
   x = oldx;
 
+  if (AVR_TINY)
+    {
+      if (CONSTANT_ADDRESS_P (x)
+          && !(CONST_INT_P (x)
+               && IN_RANGE (INTVAL (x), 0, 0xc0 - GET_MODE_SIZE (mode))))
+        {
+          x = force_reg (Pmode, x);
+        }
+    }
+
   if (GET_CODE (oldx) == PLUS
       && REG_P (XEXP (oldx, 0)))
     {
@@ -3611,7 +3621,7 @@ out_movqi_r_mr (rtx_insn *insn, rtx op[], int *plen)
 /* Same as movhi_r_mr, but TINY does not have ADIW, SBIW and LDD */
 
 static const char*
-avr_out_movhi_r_mr_reg_no_disp_tiny (rtx op[], int *plen)
+avr_out_movhi_r_mr_reg_no_disp_tiny (rtx_insn *insn, rtx op[], int *plen)
 {
   rtx dest = op[0];
   rtx src = op[1];
@@ -3625,17 +3635,20 @@ avr_out_movhi_r_mr_reg_no_disp_tiny (rtx op[], int *plen)
 			"ld %B0,%1"          CR_TAB
 			"mov %A0,__tmp_reg__", op, plen, -3);
 
-  return avr_asm_len ("ld %A0,%1"             CR_TAB
-                      TINY_ADIW (%E1, %F1, 1) CR_TAB
-                      "ld %B0,%1"             CR_TAB
-                      TINY_SBIW (%E1, %F1, 1), op, plen, -6);
+  avr_asm_len ("ld %A0,%1+"                  CR_TAB
+               "ld %B0,%1", op, plen, -2);
+
+  if (!reg_unused_after (insn, base))
+    avr_asm_len (TINY_SBIW (%E1, %F1, 1), op, plen, 2);
+
+  return "";
 }
 
 
 /* Same as movhi_r_mr, but TINY does not have ADIW, SBIW and LDD */
 
 static const char*
-avr_out_movhi_r_mr_reg_disp_tiny (rtx op[], int *plen)
+avr_out_movhi_r_mr_reg_disp_tiny (rtx_insn *insn, rtx op[], int *plen)
 {
   rtx dest = op[0];
   rtx src = op[1];
@@ -3653,10 +3666,14 @@ avr_out_movhi_r_mr_reg_disp_tiny (rtx op[], int *plen)
     }
   else
     {
-      return avr_asm_len (TINY_ADIW (%I1, %J1, %o1) CR_TAB
-                          "ld %A0,%b1+"             CR_TAB
-                          "ld %B0,%b1"              CR_TAB
-                          TINY_SBIW (%I1, %J1, %o1+1), op, plen, -6);
+      avr_asm_len (TINY_ADIW (%I1, %J1, %o1) CR_TAB
+                   "ld %A0,%b1+"             CR_TAB
+                   "ld %B0,%b1", op, plen, -4);
+
+      if (!reg_unused_after (insn, XEXP (base, 0)))
+        avr_asm_len (TINY_SBIW (%I1, %J1, %o1+1), op, plen, 2);
+
+      return "";
     }
 }
 
@@ -3704,7 +3721,7 @@ out_movhi_r_mr (rtx_insn *insn, rtx op[], int *plen)
   if (reg_base > 0)
     {
       if (AVR_TINY)
-        return avr_out_movhi_r_mr_reg_no_disp_tiny (op, plen);
+        return avr_out_movhi_r_mr_reg_no_disp_tiny (insn, op, plen);
 
       if (reg_dest == reg_base)         /* R = (R) */
         return avr_asm_len ("ld __tmp_reg__,%1+" CR_TAB
@@ -3729,7 +3746,7 @@ out_movhi_r_mr (rtx_insn *insn, rtx op[], int *plen)
       int reg_base = true_regnum (XEXP (base, 0));
 
       if (AVR_TINY)
-        return avr_out_movhi_r_mr_reg_disp_tiny (op, plen);
+        return avr_out_movhi_r_mr_reg_disp_tiny (insn, op, plen);
 
       if (disp > MAX_LD_OFFSET (GET_MODE (src)))
         {
@@ -4478,8 +4495,8 @@ avr_out_load_psi_reg_no_disp_tiny (rtx_insn *insn, rtx *op, int *plen)
                           "ld %B0,%1+"  CR_TAB
                           "ld %C0,%1", op, plen, -3);
 
-      if (reg_dest != reg_base - 2 &&
-          !reg_unused_after (insn, base))
+      if (reg_dest != reg_base - 2
+          && !reg_unused_after (insn, base))
         {
           avr_asm_len (TINY_SBIW (%E1, %F1, 2), op, plen, 2);
         }
@@ -4509,13 +4526,13 @@ avr_out_load_psi_reg_disp_tiny (rtx_insn *insn, rtx *op, int *plen)
   else
     {
       avr_asm_len (TINY_ADIW (%I1, %J1, %o1)   CR_TAB
-                          "ld %A0,%b1+"              CR_TAB
-                          "ld %B0,%b1+"              CR_TAB
-                          "ld %C0,%b1", op, plen, -5);
+                   "ld %A0,%b1+"               CR_TAB
+                   "ld %B0,%b1+"               CR_TAB
+                   "ld %C0,%b1", op, plen, -5);
 
-      if (reg_dest != (reg_base - 2)
+      if (reg_dest != reg_base - 2
           && !reg_unused_after (insn, XEXP (base, 0)))
-          avr_asm_len (TINY_SBIW (%I1, %J1, %o1+2), op, plen, 2);
+        avr_asm_len (TINY_SBIW (%I1, %J1, %o1+2), op, plen, 2);
 
       return "";
     }
@@ -4700,7 +4717,7 @@ avr_out_store_psi_reg_no_disp_tiny (rtx_insn *insn, rtx *op, int *plen)
 }
 
 static const char*
-avr_out_store_psi_reg_disp_tiny (rtx *op, int *plen)
+avr_out_store_psi_reg_disp_tiny (rtx_insn *insn, rtx *op, int *plen)
 {
   rtx dest = op[0];
   rtx src = op[1];
@@ -4709,31 +4726,29 @@ avr_out_store_psi_reg_disp_tiny (rtx *op, int *plen)
   int reg_src = true_regnum (src);
 
   if (reg_src == reg_base)
-    {
-      return avr_asm_len ("mov __tmp_reg__,%A1"          CR_TAB
-                          "mov __zero_reg__,%B1"         CR_TAB
-                          TINY_ADIW (%I0, %J0, %o0)      CR_TAB
-                          "st %b0+,__tmp_reg__"          CR_TAB
-                          "st %b0+,__zero_reg__"         CR_TAB
-                          "st %b0,%C1"                   CR_TAB
-                          "clr __zero_reg__"             CR_TAB
-                          TINY_SBIW (%I0, %J0, %o0+2), op, plen, -10);
-    }
+    avr_asm_len ("mov __tmp_reg__,%A1"          CR_TAB
+                 "mov __zero_reg__,%B1"         CR_TAB
+                 TINY_ADIW (%I0, %J0, %o0)      CR_TAB
+                 "st %b0+,__tmp_reg__"          CR_TAB
+                 "st %b0+,__zero_reg__"         CR_TAB
+                 "st %b0,%C1"                   CR_TAB
+                 "clr __zero_reg__", op, plen, -8);
   else if (reg_src == reg_base - 2)
-    {
-      return avr_asm_len ("mov __tmp_reg__,%C1"          CR_TAB
-                          TINY_ADIW (%I0, %J0, %o0)      CR_TAB
-                          "st %b0+,%A1"                  CR_TAB
-                          "st %b0+,%B1"                  CR_TAB
-                          "st %b0,__tmp_reg__"           CR_TAB
-                          TINY_SBIW (%I0, %J0, %o0+2), op, plen, -8);
-    }
+    avr_asm_len ("mov __tmp_reg__,%C1"          CR_TAB
+                 TINY_ADIW (%I0, %J0, %o0)      CR_TAB
+                 "st %b0+,%A1"                  CR_TAB
+                 "st %b0+,%B1"                  CR_TAB
+                 "st %b0,__tmp_reg__", op, plen, -6);
+  else
+    avr_asm_len (TINY_ADIW (%I0, %J0, %o0)      CR_TAB
+                 "st %b0+,%A1"                  CR_TAB
+                 "st %b0+,%B1"                  CR_TAB
+                 "st %b0,%C1", op, plen, -5);
 
-  return avr_asm_len (TINY_ADIW (%I0, %J0, %o0)      CR_TAB
-                          "st %b0+,%A1"                  CR_TAB
-                          "st %b0+,%B1"                  CR_TAB
-                          "st %b0,%C1"                   CR_TAB
-                          TINY_SBIW (%I0, %J0, %o0+2), op, plen, -7);
+  if (!reg_unused_after (insn, XEXP (base, 0)))
+    avr_asm_len (TINY_SBIW (%I0, %J0, %o0+2), op, plen, 2);
+
+  return "";
 }
 
 /* Handle store of 24-bit type from register or zero to memory.  */
@@ -4782,7 +4797,7 @@ avr_out_store_psi (rtx_insn *insn, rtx *op, int *plen)
       int disp = INTVAL (XEXP (base, 1));
 
       if (AVR_TINY)
-        return avr_out_store_psi_reg_disp_tiny (op, plen);
+        return avr_out_store_psi_reg_disp_tiny (insn, op, plen);
 
       reg_base = REGNO (XEXP (base, 0));
 
@@ -4916,7 +4931,7 @@ avr_out_movqi_mr_r_reg_disp_tiny (rtx_insn *insn, rtx op[], int *plen)
     else
     {
       avr_asm_len (TINY_ADIW (%I0, %J0, %o0) CR_TAB
-          "st %b0,%1" , op, plen, -3);
+                   "st %b0,%1", op, plen, -3);
     }
 
   if (!reg_unused_after (insn, XEXP (x,0)))
@@ -5140,7 +5155,7 @@ avr_out_movhi_mr_r_reg_no_disp_tiny (rtx_insn *insn, rtx op[], int *plen)
 }
 
 static const char*
-avr_out_movhi_mr_r_reg_disp_tiny (rtx op[], int *plen)
+avr_out_movhi_mr_r_reg_disp_tiny (rtx_insn *insn, rtx op[], int *plen)
 {
   rtx dest = op[0];
   rtx src = op[1];
@@ -5148,19 +5163,22 @@ avr_out_movhi_mr_r_reg_disp_tiny (rtx op[], int *plen)
   int reg_base = REGNO (XEXP (base, 0));
   int reg_src = true_regnum (src);
 
-  return reg_src == reg_base
-        ? avr_asm_len ("mov __tmp_reg__,%A1"          CR_TAB
-                       "mov __zero_reg__,%B1"         CR_TAB
-                       TINY_ADIW (%I0, %J0, %o0+1)    CR_TAB
-                       "st %b0,__zero_reg__"          CR_TAB
-                       "st -%b0,__tmp_reg__"          CR_TAB
-                       "clr __zero_reg__"             CR_TAB
-                       TINY_SBIW (%I0, %J0, %o0), op, plen, -9)
+  if (reg_src == reg_base)
+    avr_asm_len ("mov __tmp_reg__,%A1"          CR_TAB
+                 "mov __zero_reg__,%B1"         CR_TAB
+                 TINY_ADIW (%I0, %J0, %o0+1)    CR_TAB
+                 "st %b0,__zero_reg__"          CR_TAB
+                 "st -%b0,__tmp_reg__"          CR_TAB
+                 "clr __zero_reg__", op, plen, -7);
+  else
+    avr_asm_len (TINY_ADIW (%I0, %J0, %o0+1) CR_TAB
+                 "st %b0,%B1"                CR_TAB
+                 "st -%b0,%A1", op, plen, -4);
 
-        : avr_asm_len (TINY_ADIW (%I0, %J0, %o0+1) CR_TAB
-                       "st %b0,%B1"                CR_TAB
-                       "st -%b0,%A1"               CR_TAB
-                       TINY_SBIW (%I0, %J0, %o0), op, plen, -6);
+  if (!reg_unused_after (insn, XEXP (base, 0)))
+    avr_asm_len (TINY_SBIW (%I0, %J0, %o0), op, plen, 2);
+
+  return "";
 }
 
 static const char*
@@ -5237,7 +5255,7 @@ out_movhi_mr_r (rtx_insn *insn, rtx op[], int *plen)
       int disp = INTVAL (XEXP (base, 1));
 
       if (AVR_TINY)
-        return avr_out_movhi_mr_r_reg_disp_tiny (op, plen);
+        return avr_out_movhi_mr_r_reg_disp_tiny (insn, op, plen);
 
       reg_base = REGNO (XEXP (base, 0));
       if (disp > MAX_LD_OFFSET (GET_MODE (dest)))
