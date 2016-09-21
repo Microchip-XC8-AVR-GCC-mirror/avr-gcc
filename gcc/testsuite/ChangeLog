@@ -1,3 +1,8 @@
+2016-09-21  Georg-Johann Lay  <avr@gjlay.de>
+
+	PR target/77326
+	* gcc.target/avr/torture/pr77326.c: New test.
+
 2016-10-21  Senthil Kumar Selvaraj  <senthil_kumar.selvaraj@atmel.com>
 
 	PR target/71627
