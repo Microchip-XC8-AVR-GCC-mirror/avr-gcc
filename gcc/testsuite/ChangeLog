@@ -3,6 +3,11 @@
 	PR target/71627
 	* gcc.target/avr/pr71627.c: New test
 
+2016-10-03  Senthil Kumar Selvaraj  <senthil_kumar.selvaraj@atmel.com>
+
+	* gcc.target/avr/torture/builtins-error.c: Add -ffat-lto-objects
+	option.
+
 2016-08-10  Senthil Kumar Selvaraj  <senthil_kumar.selvaraj@atmel.com>
 
 	PR target/71873
