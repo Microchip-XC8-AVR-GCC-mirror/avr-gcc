@@ -429,7 +429,7 @@ should have attributes as specified by @var{flags}, which is a bit mask\n\
 of the @code{SECTION_*} flags defined in @file{output.h}.  If @var{decl}\n\
 is non-NULL, it is the @code{VAR_DECL} or @code{FUNCTION_DECL} with which\n\
 this section is associated.",
- void, (const char *name, unsigned int flags, tree decl),
+ void, (const char *name, uint64_t flags, tree decl),
  default_no_named_section)
 
 /* Return preferred text (sub)section for function DECL.
@@ -2466,7 +2466,7 @@ The default version of this function handles choosing code vs data,\n\
 read-only vs read-write data, and @code{flag_pic}.  You should only\n\
 need to override this if your target has special flags that might be\n\
 set via @code{__attribute__}.",
- unsigned int, (tree decl, const char *name, int reloc),
+ uint64_t, (tree decl, const char *name, int reloc),
  default_section_type_flags)
 
 DEFHOOK

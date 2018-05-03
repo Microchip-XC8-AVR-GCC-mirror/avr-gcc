@@ -30,6 +30,10 @@ mn-flash=
 Target RejectNegative Joined Var(avr_n_flash) UInteger Init(-1)
 Set the number of 64 KiB flash segments
 
+mnon-bit-addressable-registers-mask=
+Target Report Joined Var(avr_deferred_options) Defer
+Set the 32 bit mask for non bit addressable registers.
+
 mskip-bug
 Target Report Mask(SKIP_BUG)
 Indicate presence of a processor erratum
@@ -110,3 +114,26 @@ Assume that all data in static storage can be accessed by LDS / STS.  This optio
 nodevicelib
 Driver Target Report RejectNegative
 Do not link against the device-specific library lib<MCU>.a
+
+mext=
+Target RejectNegative Joined Var(avr_deferred_options) MissingArgError(missing language extension after %qs) Defer
+-mext=lang_extension Specify the language extension. e.g. cci to use CCI keywords and features.
+
+mdfp=
+Target RejectNegative Joined Var(avr_dfp_path)
+-mdfp=<Microchip Device Family Pack path>. e.g. -mdfp=/packs/mega-206/.
+
+mdevice=
+Target RejectNegative Joined Var(avr_device) Undocumented
+
+mlicense-warning
+Target Var Var(TARGET_LICENSE_WARNING) Undocumented Init(1)
+-mlicense-warning	Emit the license warning when appropriate
+
+mno-fallback
+Target Report RejectNegative Var Var(TARGET_NO_FALLBACKLICENSE)
+-mno-fallback		Require a MPLAB XC8 Standard or Pro license and do not fall back to a lesser license
+
+mskip-license-check
+Target Var(TARGET_SKIP_LICENSE_CHECK) Init(0) Undocumented
+For MPLAB X IDE use only - Forces a free license

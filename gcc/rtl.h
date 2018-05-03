@@ -31,6 +31,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "wide-int.h"
 #include "flags.h"
 #include "is-a.h"
+#include "hard-reg-set.h"
 
 /* Value used by some passes to "recognize" noop moves as valid
  instructions.  */
@@ -2843,10 +2844,8 @@ extern int reg_overlap_mentioned_p (const_rtx, const_rtx);
 extern const_rtx set_of (const_rtx, const_rtx);
 extern void record_hard_reg_sets (rtx, const_rtx, void *);
 extern void record_hard_reg_uses (rtx *, void *);
-#ifdef HARD_CONST
 extern void find_all_hard_regs (const_rtx, HARD_REG_SET *);
 extern void find_all_hard_reg_sets (const_rtx, HARD_REG_SET *, bool);
-#endif
 extern void note_stores (const_rtx, void (*) (rtx, const_rtx, void *), void *);
 extern void note_uses (rtx *, void (*) (rtx *, void *), void *);
 extern int dead_or_set_p (const_rtx, const_rtx);

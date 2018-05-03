@@ -98,7 +98,7 @@ avr_texinfo[] =
     "of program memory." },
   { ARCH_AVRXMEGA3,
     "``XMEGA'' devices with up to 64@tie{}KiB of combined program memory "
-	"and RAM, and with program memory visible in the RAM address space." },
+    "and RAM, and with program memory visible in the RAM address space." },
   { ARCH_AVRXMEGA4,
     "``XMEGA'' devices with more than 64@tie{}KiB and up to 128@tie{}KiB "
     "of program memory." },
@@ -115,12 +115,12 @@ avr_texinfo[] =
 const avr_mcu_t
 avr_mcu_types[] =
 {
-#define AVR_MCU(NAME, ARCH, DEV_ATTRIBUTE, MACRO, DATA_SEC, TEXT_SEC, FLASH_SIZE)\
-  { NAME, ARCH, DEV_ATTRIBUTE, MACRO, DATA_SEC, TEXT_SEC, FLASH_SIZE },
+#define AVR_MCU(NAME, ARCH, DEV_ATTRIBUTE, MACRO, DATA_SEC, TEXT_SEC, NON_BIT_ADDRESSABLE_REG_MASK, FLASH_SIZE)\
+  { NAME, ARCH, DEV_ATTRIBUTE, MACRO, DATA_SEC, TEXT_SEC, NON_BIT_ADDRESSABLE_REG_MASK, FLASH_SIZE },
 #include "avr-mcus.def"
 #undef AVR_MCU
     /* End of list.  */
-  { NULL, ARCH_UNKNOWN, AVR_ISA_NONE, NULL, 0, 0, 0 }
+  { NULL, ARCH_UNKNOWN, AVR_ISA_NONE, NULL, 0, 0, 0, 0 }
 };
 
 

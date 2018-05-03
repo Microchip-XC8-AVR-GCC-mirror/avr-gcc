@@ -206,7 +206,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define exp_hi(N)  hhi8 ((N) << 23)
 
 
-.section .text.libgcc.mul, "ax", @progbits
+.section .text.libgcc.mul, code
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 /* Note: mulqi3, mulhi3 are open-coded on the enhanced core.  */
@@ -1332,7 +1332,7 @@ ENDF __umulsidi3
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	
 
-.section .text.libgcc.div, "ax", @progbits
+.section .text.libgcc.div, code
 
 /*******************************************************
        Division 8 / 8 => (result + remainder)
@@ -2038,7 +2038,7 @@ ENDF __divdi3_moddi3
 #undef SS
 #undef NN
 
-.section .text.libgcc, "ax", @progbits
+.section .text.libgcc, code
 
 #define TT __tmp_reg__
 
@@ -2157,7 +2157,7 @@ ENDF __negdi2
 #endif /* !defined (__AVR_TINY__) */
 
 
-.section .text.libgcc.prologue, "ax", @progbits
+.section .text.libgcc.prologue, code
 
 /**********************************
  * This is a prologue subroutine
@@ -2267,7 +2267,7 @@ ENDF __epilogue_restores__
 #endif /* !defined (__AVR_TINY__) */
 
 #ifdef L_exit
-	.section .fini9,"ax",@progbits
+	.section .fini9, code
 DEFUN _exit
 	.weak	exit
 exit:
@@ -2275,7 +2275,7 @@ ENDF _exit
 
 	/* Code from .fini8 ... .fini1 sections inserted by ld script.  */
 
-	.section .fini0,"ax",@progbits
+	.section .fini0, code
 	cli
 __stop_program:
 	rjmp	__stop_program
@@ -2290,7 +2290,7 @@ _cleanup:
 #endif /* defined (L_cleanup) */
 
 
-.section .text.libgcc, "ax", @progbits
+.section .text.libgcc, code
 
 #ifdef L_tablejump2
 DEFUN __tablejump2__
@@ -2347,110 +2347,141 @@ DEFUN __tablejump2__
 ENDF __tablejump2__
 #endif /* L_tablejump2 */
 
+#ifdef L_copy_data
+
 #if defined(__AVR_TINY__)
-#ifdef L_copy_data
-        .section .init4,"ax",@progbits
-        .global __do_copy_data
-__do_copy_data:
-        ldi     r18, hi8(__data_end)
-        ldi     r26, lo8(__data_start)
-        ldi     r27, hi8(__data_start)
-        ldi     r30, lo8(__data_load_start + __AVR_TINY_PM_BASE_ADDRESS__)
-        ldi     r31, hi8(__data_load_start + __AVR_TINY_PM_BASE_ADDRESS__)
-        rjmp    .L__do_copy_data_start
-.L__do_copy_data_loop:
-        ld      r19, z+
-        st      X+, r19
-.L__do_copy_data_start:
-        cpi     r26, lo8(__data_end)
-        cpc     r27, r18
-        brne    .L__do_copy_data_loop
-#endif
+	#define data_copy_dest_reg  21
 #else
-#ifdef L_copy_data
-	.section .init4,"ax",@progbits
-DEFUN __do_copy_data
-#if defined(__AVR_HAVE_ELPMX__)
-	ldi	r17, hi8(__data_end)
-	ldi	r26, lo8(__data_start)
-	ldi	r27, hi8(__data_start)
-	ldi	r30, lo8(__data_load_start)
-	ldi	r31, hi8(__data_load_start)
-	ldi	r16, hh8(__data_load_start)
-	out	__RAMPZ__, r16
-	rjmp	.L__do_copy_data_start
-.L__do_copy_data_loop:
-	elpm	r0, Z+
-	st	X+, r0
-.L__do_copy_data_start:
-	cpi	r26, lo8(__data_end)
-	cpc	r27, r17
-	brne	.L__do_copy_data_loop
-#elif  !defined(__AVR_HAVE_ELPMX__) && defined(__AVR_HAVE_ELPM__)
-	ldi	r17, hi8(__data_end)
-	ldi	r26, lo8(__data_start)
-	ldi	r27, hi8(__data_start)
-	ldi	r30, lo8(__data_load_start)
-	ldi	r31, hi8(__data_load_start)
-	ldi	r16, hh8(__data_load_start - 0x10000)
-.L__do_copy_data_carry:
-	inc	r16
-	out	__RAMPZ__, r16
-	rjmp	.L__do_copy_data_start
-.L__do_copy_data_loop:
-	elpm
-	st	X+, r0
-	adiw	r30, 1
-	brcs	.L__do_copy_data_carry
-.L__do_copy_data_start:
-	cpi	r26, lo8(__data_end)
-	cpc	r27, r17
-	brne	.L__do_copy_data_loop
-#elif !defined(__AVR_HAVE_ELPMX__) && !defined(__AVR_HAVE_ELPM__)
-	ldi	r17, hi8(__data_end)
-	ldi	r26, lo8(__data_start)
-	ldi	r27, hi8(__data_start)
-	ldi	r30, lo8(__data_load_start)
-	ldi	r31, hi8(__data_load_start)
-	rjmp	.L__do_copy_data_start
-.L__do_copy_data_loop:
+	#define data_copy_dest_reg  0
+#endif
+
+.macro	read_flash_byte r_dest, r_ptr
+#if defined (__AVR_TINY__)
+    ld \r_dest, \r_ptr+
+#elif defined (__AVR_HAVE_ELPMX__)
+    elpm \r_dest, \r_ptr+
+#elif !defined (__AVR_HAVE_ELPMX__) && defined (__AVR_HAVE_ELPM__)
+    elpm
+.if (\r_dest-data_copy_dest_reg)
+    mov \r_dest, r0
+.endif
+    adiw r30, 1
+#elif !defined (__AVR_HAVE_ELPMX__) && !defined (__AVR_HAVE_ELPM__)
 #if defined (__AVR_HAVE_LPMX__)
-	lpm	r0, Z+
+    lpm \r_dest, \r_ptr+
 #else
-	lpm
-	adiw	r30, 1
+    lpm
+.if (\r_dest-data_copy_dest_reg)
+    mov \r_dest, r0
+.endif
+    adiw r30, 1
 #endif
-	st	X+, r0
+#endif
+.endm
+
+.section .init4, code
+.global __do_copy_data
+__do_copy_data:
+
+#if defined(__AVR_TINY__)
+#define dinit_ptr_reg Y
+#define dinit_ptr_reg_lo r28
+#define dinit_ptr_reg_hi r29
+    ldi dinit_ptr_reg_lo, lo8(_dinit_addr + __AVR_TINY_PM_BASE_ADDRESS__)
+    ldi dinit_ptr_reg_hi, hi8(_dinit_addr + __AVR_TINY_PM_BASE_ADDRESS__)
+    ldi r20, hi8(_dinit_end + __AVR_TINY_PM_BASE_ADDRESS__)
+#else
+#define dinit_ptr_reg Z
+#define dinit_ptr_reg_lo r30
+#define dinit_ptr_reg_hi r31
+#define dinit_ptr_reg_is_z
+    ldi dinit_ptr_reg_lo, lo8(_dinit_addr)
+    ldi dinit_ptr_reg_hi, hi8(_dinit_addr)
+    ldi r20, hi8(_dinit_end)
+#endif
+
+.L__dinit_loop:
+ // Load VMA
+    read_flash_byte 27, dinit_ptr_reg
+    read_flash_byte 26, dinit_ptr_reg
+// Load VMA end
+    read_flash_byte 19, dinit_ptr_reg
+    read_flash_byte 18, dinit_ptr_reg
+// Load format + hhi8(LMA).
+// MSB = format, and is set for bss
+    read_flash_byte 16, dinit_ptr_reg
+    sbrc r16, 7
+    rjmp __do_clear_bss
+
+  // Load LMA. Use Y as scratch for holding
+  // dinit_ptr_reg, while Z is clobbered with
+  // LMA
+#if defined(dinit_ptr_reg_is_z)
+    read_flash_byte 25, dinit_ptr_reg
+    read_flash_byte 24, dinit_ptr_reg
+    wmov 28, 30
+    mov r31, 25
+    mov r30, 24
+#else
+    read_flash_byte 31, dinit_ptr_reg
+    read_flash_byte 30, dinit_ptr_reg
+#endif
+
+#if defined(__AVR_TINY__)
+    waddi 30, __AVR_TINY_PM_BASE_ADDRESS__
+#elif defined(__AVR_HAVE_ELPMX__)
+    out __RAMPZ__, r16
+#elif !defined(__AVR_HAVE_ELPMX__) && defined(__AVR_HAVE_ELPM__)
+    dec r16
+.L__do_copy_data_carry:
+    inc r16
+    out __RAMPZ__, r16
+    rjmp .L__do_copy_data_start
+#endif
+
+.L__do_copy_data_loop:
+    read_flash_byte data_copy_dest_reg, Z
+    st X+, data_copy_dest_reg
+#if !defined (__AVR_HAVE_ELPMX__) && defined (__AVR_HAVE_ELPM__)
+    brcs .L__do_copy_data_carry
+#endif
 .L__do_copy_data_start:
-	cpi	r26, lo8(__data_end)
-	cpc	r27, r17
-	brne	.L__do_copy_data_loop
-#endif /* !defined(__AVR_HAVE_ELPMX__) && !defined(__AVR_HAVE_ELPM__) */
+    cp r26, r18
+    cpc r27, r19
+    brne .L__do_copy_data_loop
+
+// Restore Z from Y, and clear __RAMPZ__
+#if defined(dinit_ptr_reg_is_z)
+	   wmov 30, 28
+#if defined(__AVR_HAVE_ELPMX__) || 	defined(__AVR_HAVE_ELPM__)
+    out	__RAMPZ__, __zero_reg__
+#endif
+#endif
+	// Jump over bss clear code
+    rjmp .L__dinit_loop_start
+
+__do_clear_bss:
+.L__do_clear_bss_loop:
+    st X+, __zero_reg__
+.L__do_clear_bss_start:
+    cp r26, r18
+    cpc r27, r19
+    brne .L__do_clear_bss_loop
+
+.L__dinit_loop_start:
+#if defined(__AVR_TINY__)
+    cpi dinit_ptr_reg_lo, lo8(_dinit_end + __AVR_TINY_PM_BASE_ADDRESS__)
+#else
+    cpi dinit_ptr_reg_lo, lo8(_dinit_end)
+#endif
+    cpc dinit_ptr_reg_hi, r20
+    brne .L__dinit_loop
+
 #if defined (__AVR_HAVE_ELPM__) && defined (__AVR_HAVE_RAMPD__)
-	;; Reset RAMPZ to 0 so that EBI devices don't read garbage from RAM
-	out	__RAMPZ__, __zero_reg__
-#endif /* ELPM && RAMPD */
-ENDF __do_copy_data
-#endif /* L_copy_data */
-#endif /* !defined (__AVR_TINY__) */
-
-/* __do_clear_bss is only necessary if there is anything in .bss section.  */
-
-#ifdef L_clear_bss
-	.section .init4,"ax",@progbits
-DEFUN __do_clear_bss
-	ldi	r18, hi8(__bss_end)
-	ldi	r26, lo8(__bss_start)
-	ldi	r27, hi8(__bss_start)
-	rjmp	.do_clear_bss_start
-.do_clear_bss_loop:
-	st	X+, __zero_reg__
-.do_clear_bss_start:
-	cpi	r26, lo8(__bss_end)
-	cpc	r27, r18
-	brne	.do_clear_bss_loop
-ENDF __do_clear_bss
-#endif /* L_clear_bss */
+    ;; Reset RAMPZ to 0 so that EBI devices don't read garbage from RAM
+    out	__RAMPZ__, __zero_reg__
+#endif
+#endif
 
 /* __do_global_ctors and __do_global_dtors are only necessary
    if there are any constructors/destructors.  */
@@ -2462,7 +2493,7 @@ ENDF __do_clear_bss
 #endif
 
 #ifdef L_ctors
-	.section .init6,"ax",@progbits
+	.section .init6, code
 DEFUN __do_global_ctors
     ldi     cdtors_tst_reg, pm_hi8(__ctors_start)
     ldi     r28, pm_lo8(__ctors_end)
@@ -2492,7 +2523,7 @@ ENDF __do_global_ctors
 #endif /* L_ctors */
 
 #ifdef L_dtors
-	.section .fini6,"ax",@progbits
+	.section .fini6, code
 DEFUN __do_global_dtors
     ldi     cdtors_tst_reg, pm_hi8(__dtors_end)
     ldi     r28, pm_lo8(__dtors_start)
@@ -2525,7 +2556,7 @@ ENDF __do_global_dtors
 
 #undef cdtors_tst_reg
 
-.section .text.libgcc, "ax", @progbits
+.section .text.libgcc, code
 
 #if !defined (__AVR_TINY__)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2778,7 +2809,7 @@ ENDF __movmemx_hi
 #endif /* !defined (__AVR_TINY__) */ 
 
 
-.section .text.libgcc.builtins, "ax", @progbits
+.section .text.libgcc.builtins, code
 
 /**********************************
  * Find first set Bit (ffs)
@@ -3223,7 +3254,7 @@ ENDF __rotldi3
 #endif /* defined (L_rotldi3) */
 
 
-.section .text.libgcc.fmul, "ax", @progbits
+.section .text.libgcc.fmul, code
 
 /***********************************************************/
 ;;; Softmul versions of FMUL, FMULS and FMULSU to implement

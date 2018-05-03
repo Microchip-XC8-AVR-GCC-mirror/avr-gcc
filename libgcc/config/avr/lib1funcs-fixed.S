@@ -39,7 +39,7 @@
 #define __tmp_reg__ r0
 #endif
 
-.section .text.libgcc.fixed, "ax", @progbits
+.section .text.libgcc.fixed, code
 
 #ifndef __AVR_TINY__
 

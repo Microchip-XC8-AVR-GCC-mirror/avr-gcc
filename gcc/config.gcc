@@ -1098,8 +1098,8 @@ avr-*-rtems*)
 	tm_file="elfos.h avr/elf.h avr/avr-arch.h avr/avr.h avr/specs.h dbxelf.h avr/rtems.h rtems.h newlib-stdint.h"
 	tm_defines="${tm_defines} WITH_RTEMS"
 	tmake_file="${tmake_file} avr/t-avr avr/t-multilib avr/t-rtems"
-	extra_gcc_objs="driver-avr.o avr-devices.o"
-	extra_objs="avr-devices.o avr-log.o"
+	extra_gcc_objs="driver-avr.o avr-devices.o avr-device-config.o DevXMLParse.o"
+	extra_objs="avr-devices.o avr-log.o avr-device-config.o DevXMLParse.o mchp-license-manager.o sha256.o mchp_sha.o"
 	;;
 avr-*-*)
 	tm_file="elfos.h avr/elf.h avr/avr-arch.h avr/avr.h avr/specs.h dbxelf.h avr/avr-stdint.h"
@@ -1109,8 +1109,8 @@ avr-*-*)
 	fi
 	tmake_file="${tmake_file} avr/t-avr avr/t-multilib"
 	use_gcc_stdint=wrap
-	extra_gcc_objs="driver-avr.o avr-devices.o"
-	extra_objs="avr-devices.o avr-log.o"
+	extra_gcc_objs="driver-avr.o avr-devices.o avr-device-config.o DevXMLParse.o"
+	extra_objs="avr-devices.o avr-log.o avr-device-config.o DevXMLParse.o mchp-license-manager.o sha256.o mchp_sha.o"
 	;;
 bfin*-elf*)
 	tm_file="${tm_file} dbxelf.h elfos.h newlib-stdint.h bfin/elf.h"

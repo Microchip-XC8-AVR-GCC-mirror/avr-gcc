@@ -264,7 +264,7 @@ object_block_hasher::hash (object_block *old)
 /* Return a new unnamed section with the given fields.  */
 
 section *
-get_unnamed_section (unsigned int flags, void (*callback) (const void *),
+get_unnamed_section (uint64_t flags, void (*callback) (const void *),
 		     const void *data)
 {
   section *sect;
@@ -282,7 +282,7 @@ get_unnamed_section (unsigned int flags, void (*callback) (const void *),
 /* Return a SECTION_NOSWITCH section with the given fields.  */
 
 static section *
-get_noswitch_section (unsigned int flags, noswitch_section_callback callback)
+get_noswitch_section (uint64_t flags, noswitch_section_callback callback)
 {
   section *sect;
 
@@ -297,22 +297,14 @@ get_noswitch_section (unsigned int flags, noswitch_section_callback callback)
    a new section with the given fields if no such structure exists.  */
 
 section *
-get_section (const char *name, unsigned int flags, tree decl)
+get_section (const char *name, uint64_t flags, tree decl)
 {
   section *sect, **slot;
 
   slot = section_htab->find_slot_with_hash (name, htab_hash_string (name),
 					    INSERT);
   flags |= SECTION_NAMED;
-  if (*slot == NULL)
-    {
-      sect = ggc_alloc<section> ();
-      sect->named.common.flags = flags;
-      sect->named.name = ggc_strdup (name);
-      sect->named.decl = decl;
-      *slot = sect;
-    }
-  else
+  if (*slot != NULL)
     {
       sect = *slot;
       if ((sect->common.flags & ~SECTION_DECLARED) != flags
@@ -355,8 +347,23 @@ get_section (const char *name, unsigned int flags, tree decl)
 	    error ("section type conflict");
 	  /* Make sure we don't error about one section multiple times.  */
 	  sect->common.flags |= SECTION_OVERRIDE;
+      return sect;
 	}
     }
+  /* create a new section if
+     - no section found associated with NAME   OR
+     - the existing section with NAME has target specific flags OR
+     - the required section has target specific flags.  */
+  if ((*slot == NULL) || (((*slot)->common.flags & AVR_SECTION_FLAGS_MASK) ||
+                            (flags & AVR_SECTION_FLAGS_MASK)))
+    {
+      sect = ggc_alloc<section> ();
+      sect->named.common.flags = flags;
+      sect->named.name = ggc_strdup (name);
+      sect->named.decl = decl;
+      *slot = sect;
+    }
+  gcc_assert (sect);
   return sect;
 }
 
@@ -433,7 +440,7 @@ create_block_symbol (const char *label, struct object_block *block,
 section *
 get_named_section (tree decl, const char *name, int reloc)
 {
-  unsigned int flags;
+  uint64_t flags;
 
   if (name == NULL)
     {
@@ -781,7 +788,7 @@ default_no_function_rodata_section (tree decl ATTRIBUTE_UNUSED)
 static section *
 mergeable_string_section (tree decl ATTRIBUTE_UNUSED,
 			  unsigned HOST_WIDE_INT align ATTRIBUTE_UNUSED,
-			  unsigned int flags ATTRIBUTE_UNUSED)
+			  uint64_t flags ATTRIBUTE_UNUSED)
 {
   HOST_WIDE_INT len;
 
@@ -838,7 +845,7 @@ mergeable_string_section (tree decl ATTRIBUTE_UNUSED,
 section *
 mergeable_constant_section (machine_mode mode ATTRIBUTE_UNUSED,
 			    unsigned HOST_WIDE_INT align ATTRIBUTE_UNUSED,
-			    unsigned int flags ATTRIBUTE_UNUSED)
+			    uint64_t flags ATTRIBUTE_UNUSED)
 {
   unsigned int modesize = GET_MODE_BITSIZE (mode);
 
@@ -2307,7 +2314,7 @@ void
 assemble_vtv_preinit_initializer (tree fn_decl)
 {
   section *sect;
-  unsigned flags = SECTION_WRITE;
+  uint64_t flags = SECTION_WRITE;
   rtx symbol = XEXP (DECL_RTL (fn_decl), 0);
 
   flags |= SECTION_NOTYPE;
@@ -6153,10 +6160,10 @@ decl_default_tls_model (const_tree decl)
    We make the section read-only and executable for a function decl,
    read-only for a const data decl, and writable for a non-const data decl.  */
 
-unsigned int
+uint64_t
 default_section_type_flags (tree decl, const char *name, int reloc)
 {
-  unsigned int flags;
+  uint64_t flags;
 
   if (decl && TREE_CODE (decl) == FUNCTION_DECL)
     flags = SECTION_CODE;
@@ -6237,7 +6244,7 @@ have_global_bss_p (void)
 
 void
 default_no_named_section (const char *name ATTRIBUTE_UNUSED,
-			  unsigned int flags ATTRIBUTE_UNUSED,
+			  uint64_t flags ATTRIBUTE_UNUSED,
 			  tree decl ATTRIBUTE_UNUSED)
 {
   /* Some object formats don't support named sections at all.  The
@@ -6250,7 +6257,7 @@ default_no_named_section (const char *name ATTRIBUTE_UNUSED,
 #endif
 
 void
-default_elf_asm_named_section (const char *name, unsigned int flags,
+default_elf_asm_named_section (const char *name, uint64_t flags,
 			       tree decl ATTRIBUTE_UNUSED)
 {
   char flagchars[10], *f = flagchars;
@@ -6323,7 +6330,7 @@ default_elf_asm_named_section (const char *name, unsigned int flags,
 }
 
 void
-default_coff_asm_named_section (const char *name, unsigned int flags,
+default_coff_asm_named_section (const char *name, uint64_t flags,
 				tree decl ATTRIBUTE_UNUSED)
 {
   char flagchars[8], *f = flagchars;
@@ -6338,7 +6345,7 @@ default_coff_asm_named_section (const char *name, unsigned int flags,
 }
 
 void
-default_pe_asm_named_section (const char *name, unsigned int flags,
+default_pe_asm_named_section (const char *name, uint64_t flags,
 			      tree decl)
 {
   default_coff_asm_named_section (name, flags, decl);
@@ -7100,7 +7107,7 @@ int trampolines_created;
 void
 file_end_indicate_exec_stack (void)
 {
-  unsigned int flags = SECTION_DEBUG;
+  uint64_t flags = SECTION_DEBUG;
   if (trampolines_created)
     flags |= SECTION_CODE;
 

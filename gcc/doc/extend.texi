@@ -1254,11 +1254,24 @@ in order to put read-only data into the flash memory and access that
 data by means of the special instructions @code{LPM} or @code{ELPM}
 needed to read from flash.
 
-Per default, any data including read-only data is located in RAM
-(the generic address space) so that non-generic address spaces are
-needed to locate read-only data in flash memory
-@emph{and} to generate the right instructions to access this data
-without using (inline) assembler code.
+Devices belonging to @code{avrtiny} and @code{avrxmega3} can access
+flash memory by means of @code{LD*} instructions because the flash
+memory is mapped into the RAM address space.  There is @emph{no need}
+for language extensions like @code{__flash} or attribute
+@ref{AVR Variable Attributes,,@code{progmem}}.
+The default linker description files for these devices cater for that
+feature and @code{.rodata} stays in flash: The compiler just generates
+@code{LD*} instructions, and the linker script adds core specific
+offsets to all @code{.rodata} symbols: @code{0x4000} in the case of
+@code{avrtiny} and @code{0x8000} in the case of @code{avrxmega3}.
+See @ref{AVR Options} for a list of respective devices.
+
+For devices not in @code{avrtiny} or @code{avrxmega3},
+any data including read-only data is located in RAM (the generic
+address space) because flash memory is not visible in the RAM address
+space.  In order to locate read-only data in flash memory @emph{and}
+to generate the right instructions to access this data without
+using (inline) assembler code, special address spaces are needed.
 
 @table @code
 @item __flash
@@ -1389,9 +1402,11 @@ extern const __memx char foo;
 const __memx void *pfoo = &foo;
 @end smallexample
 
-@noindent
-Such code requires at least binutils 2.23, see
-@w{@uref{http://sourceware.org/PR13503,PR13503}}.
+@item
+On the reduced Tiny devices like ATtiny40, no address spaces are supported.
+Just use vanilla C / C++ code without overhead as outlined above.
+Attribute @code{progmem} is supported but works differently,
+see @ref{AVR Variable Attributes}.
 
 @end itemize
 
@@ -5317,10 +5332,12 @@ attribute accomplishes this by putting respective variables into a
 section whose name starts with @code{.progmem}.
 
 This attribute works similar to the @code{section} attribute
-but adds additional checking. Notice that just like the
-@code{section} attribute, @code{progmem} affects the location
-of the data but not how this data is accessed.
+but adds additional checking.
 
+@table @asis
+@item @bullet{}@tie{} Ordinary AVR cores with 32 general purpose registers:
+@code{progmem} affects the location
+of the data but not how this data is accessed.
 In order to read data located with the @code{progmem} attribute
 (inline) assembler must be used.
 @smallexample
@@ -5342,6 +5359,54 @@ normally resides in the data memory (RAM).
 
 See also the @ref{AVR Named Address Spaces} section for
 an alternate way to locate and access data in flash memory.
+
+@item @bullet{}@tie{} AVR cores with flash memory visible in the RAM address range:
+On such devices, there is no need for attribute @code{progmem} or
+@ref{AVR Named Address Spaces,,@code{__flash}} qualifier at all.
+Just use standard C / C++.  The compiler will generate @code{LD*}
+instructions.  As flash memory is visible in the RAM address range,
+and the default linker script does @emph{not} locate @code{.rodata} in
+RAM, no special features are needed in order not to waste RAM for
+read-only data or to read from flash.  You might even get slightly better
+performance by
+avoiding @code{progmem} and @code{__flash}.  This applies to devices from
+families @code{avrtiny} and @code{avrxmega3}, see @ref{AVR Options} for
+an overview.
+
+@item @bullet{}@tie{}Reduced AVR Tiny cores like ATtiny40:
+The compiler adds @code{0x4000}
+to the addresses of objects and declarations in @code{progmem} and locates
+the objects in flash memory, namely in section @code{.progmem.data}.
+The offset is needed because the flash memory is visible in the RAM
+address space starting at address @code{0x4000}.
+
+Data in @code{progmem} can be accessed by means of ordinary C@tie{}code,
+no special functions or macros are needed.
+
+@smallexample
+/* var is located in flash memory */
+extern const int var[2] __attribute__((progmem));
+
+int read_var (int i)
+@{
+    return var[i];
+@}
+@end smallexample
+
+Please notice that on these devices, there is no need for @code{progmem}
+at all.
+
+@end table
+
+@item io
+@itemx io (@var{addr})
+@cindex @code{io} variable attribute, AVR
+Variables with the @code{io} attribute are used to address
+memory-mapped peripherals in the io address range.
+If an address is specified, the variable
+is assigned that address, and the value is interpreted as an
+address in the data address space.
+Example:
 
 @item io
 @itemx io (@var{addr})
@@ -5385,6 +5450,33 @@ memory-mapped peripherals that may lie outside the io address range.
 @smallexample
 volatile int porta __attribute__((address (0x600)));
 @end smallexample
+
+@item absdata
+@cindex @code{absdata} variable attribute, AVR
+Variables in static storage and with the @code{absdata} attribute can
+be accessed by the @code{LDS} and @code{STS} instructions which take
+absolute addresses.
+
+@itemize @bullet
+@item
+This attribute is only supported for the reduced AVR Tiny core
+like ATtiny40.
+
+@item
+You must make sure that respective data is located in the
+address range @code{0x40}@dots{}@code{0xbf} accessible by
+@code{LDS} and @code{STS}.  One way to achieve this as an
+appropriate linker description file.
+
+@item
+If the location does not fit the address range of @code{LDS}
+and @code{STS}, there is currently (Binutils 2.26) just an unspecific
+warning like
+@quotation
+@code{module.c:(.text+0x1c): warning: internal error: out of range error}
+@end quotation
+
+@end itemize
 
 @end table
 

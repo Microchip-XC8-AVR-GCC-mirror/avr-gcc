@@ -1,3 +1,4 @@
+
 LIB1ASMSRC = avr/lib1funcs.S
 LIB1ASMFUNCS = \
 	_mulqi3 \

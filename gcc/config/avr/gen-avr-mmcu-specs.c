@@ -127,8 +127,9 @@ print_mcu (const avr_mcu_t *mcu)
   const avr_arch_t *arch;
   enum avr_arch_id arch_id = mcu->arch_id;
 
-  for (arch_mcu = mcu; arch_mcu->macro; )
+  for (arch_mcu = mcu; arch_mcu->macro;)
     arch_mcu--;
+
   if (arch_mcu->arch_id != arch_id)
     exit (EXIT_FAILURE);
 
@@ -179,7 +180,7 @@ print_mcu (const avr_mcu_t *mcu)
     fprintf (f, "core architecture %s\n", arch->name);
   else
     fprintf (f, "device %s (core %s, %d-bit SP%s)\n", mcu->name,
-			 arch->name, sp8 ? 8 : 16, rcall ? ", short-calls" : "");
+             arch->name, sp8 ? 8 : 16, rcall ? ", short-calls" : "");
   fprintf (f, "%s\n", header);
 
   if (is_device)
@@ -214,6 +215,11 @@ print_mcu (const avr_mcu_t *mcu)
   fprintf (f, "*cc1_errata_skip:\n%s\n\n", errata_skip
            ? "\t%{!mno-skip-bug: -mskip-bug}"
            : "\t%{!mskip-bug: -mno-skip-bug}");
+
+  if (mcu->non_bit_addressable_registers_mask)
+    fprintf (f, "*cc1_non_bit_addressable_registers_mask:\n"
+                "\t-mnon-bit-addressable-registers-mask=%#x\n\n",
+                mcu->non_bit_addressable_registers_mask);
 
   fprintf (f, "*cc1_absdata:\n%s\n\n", absdata
            ? "\t%{!mno-absdata: -mabsdata}"
@@ -277,6 +283,7 @@ print_mcu (const avr_mcu_t *mcu)
     {
       fprintf (f, "*self_spec:\n");
       fprintf (f, "\t%%{!mmcu=avr*: %%<mmcu=* -mmcu=%s} ", arch->name);
+      fprintf (f, "-mdevice=%s ", mcu->name);
       fprintf (f, "%s ", rcall_spec);
       fprintf (f, "%s\n\n", sp8_spec);
 
@@ -287,6 +294,11 @@ print_mcu (const avr_mcu_t *mcu)
       fprintf (f, "*cpp:\n");
       fprintf (f, "\t-D%s -D__AVR_DEVICE_NAME__=%s", mcu->macro, mcu->name);
       fprintf (f, "\n\n");
+    }
+  else
+    {
+      fprintf (f, "*self_spec:\n");
+      fprintf (f, "\t-mmcu=%s \n\n", arch->name);
     }
 
   fprintf (f, "# End of file\n");

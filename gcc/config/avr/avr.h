@@ -38,6 +38,9 @@ typedef struct
 
   /* Section prefix, e.g. ".progmem1.data"  */
   const char *section_name;
+
+  /* Section flag, e.g. "progmem2"  */
+  const char *section_flag;
 } avr_addrspace_t;
 
 extern const avr_addrspace_t avr_addrspace[];
@@ -149,6 +152,8 @@ FIXME: DRIVER_SELF_SPECS has changed.
 #define SIZE_TYPE (INT_TYPE_SIZE == 8 ? "long unsigned int" : "unsigned int")
 #define PTRDIFF_TYPE (INT_TYPE_SIZE == 8 ? "long int" :"int")
 
+#define WCHAR_TYPE "int"
+#define WINT_TYPE "int"
 #define WCHAR_TYPE_SIZE 16
 
 #define FIRST_PSEUDO_REGISTER 36
@@ -371,21 +376,24 @@ typedef struct avr_args
     avr_register_target_pragmas();                                      \
   } while (0)
 
-#define TEXT_SECTION_ASM_OP "\t.text"
-
-#define DATA_SECTION_ASM_OP "\t.data"
-
-#define BSS_SECTION_ASM_OP "\t.section .bss"
+#undef TEXT_SECTION_ASM_OP
+#define TEXT_SECTION_ASM_OP avr_text_section_asm_op()
+#undef READONLY_DATA_SECTION_ASM_OP
+#define READONLY_DATA_SECTION_ASM_OP avr_readonly_data_section_asm_op()
+#undef DATA_SECTION_ASM_OP
+#define DATA_SECTION_ASM_OP avr_data_section_asm_op()
+#undef BSS_SECTION_ASM_OP
+#define BSS_SECTION_ASM_OP avr_bss_section_asm_op()
 
 /* Define the pseudo-ops used to switch to the .ctors and .dtors sections.
    There are no shared libraries on this target, and these sections are
    placed in the read-only program memory, so they are not writable.  */
 
 #undef CTORS_SECTION_ASM_OP
-#define CTORS_SECTION_ASM_OP "\t.section .ctors,\"a\",@progbits"
+#define CTORS_SECTION_ASM_OP "\t.section\t.ctors,code"
 
 #undef DTORS_SECTION_ASM_OP
-#define DTORS_SECTION_ASM_OP "\t.section .dtors,\"a\",@progbits"
+#define DTORS_SECTION_ASM_OP "\t.section\t.dtors,code"
 
 #define TARGET_ASM_CONSTRUCTOR avr_asm_out_ctor
 
@@ -412,6 +420,9 @@ typedef struct avr_args
 
 #define ASM_OUTPUT_ALIGNED_DECL_LOCAL(STREAM, DECL, NAME, SIZE, ALIGN)  \
   avr_asm_output_aligned_decl_common (STREAM, DECL, NAME, SIZE, ALIGN, true)
+
+#define ASM_OUTPUT_FUNCTION_LABEL(FILE, NAME, DECL) \
+  avr_asm_output_function_label (FILE, NAME, DECL)
 
 /* Globalizing directive for a label.  */
 #define GLOBAL_ASM_OP ".global\t"
@@ -509,17 +520,23 @@ typedef struct avr_args
     (LENGTH = avr_adjust_insn_length (INSN, LENGTH))
 
 extern const char *avr_devicespecs_file (int, const char**);
+extern const char *avr_language_extension (int, const char**);
 
 #define EXTRA_SPEC_FUNCTIONS                                   \
-  { "device-specs-file", avr_devicespecs_file },
+  { "device-specs-file", avr_devicespecs_file },   \
+  { "lang-extn", avr_language_extension },
 
 /* Driver self specs has lmited functionality w.r.t. '%s' for dynamic specs.
    Apply '%s' to a static string to inflate the file (directory) name which
    is used to diagnose problems with reading the specs file.  */
 
 #undef  DRIVER_SELF_SPECS
-#define DRIVER_SELF_SPECS                       \
-  " %:device-specs-file(device-specs%s %{mmcu=*:%*})"
+#define DRIVER_SELF_SPECS " \
+  %{mmcu=*: %<mmcu=* } \
+  %{mdfp=*: -B%*/gcc/dev/%{mmcu=*:%*} -I%*/include} \
+  %:device-specs-file(device-specs%s %{mmcu=*:%*}) \
+  %:lang-extn(%{mext=*:%*}) \
+  "
 
 /* No libstdc++ for now.  Empty string doesn't work.  */
 #define LIBSTDCXX "gcc"
@@ -558,6 +575,10 @@ struct GTY(()) machine_function
   /* 'true' - if current function is a signal function 
      as specified by the "signal" attribute.  */
   int is_signal;
+
+  /* 'true' - if current function is an nmi function 
+     as specified by the "nmi" attribute.  */
+  int is_nmi;
   
   /* 'true' - if current function is a 'task' function 
      as specified by the "OS_task" attribute.  */
@@ -590,7 +611,63 @@ extern int avr_accumulate_outgoing_args (void);
 
 #define INIT_EXPANDERS avr_init_expanders()
 
+#define SYMBOL_FLAG_PROGMEM1 (SYMBOL_FLAG_MACH_DEP << 0)
+#define SYMBOL_FLAG_PROGMEM2 (SYMBOL_FLAG_MACH_DEP << 1)
+#define SYMBOL_FLAG_PROGMEM3 (SYMBOL_FLAG_MACH_DEP << 2)
+#define SYMBOL_FLAG_PROGMEM4 (SYMBOL_FLAG_MACH_DEP << 3)
+
 /* Flags used for io and address attributes.  */
 #define SYMBOL_FLAG_IO_LOW	(SYMBOL_FLAG_MACH_DEP << 4)
 #define SYMBOL_FLAG_IO		(SYMBOL_FLAG_MACH_DEP << 5)
 #define SYMBOL_FLAG_ADDRESS	(SYMBOL_FLAG_MACH_DEP << 6)
+/* (AVR_TINY only): Symbol has attribute progmem */
+#define SYMBOL_FLAG_TINY_PM (SYMBOL_FLAG_MACH_DEP << 7)
+/* (AVR_TINY only): Symbol has attribute absdata */
+#define SYMBOL_FLAG_TINY_ABSDATA (SYMBOL_FLAG_MACH_DEP << 8)
+#define SYMBOL_FLAG_AT      (SYMBOL_FLAG_MACH_DEP << 9)
+#define SYMBOL_FLAG_PERSISTENT  (SYMBOL_FLAG_MACH_DEP << 10)
+
+#define SECTION_FLAG_EXEC       "x"
+#define SECTION_FLAG_DATA       "d"
+#define SECTION_FLAG_BSS        "b"
+#define SECTION_FLAG_READONLY   "r"
+
+#define SECTION_NAME_BSS          ".bss"
+#define SECTION_NAME_DATA         ".data"
+#define SECTION_NAME_CONST        ".rodata"
+#define SECTION_NAME_INIT         ".init"
+#define SECTION_NAME_FINI         ".fini"
+#define SECTION_NAME_CTORS        ".ctors"
+#define SECTION_NAME_DTORS        ".dtors"
+#define SECTION_NAME_INIT_ARRAY   ".init_array"
+#define SECTION_NAME_FINI_ARRAY   ".fini_array"
+
+#define JOIN2(X,Y) (X ## Y)
+#define JOIN(X,Y) JOIN2(X,Y)
+#define MCHP_ULL(X) JOIN2(X,ULL)
+
+/* 0x100000 */
+#define AVR_SECTION_FLAGS_MASK      (~(MCHP_ULL(SECTION_MACH_DEP) - 1ull))
+
+// AVR_SECTION_PROGMEM_MASK   0xf * SECTION_MACH_DEP
+#define AVR_SECTION_PROGMEM         (MCHP_ULL(SECTION_MACH_DEP) * ADDR_SPACE_FLASH)
+#define AVR_SECTION_READONLY        (MCHP_ULL(SECTION_MACH_DEP) << 5ull)
+#define AVR_SECTION_CONST           (MCHP_ULL(SECTION_MACH_DEP) << 5ull)
+#define AVR_SECTION_AT              (MCHP_ULL(SECTION_MACH_DEP) << 6ull)
+#define AVR_SECTION_PERSISTENT      (MCHP_ULL(SECTION_MACH_DEP) << 7ULL)
+
+#define SECTION_ATTR_BSS            "bss"
+#define SECTION_ATTR_CODE           "code"
+#define SECTION_ATTR_DATA           "data"
+#define SECTION_ATTR_INFO           "info"
+#define SECTION_ATTR_NOLOAD         "noload"
+#define SECTION_ATTR_KEEP           "keep"
+#define SECTION_ATTR_PROGMEM        "progmem"
+#define SECTION_ATTR_PROGMEM1       "progmem1"
+#define SECTION_ATTR_PROGMEM2       "progmem2"
+#define SECTION_ATTR_PROGMEM3       "progmem3"
+#define SECTION_ATTR_PROGMEM4       "progmem4"
+#define SECTION_ATTR_PROGMEM5       "progmem5"
+#define SECTION_ATTR_AT             "address"
+#define SECTION_ATTR_PERSISTENT     "persist"
+

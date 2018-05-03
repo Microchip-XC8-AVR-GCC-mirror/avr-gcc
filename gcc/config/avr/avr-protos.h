@@ -30,6 +30,7 @@ extern int avr_simple_epilogue (void);
 extern int avr_hard_regno_rename_ok (unsigned int, unsigned int);
 extern rtx avr_return_addr_rtx (int count, rtx tem);
 extern void avr_register_target_pragmas (void);
+extern void avr_handle_config_pragma (struct cpp_reader *pfile);
 extern void avr_init_expanders (void);
 
 #ifdef TREE_CODE
@@ -37,6 +38,8 @@ extern void avr_asm_output_aligned_decl_common (FILE*, tree, const char*, unsign
 extern void avr_asm_asm_output_aligned_bss (FILE *, tree, const char *, unsigned HOST_WIDE_INT, int, void (*) (FILE *, tree, const char *, unsigned HOST_WIDE_INT, int));
 extern void asm_output_external (FILE *file, tree decl, char *name);
 extern int avr_progmem_p (tree decl, tree attributes);
+extern void avr_asm_output_function_label (FILE *file, const char *name, tree decl);
+
 
 #ifdef RTX_CODE /* inside TREE_CODE */
 extern void avr_init_cumulative_args (CUMULATIVE_ARGS*, tree, rtx, tree);
@@ -174,3 +177,17 @@ typedef struct
 } avr_log_t;
 
 extern avr_log_t avr_log;
+extern unsigned long avr_non_bit_addressable_registers_mask;
+typedef enum
+{
+  LANG_EXTN_NONE,
+  LANG_EXTN_CCI
+} avr_lang_extn_t;
+extern avr_lang_extn_t avr_lang_extn;
+#define TARGET_CCI  (avr_lang_extn == LANG_EXTN_CCI)
+extern void avr_output_configurations (void);
+extern void avr_override_licensed_options(void);
+extern const char* avr_text_section_asm_op();
+extern const char* avr_data_section_asm_op();
+extern const char* avr_bss_section_asm_op();
+extern const char* avr_readonly_data_section_asm_op();

@@ -67,6 +67,11 @@
 	PR target/71103
 	* gcc.target/avr/pr71103.c: New test.
 
+2016-06-09  Senthil Kumar Selvaraj  <senthil_kumar.selvaraj@atmel.com>
+
+	* gcc.dg/stack-usage-1.c (SIZE): Consider return address
+	  when setting SIZE.
+
 2016-06-03  Release Manager
 
 	* GCC 5.4.0 released.

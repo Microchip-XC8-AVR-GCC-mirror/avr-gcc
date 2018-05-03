@@ -642,7 +642,7 @@
       DONE;
 
     if (QImode == <MODE>mode
-        && SUBREG_P (src)
+        && (GET_CODE(src) == SUBREG)
         && CONSTANT_ADDRESS_P (SUBREG_REG (src))
         && can_create_pseudo_p())
       {

@@ -35,6 +35,7 @@ along with GCC; see the file COPYING3.  If not see
   "%(cc1_n_flash) "                             \
   "%(cc1_errata_skip) "                         \
   "%(cc1_rmw) "                                 \
+  "%(cc1_non_bit_addressable_registers_mask) "  \
   "%(cc1_absdata) "
 
 #undef  CC1PLUS_SPEC

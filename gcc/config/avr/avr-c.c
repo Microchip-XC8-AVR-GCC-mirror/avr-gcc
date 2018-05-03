@@ -19,6 +19,8 @@
 
 /* Not included in avr.c since this requires C front end.  */
 
+#include "avr-device-config.h"
+
 #include "config.h"
 #include "system.h"
 #include "coretypes.h"
@@ -39,7 +41,6 @@
 #include "target.h"
 #include "c-family/c-common.h"
 #include "langhooks.h"
-
 
 /* IDs for all the AVR builtins.  */
 
@@ -255,9 +256,9 @@ avr_resolve_overloaded_builtin (unsigned int iloc, tree fndecl, void *vargs)
   return fold;
 }
   
-
 /* Implement `REGISTER_TARGET_PRAGMAS'.  */
-
+extern void c_register_pragma (const char * space, const char * name,
+                               void (* callback ) (struct cpp_reader *));
 void
 avr_register_target_pragmas (void)
 {
@@ -277,6 +278,9 @@ avr_register_target_pragmas (void)
     }
 
   targetm.resolve_overloaded_builtin = avr_resolve_overloaded_builtin;
+
+  // Register actual target pragmas
+  c_register_pragma(0, "config", avr_handle_config_pragma);
 }
 
 
@@ -295,6 +299,8 @@ avr_toupper (char *up, const char *lo)
 
   return up0;
 }
+
+extern HOST_WIDE_INT mchp_avr_license_valid;
 
 /* Worker function for TARGET_CPU_CPP_BUILTINS.  */
 
@@ -394,6 +400,9 @@ avr_cpu_cpp_builtins (struct cpp_reader *pfile)
   if (TARGET_RMW)
     cpp_define (pfile, "__AVR_ISA_RMW__");
 
+  if (TARGET_CCI)
+    cpp_define (pfile, "__CCI__");
+
   cpp_define_formatted (pfile, "__AVR_SFR_OFFSET__=0x%x",
                         avr_arch->sfr_offset);
 
@@ -441,4 +450,137 @@ avr_cpu_cpp_builtins (struct cpp_reader *pfile)
   cpp_define (pfile, "__INT24_MIN__=(-__INT24_MAX__-1)");
   cpp_define_formatted (pfile, "__UINT24_MAX__=16777215%s",
                         INT_TYPE_SIZE == 8 ? "ULL" : "UL");
+
+  cpp_define_formatted (pfile, "XC8_MODE=%d", mchp_avr_license_valid);
+
 }
+
+//#include "avr-device-config.cpp"
+
+extern enum cpp_ttype pragma_lex (tree *value);
+
+#ifndef CLEAR_REST_OF_INPUT_LINE
+#define CLEAR_REST_OF_INPUT_LINE() \
+  do {                             \
+       int t;                      \
+       tree tv;                    \
+       do {                        \
+         t=pragma_lex(&tv);        \
+       } while (t!=CPP_EOF);       \
+      } while(0);
+#endif
+
+/* handler function for pragma config.  */
+void
+avr_handle_config_pragma (struct cpp_reader *pfile)
+{
+  enum cpp_ttype tok;
+  tree tok_value;
+  static int shown_no_config_warning = 0;
+  
+  if (flag_generate_lto)
+    {
+      warning (0, "#pragma config not supported with -flto option, this file will not participate in LTO");
+      flag_generate_lto = 0;
+    }
+
+  if (DeviceConfigurations.ConfigFile.empty())
+    {
+      error ("#pragma config directive not available as device config file "
+             "not found.");
+      CLEAR_REST_OF_INPUT_LINE();
+      return;
+    }
+
+   /* if configurations are not loaded, warn and skip pragma config.  */
+	if (!DeviceConfigurations.AreConfigsLoaded)
+    {
+      if (!shown_no_config_warning)
+        {
+          shown_no_config_warning = 1;
+          warning (0, "Configuration word information not available for "
+                   "this device. #pragma config is ignored.");
+        }
+        CLEAR_REST_OF_INPUT_LINE();
+        return;
+    }
+
+  /* The payload for the config pragma is a comma delimited list of
+     "setting = value" pairs. Both the setting and the value must
+     be valid C identifiers. */
+  tok = pragma_lex (&tok_value);
+  while (1)
+    {
+      const cpp_token *raw_token;
+      const char *setting_name;
+      unsigned char *value_name;
+
+      /* the current token should be the setting name */
+      if (tok != CPP_NAME)
+        {
+          error ("configuration setting name expected in configuration pragma");
+          break;
+        }
+
+      setting_name = IDENTIFIER_POINTER (tok_value);
+      /* the next token should be the '=' */
+      tok = pragma_lex (&tok_value);
+      if (tok != CPP_EQ)
+        {
+          error ("'=' expected in configuration pragma");
+          break;
+        }
+      /* now we have the value name. We don't use pragma_lex() to get this one
+         since we don't want the additional interpretation going on there.
+         i.e., converting integers from the string. */
+      tok = pragma_lex (&tok_value);
+      if (tok == CPP_NAME)
+        value_name = (unsigned char *)IDENTIFIER_POINTER (tok_value);
+      else if (tok == CPP_NUMBER)
+        {
+          if (tree_fits_uhwi_p (tok_value))
+          {
+            #define MAX_VALUE_NAME_LENGTH 22
+            HOST_WIDE_INT i;
+            i = tree_to_uhwi(tok_value);//, 1 /* positive only */ );
+            value_name = (unsigned char*)xcalloc(MAX_VALUE_NAME_LENGTH,1);
+            snprintf((char *)value_name, MAX_VALUE_NAME_LENGTH, "%d", i);
+            #undef MAX_VALUE_NAME_LENGTH
+          }
+        }
+      else
+        {
+          error ("config-setting value must be a name or a constant integer");
+          break;
+        }
+
+			char ErrorMsg[127] = "";
+			if (!DeviceConfigurations.SetConfig(std::string(setting_name),
+																				 std::string((const char*)value_name),
+																				 ErrorMsg))
+				{
+					error ("Error in setting config (%s)", ErrorMsg);
+					break;
+				}
+
+      /* if the next token is ',' then we have another setting. */
+      tok = pragma_lex (&tok_value);
+      if (tok == CPP_COMMA)
+        tok = pragma_lex (&tok_value);
+      /* if it's EOF, we're done */
+      else if (tok == CPP_EOF)
+        break;
+      /* otherwise, we have spurious input */
+      else
+        {
+          error ("',' or end of line expected in configuration pragma");
+          break;
+        }
+    }
+  /* if we ended for any reason other than end of line, we have an error.
+     Any needed diagnostic should have already been issued, so just
+     clear the rest of the data on the line. */
+  if (tok != CPP_EOF)
+    CLEAR_REST_OF_INPUT_LINE();
+}
+

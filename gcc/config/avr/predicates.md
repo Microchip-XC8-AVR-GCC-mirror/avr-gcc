@@ -42,11 +42,13 @@
   (and (match_code "reg")
        (match_test "REGNO (op) == REG_SP")))
 
-;; Return true if OP is a valid address for lower half of I/O space.
+;; Return true if OP is a valid address for lower half of I/O space
+;; and it is bit addressable
 (define_special_predicate "low_io_address_operand"
   (ior (and (match_code "const_int")
 	    (match_test "IN_RANGE (INTVAL (op) - avr_arch->sfr_offset,
-				   0, 0x20 - GET_MODE_SIZE (mode))"))
+				   0, 0x1F) &&
+         (((1 << (INTVAL (op) - avr_arch->sfr_offset)) & avr_non_bit_addressable_registers_mask) == 0)"))
        (and (match_code "symbol_ref")
 	    (match_test "SYMBOL_REF_FLAGS (op) & SYMBOL_FLAG_IO_LOW"))))
 
@@ -60,7 +62,7 @@
 (define_special_predicate "io_address_operand"
   (ior (and (match_code "const_int")
 	    (match_test "IN_RANGE (INTVAL (op) - avr_arch->sfr_offset,
-				   0, 0x40 - GET_MODE_SIZE (mode))"))
+				   0, 0x3F)"))
        (and (match_code "symbol_ref")
 	    (match_test "SYMBOL_REF_FLAGS (op) & SYMBOL_FLAG_IO"))))
 

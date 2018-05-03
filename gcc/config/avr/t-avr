@@ -31,8 +31,29 @@ avr-c.o: $(srcdir)/config/avr/avr-c.c \
   $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) $(TREE_H) $(C_COMMON_H)
 	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) $<
 
+DevXMLParse.o: $(srcdir)/config/avr/DevXMLParse.cpp
+	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) -fexceptions $(INCLUDES) $<
+
+avr-device-config.o: $(srcdir)/config/avr/avr-device-config.cpp \
+  $(srcdir)/config/avr/DevXMLParse.cpp
+	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) -fexceptions $(INCLUDES) $<
+
 avr-log.o: $(srcdir)/config/avr/avr-log.c \
   $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) $(TREE_H) $(INPUT_H) dumpfile.h
+	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) $<
+
+sha256.o: $(srcdir)/config/avr/sha256.c \
+	$(srcdir)/config/avr/sha256.h
+	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) $<
+
+mchp_sha.o: $(srcdir)/config/avr/mchp_sha.c \
+	$(srcdir)/config/avr/mchp_sha.h
+	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $<
+
+mchp-license-manager.o: $(srcdir)/config/avr/mchp-license-manager.c $(CONFIG_H) $(SYSTEM_H) \
+	coretypes.h $(TM_H) $(TREE_H) output.h $(C_COMMON_H) \
+	$(srcdir)/config/avr/avr.h $(srcdir)/config/avr/xclm_public.h \
+	$(srcdir)/config/avr/avr-protos.h
 	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) $<
 
 avr.o avr-c.o: $(srcdir)/config/avr/builtins.def
@@ -41,7 +62,9 @@ avr.o avr-c.o: $(srcdir)/config/avr/builtins.def
 # in our own stdfix.h as stdfix-gcc.h.
 
 EXTRA_HEADERS = $(srcdir)/config/avr/stdfix.h \
-	      	stdfix-gcc.h
+	      	stdfix-gcc.h \
+	        $(srcdir)/config/avr/xc.h \
+	        $(srcdir)/config/avr/cci.h
 
 stdfix-gcc.h: $(srcdir)/ginclude/stdfix.h
 	-cp $< $@

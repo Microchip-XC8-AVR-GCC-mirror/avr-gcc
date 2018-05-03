@@ -124,6 +124,9 @@ typedef struct
   /* Start of text section. */
   int text_section_start;
 
+  /* Non bit addressable registers mask.  */
+  unsigned int non_bit_addressable_registers_mask;
+
   /* Flash size in bytes.  */
   int flash_size;
 } avr_mcu_t;

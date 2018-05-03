@@ -7425,7 +7425,7 @@ the assembler source.  So you can use it to canonicalize the format
 of the filename using this macro.
 @end defmac
 
-@deftypefn {Target Hook} void TARGET_ASM_NAMED_SECTION (const char *@var{name}, unsigned int @var{flags}, tree @var{decl})
+@deftypefn {Target Hook} void TARGET_ASM_NAMED_SECTION (const char *@var{name}, uint64_t @var{flags}, tree @var{decl})
 Output assembly directives to switch to section @var{name}.  The section
 should have attributes as specified by @var{flags}, which is a bit mask
 of the @code{SECTION_*} flags defined in @file{output.h}.  If @var{decl}
@@ -7459,7 +7459,7 @@ section and then using @code{ASM_OUTPUT_SKIP} to allocate the space.
 This is true on most ELF targets.
 @end deftypevr
 
-@deftypefn {Target Hook} {unsigned int} TARGET_SECTION_TYPE_FLAGS (tree @var{decl}, const char *@var{name}, int @var{reloc})
+@deftypefn {Target Hook} uint64_t TARGET_SECTION_TYPE_FLAGS (tree @var{decl}, const char *@var{name}, int @var{reloc})
 Choose a set of section attributes for use by @code{TARGET_ASM_NAMED_SECTION}
 based on a variable or function decl, a section name, and whether or not the
 declaration's initializer may contain runtime relocations.  @var{decl} may be

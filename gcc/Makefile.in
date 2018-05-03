@@ -346,6 +346,8 @@ OUTPUT_OPTION = -o $@
 ZLIB = @zlibdir@ -lz
 ZLIBINC = @zlibinc@
 
+LIBXMLLIB = -lxml2
+
 # How to find GMP
 GMPLIBS = @GMPLIBS@
 GMPINC = @GMPINC@
@@ -1014,7 +1016,7 @@ BUILD_LIBDEPS= $(BUILD_LIBIBERTY)
 LIBS = @LIBS@ libcommon.a $(CPPLIB) $(LIBINTL) $(LIBICONV) $(LIBBACKTRACE) \
 	$(LIBIBERTY) $(LIBDECNUMBER) $(HOST_LIBS)
 BACKENDLIBS = $(ISLLIBS) $(GMPLIBS) $(PLUGINLIBS) $(HOST_LIBS) \
-	$(ZLIB)
+	$(ZLIB) $(LIBXMLLIB)
 # Any system libraries needed just for GNAT.
 SYSLIBS = @GNAT_LIBEXC@
 
@@ -1825,7 +1827,7 @@ xgcc$(exeext): $(GCC_OBJS) c/gccspec.o libcommon-target.a $(LIBDEPS) \
 	$(EXTRA_GCC_OBJS)
 	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ $(GCC_OBJS) \
 	  c/gccspec.o $(EXTRA_GCC_OBJS) libcommon-target.a \
-	  $(EXTRA_GCC_LIBS) $(LIBS)
+	  $(EXTRA_GCC_LIBS) $(LIBS) $(LIBXMLLIB)
 
 # cpp is to cpp0 as e.g. g++ is to cc1plus: Just another driver.
 # It is part of c-family because the handled extensions are hard-coded
@@ -1834,7 +1836,7 @@ cpp$(exeext): $(GCC_OBJS) c-family/cppspec.o libcommon-target.a $(LIBDEPS) \
 	$(EXTRA_GCC_OBJS)
 	+$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ $(GCC_OBJS) \
 	  c-family/cppspec.o $(EXTRA_GCC_OBJS) libcommon-target.a \
-	  $(EXTRA_GCC_LIBS) $(LIBS)
+	  $(EXTRA_GCC_LIBS) $(LIBS) $(LIBXMLLIB)
 
 # Dump a specs file to make -B./ read these specs over installed ones.
 $(SPECS): xgcc$(exeext)

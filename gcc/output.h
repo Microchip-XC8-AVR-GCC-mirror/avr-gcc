@@ -439,7 +439,7 @@ enum section_category
 /* Information that is provided by all instances of the section type.  */
 struct GTY(()) section_common {
   /* The set of SECTION_* flags that apply to this section.  */
-  unsigned int flags;
+  uint64_t flags;
 };
 
 /* Information about a SECTION_NAMED section.  */
@@ -524,9 +524,9 @@ extern GTY(()) section *bss_noswitch_section;
 extern GTY(()) section *in_section;
 extern GTY(()) bool in_cold_section_p;
 
-extern section *get_unnamed_section (unsigned int, void (*) (const void *),
+extern section *get_unnamed_section (uint64_t flags, void (*) (const void *),
 				     const void *);
-extern section *get_section (const char *, unsigned int, tree);
+extern section *get_section (const char *, uint64_t flags, tree);
 extern section *get_named_section (tree, const char *, int);
 extern section *get_variable_section (tree, bool);
 extern void place_block_symbol (rtx);
@@ -534,7 +534,7 @@ extern rtx get_section_anchor (struct object_block *, HOST_WIDE_INT,
 			       enum tls_model);
 extern section *mergeable_constant_section (machine_mode,
 					    unsigned HOST_WIDE_INT,
-					    unsigned int);
+					    uint64_t flags);
 extern section *function_section (tree);
 extern section *unlikely_text_section (void);
 extern section *current_function_section (void);
@@ -554,16 +554,16 @@ extern tree get_tm_clone_pair (tree);
 extern void default_asm_output_source_filename (FILE *, const char *);
 extern void output_file_directive (FILE *, const char *);
 
-extern unsigned int default_section_type_flags (tree, const char *, int);
+extern uint64_t default_section_type_flags (tree, const char *, int);
 
 extern bool have_global_bss_p (void);
 extern bool bss_initializer_p (const_tree);
 
-extern void default_no_named_section (const char *, unsigned int, tree);
-extern void default_elf_asm_named_section (const char *, unsigned int, tree);
+extern void default_no_named_section (const char *, uint64_t flags, tree);
+extern void default_elf_asm_named_section (const char *, uint64_t flags, tree);
 extern enum section_category categorize_decl_for_section (const_tree, int);
-extern void default_coff_asm_named_section (const char *, unsigned int, tree);
-extern void default_pe_asm_named_section (const char *, unsigned int, tree);
+extern void default_coff_asm_named_section (const char *, uint64_t flags, tree);
+extern void default_pe_asm_named_section (const char *, uint64_t flags, tree);
 
 extern void default_named_section_asm_out_destructor (rtx, int);
 extern void default_dtor_section_asm_out_destructor (rtx, int);

@@ -4899,7 +4899,10 @@ split_live_ranges_for_shrink_wrap (void)
   bitmap_head need_new, reachable;
   vec<basic_block> queue;
 
-  if (!SHRINK_WRAPPING_ENABLED)
+	/* Restore 4.9 behavior of splitting live range even if target does
+		 not have simple_return. This helps fix code size increase for the
+		 avr target - see AVRTC-804 */
+  if (!flag_shrink_wrap)
     return false;
 
   bitmap_initialize (&need_new, 0);

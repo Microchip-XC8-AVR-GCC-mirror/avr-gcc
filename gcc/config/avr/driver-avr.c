@@ -29,7 +29,6 @@ along with GCC; see the file COPYING3.  If not see
 
 static const char dir_separator_str[] = { DIR_SEPARATOR, 0 };
 
-
 /* Implement spec function `device-specs-file´.
 
    Validate mcu name given with -mmcu option. Compose
@@ -100,7 +99,7 @@ avr_devicespecs_file (int argc, const char **argv)
         return X_NODEVLIB;
       }
 
-  return concat ("-specs=device-specs", dir_separator_str, "specs-",
+  return concat (" -specs=device-specs", dir_separator_str, "specs-",
                  mmcu, "%s"
 #if defined (WITH_AVRLIBC)
                  " %{mmcu=avr*:" X_NODEVLIB "} %{!mmcu=*:" X_NODEVLIB "}",
@@ -109,3 +108,38 @@ avr_devicespecs_file (int argc, const char **argv)
 #endif
                  NULL);
 }
+
+const char*
+avr_language_extension (int argc, const char **argv)
+{
+  if (argc == 0) return "";
+
+#ifdef DEBUG_SPECS
+  if (verbose_flag)
+    fnotice (stderr, "Running spec function '%s' with %d args\n\n",
+             __FUNCTION__, argc);
+#endif
+  gcc_assert (argc >= 1);
+
+  const char *extn = argv[argc-1];
+  switch (argc)
+    {
+      default:
+        error ("multiple language extensions specified (%qs)", "-mext");
+        return "";
+      case 1:
+        break;
+    }
+
+  if ((strcmp(extn, "cci") == 0) || (strcmp(extn, "CCI") == 0))
+    {
+      return "%{!fsigned-char: -funsigned-char} -funsigned-bitfields";
+    }
+  else
+    {
+      warning (0, "unknown language extension specified, ignored");
+    }
+
+  return "";
+}
+

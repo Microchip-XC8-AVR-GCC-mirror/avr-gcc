@@ -21,6 +21,7 @@ along with GCC; see the file COPYING3.  If not see
 #define GCC_TREE_H
 
 #include "tree-core.h"
+#include "machmode.h"
 
 /* Macros for initializing `tree_contains_struct'.  */
 #define MARK_TS_BASE(C)					\
@@ -5083,5 +5084,19 @@ int_bit_position (const_tree field)
 extern void gt_ggc_mx (tree &);
 extern void gt_pch_nx (tree &);
 extern void gt_pch_nx (tree &, gt_pointer_operator, void *);
+
+/* Return true if it makes sense to promote/demote from_type to to_type. */
+inline bool
+desired_pro_or_demotion_p (const_tree to_type, const_tree from_type)
+{
+  unsigned int to_type_precision = TYPE_PRECISION (to_type);
+
+  /* OK to promote if to_type is no bigger than word_mode. */
+  if (to_type_precision <= GET_MODE_PRECISION (word_mode))
+    return true;
+
+  /* Otherwise, allow only if narrowing or same precision conversions. */
+  return to_type_precision <= TYPE_PRECISION (from_type);
+}
 
 #endif  /* GCC_TREE_H  */
