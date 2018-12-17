@@ -1161,9 +1161,14 @@ lto_build_c_type_nodes (void)
 
   void_list_node = build_tree_list (NULL_TREE, void_type_node);
   string_type_node = build_pointer_type (char_type_node);
-  const_string_type_node
-    = build_pointer_type (build_qualified_type (char_type_node, TYPE_QUAL_CONST));
 
+	int const_string_type_node_quals = TYPE_QUAL_CONST;
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    const_string_type_node_quals |= ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX);
+
+  const_string_type_node
+    = build_pointer_type (build_qualified_type
+        (char_type_node, const_string_type_node_quals));
   if (strcmp (SIZE_TYPE, "unsigned int") == 0)
     {
       intmax_type_node = integer_type_node;

@@ -9,7 +9,7 @@
 
 typedef __SIZE_TYPE__ size_t;
 extern void abort (void);
-extern char *strstr (const char *, const char *)
+extern const char *strstr (const char *, const char *)
   __asm (ASMNAME ("my_strstr"));
 
 const char *p = "rld", *q = "hello world";

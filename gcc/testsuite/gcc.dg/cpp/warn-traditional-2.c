@@ -18,6 +18,12 @@ int f;               // { dg-error "function-like macro \"f\" must be used with 
 #if +1               // { dg-error " traditional C rejects the unary plus operator .-Werror=traditional." }
 #endif
 
-char *x = "\x0";     // { dg-error "the meaning of '.x' is different in traditional C .-Werror=traditional." }
-char *y = "\a";      // { dg-error "the meaning of '.a' is different in traditional C .-Werror=traditional." }
-char *z = "\u0F43";  // { dg-error "the meaning of '.u' is different in traditional C .-Werror=traditional." }
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
+__CONST char *x = "\x0";     // { dg-error "the meaning of '.x' is different in traditional C .-Werror=traditional." }
+__CONST char *y = "\a";      // { dg-error "the meaning of '.a' is different in traditional C .-Werror=traditional." }
+__CONST char *z = "\u0F43";  // { dg-error "the meaning of '.u' is different in traditional C .-Werror=traditional." }

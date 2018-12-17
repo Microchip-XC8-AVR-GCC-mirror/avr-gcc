@@ -7,14 +7,20 @@ typedef __CHAR32_TYPE__ char32_t;
 
 extern void abort (void);
 
-char32_t	*s0 = U"a" U"b";
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 
-char32_t	*s1 = U"a" "b";
-char32_t	*s2 = "a" U"b";
-char32_t	*s3 = U"a" "\u2029";
-char32_t	*s4 = "\u2029" U"b";
-char32_t	*s5 = U"a" "\U00064321";
-char32_t	*s6 = "\U00064321" U"b";
+__CONST char32_t	*s0 = U"a" U"b";
+
+__CONST char32_t	*s1 = U"a" "b";
+__CONST char32_t	*s2 = "a" U"b";
+__CONST char32_t	*s3 = U"a" "\u2029";
+__CONST char32_t	*s4 = "\u2029" U"b";
+__CONST char32_t	*s5 = U"a" "\U00064321";
+__CONST char32_t	*s6 = "\U00064321" U"b";
 
 #define A	0x00000061
 #define B	0x00000062

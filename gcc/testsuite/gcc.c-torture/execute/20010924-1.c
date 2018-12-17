@@ -2,9 +2,14 @@
    constructors. */
 
 /* Baselines.  */
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 struct {
   char a1c;
-  char *a1p;
+  __CONST char *a1p;
 } a1 = {
   '4',
   "62"

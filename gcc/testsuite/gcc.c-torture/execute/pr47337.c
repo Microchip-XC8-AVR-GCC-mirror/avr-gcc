@@ -1,5 +1,11 @@
 /* PR rtl-optimization/47337 */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 static unsigned int a[256], b = 0;
 static char c = 0;
 static int d = 0, *f = &d;
@@ -53,7 +59,7 @@ fnx (unsigned long long x, int y)
     }
 }
 
-char *volatile w = "2";
+__CONST char *volatile w = "2";
 
 int
 main ()

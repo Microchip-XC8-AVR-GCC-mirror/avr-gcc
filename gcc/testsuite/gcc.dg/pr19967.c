@@ -6,13 +6,19 @@
 /* { dg-do compile } */
 /* { dg-options "-pedantic -std=c99" } */
 
-char *strchr(const char *, int);
-char *strrchr(const char *, int);
-char *index(const char *, int);
-char *rindex(const char *, int);
-char *strpbrk(const char *, const char *);
-char *strstr(const char *, const char *);
-char *p;
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
+__CONST char *strchr(const char *, int);
+__CONST char *strrchr(const char *, int);
+__CONST char *index(const char *, int);
+__CONST char *rindex(const char *, int);
+__CONST char *strpbrk(const char *, const char *);
+__CONST char *strstr(const char *, const char *);
+__CONST char *p;
 
 void
 f (void)

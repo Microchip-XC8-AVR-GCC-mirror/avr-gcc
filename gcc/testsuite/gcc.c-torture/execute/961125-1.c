@@ -1,5 +1,11 @@
-static char *
-begfield (int tab, char *ptr, char *lim, int sword, int schar)
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
+static __CONST char *
+begfield (int tab, __CONST char *ptr, __CONST char *lim, int sword, int schar)
 {
   if (tab)
     {
@@ -25,8 +31,8 @@ begfield (int tab, char *ptr, char *lim, int sword, int schar)
 
 main ()
 {
-  char *s = ":ab";
-  char *lim = s + 3;
+  __CONST char *s = ":ab";
+  __CONST char *lim = s + 3;
   if (begfield (':', s, lim, 1, 1) != s + 2)
     abort ();
   exit (0);

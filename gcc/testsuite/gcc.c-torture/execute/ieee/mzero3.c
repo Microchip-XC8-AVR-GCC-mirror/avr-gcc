@@ -3,6 +3,10 @@
 
    In the MMIX port, negdf2 was bogusly expanding -x into 0 - x.  */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+extern int memcmp (const void *, const void *expected, __SIZE_TYPE__);
+#endif
+
 double nzerod = -0.0;
 float nzerof = -0.0;
 double zerod = 0.0;

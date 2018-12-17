@@ -4,6 +4,11 @@
 
    Written by Jakub Jelinek, 21/05/2003.  */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 extern void abort (void);
 typedef __SIZE_TYPE__ size_t;
 extern int memcmp (const void *, const void *, size_t);
@@ -17,7 +22,7 @@ char buf7[20];
 
 void
 __attribute__((noinline))
-test (long *buf3, char *buf4, char *buf6, int n)
+test (long *buf3, char *buf4, __CONST char *buf6, int n)
 {
   int i = 4;
 

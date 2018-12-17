@@ -1,8 +1,13 @@
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 char temp[] = "192.168.190.160";
 unsigned result = (((((192u<<8)|168u)<<8)|190u)<<8)|160u;
 
-int strtoul1(const char *a, char **b, int c) __attribute__((noinline, noclone));
-int strtoul1(const char *a, char **b, int c)
+int strtoul1(const char *a, __CONST char **b, int c) __attribute__((noinline, noclone));
+int strtoul1(const char *a, __CONST char **b, int c)
 {
   *b = a+3;
   if (a == temp)
@@ -20,7 +25,7 @@ int string_to_ip(const char *s) __attribute__((noinline,noclone));
 int string_to_ip(const char *s)
 {
         int addr;
-        char *e;
+        __CONST char *e;
         int i;
 
         if (s == 0)

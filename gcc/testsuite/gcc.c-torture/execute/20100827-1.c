@@ -1,6 +1,12 @@
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 extern void abort (void);
 int __attribute__((noinline,noclone))
-foo (char *p)
+foo (__CONST char *p)
 {
   int h = 0;
   do

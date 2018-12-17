@@ -1,6 +1,11 @@
 /* { dg-do compile } */
 /* { dg-options "-O3" } */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 typedef long unsigned int size_t;
 typedef struct
 {
@@ -58,7 +63,7 @@ struct Agobj_s
 struct Agdesc_s
 {
 };
-extern Agraph_t *agopen (char *name, Agdesc_t desc, Agdisc_t * disc);
+extern Agraph_t *agopen (__CONST char *name, Agdesc_t desc, Agdisc_t * disc);
 extern Agnode_t *agfstnode (Agraph_t * g);
 extern Agnode_t *agnxtnode (Agraph_t * g, Agnode_t * n);
 extern Agedge_t *agedge (Agraph_t * g, Agnode_t * t, Agnode_t * h, char *name,

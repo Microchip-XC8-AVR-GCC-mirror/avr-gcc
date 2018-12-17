@@ -3,21 +3,27 @@
 extern void abort (void);
 extern void exit (int);
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 struct T
 {
-  char *t1;
+  __CONST char *t1;
   char t2[4096];
-  char **t3;
+  __CONST char **t3;
 };
 
 int a[5];
 int b;
-char **c;
+__CONST char **c;
 int d;
-char **e;
+__CONST char **e;
 struct T t;
 char *f[16];
-char *g[] = { "a", "-u", "b", "c" };
+__CONST char *g[] = { "a", "-u", "b", "c" };
 
 __attribute__ ((__noreturn__)) void
 foo (void)
@@ -50,7 +56,7 @@ setup1 (int x)
 
   if (x & 0x200)
     {
-      char **h, **i = e;
+      __CONST char **h, **i = e;
 
       ++d;
       e = f;

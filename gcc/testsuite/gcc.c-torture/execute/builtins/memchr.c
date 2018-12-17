@@ -7,7 +7,7 @@
 
 extern void abort (void);
 typedef __SIZE_TYPE__ size_t;
-extern void *memchr (const void *, int, size_t);
+extern const void *memchr (const void *, int, size_t);
 
 void
 main_test (void)

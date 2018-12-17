@@ -1,13 +1,18 @@
 /* { dg-do compile } */
 /* { dg-options "-std=c99" } */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 struct A
 {
     char str[8];
     void* v;
 };
 
-int varf (char* fmt, ...);
+int varf (__CONST char* fmt, ...);
 
 void foo (struct A a, struct A b)
 {

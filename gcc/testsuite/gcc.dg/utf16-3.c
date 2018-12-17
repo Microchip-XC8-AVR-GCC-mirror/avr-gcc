@@ -6,15 +6,20 @@
 typedef __CHAR16_TYPE__ char16_t;
 
 extern void abort (void);
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 
-char16_t	*s0 = u"a" u"b";
+__CONST char16_t	*s0 = u"a" u"b";
 
-char16_t	*s1 = u"a" "b";
-char16_t	*s2 = "a" u"b";
-char16_t	*s3 = u"a" "\u2029";
-char16_t	*s4 = "\u2029" u"b";
-char16_t	*s5 = u"a" "\U00064321";
-char16_t	*s6 = "\U00064321" u"b";
+__CONST char16_t	*s1 = u"a" "b";
+__CONST char16_t	*s2 = "a" u"b";
+__CONST char16_t	*s3 = u"a" "\u2029";
+__CONST char16_t	*s4 = "\u2029" u"b";
+__CONST char16_t	*s5 = u"a" "\U00064321";
+__CONST char16_t	*s6 = "\U00064321" u"b";
 
 #define A	0x0061
 #define B	0x0062

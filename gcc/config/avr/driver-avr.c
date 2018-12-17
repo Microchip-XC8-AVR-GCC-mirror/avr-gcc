@@ -29,6 +29,76 @@ along with GCC; see the file COPYING3.  If not see
 
 static const char dir_separator_str[] = { DIR_SEPARATOR, 0 };
 
+std::string PackPrefix;
+
+static std::string
+convert_white_space (const char *orig)
+{
+  int len, number_of_space = 0;
+
+  for (len = 0; orig[len]; len++)
+    if (orig[len] == ' ' || orig[len] == '\t') number_of_space++;
+
+  if (number_of_space)
+    {
+      char *new_spec = (char *) xmalloc (len + number_of_space + 1);
+      int j, k;
+      for (j = 0, k = 0; j <= len; j++, k++)
+        {
+          if (orig[j] == ' ' || orig[j] == '\t')
+            new_spec[k++] = '\\';
+          new_spec[k] = orig[j];
+        }
+      //free (orig);
+      return std::string(new_spec);
+    }
+  else
+    return std::string(orig);
+}
+
+#ifdef DIR_SEPARATOR_2
+// gcc/prefix.c
+/* In a NUL-terminated STRING, replace character C1 with C2 in-place.  */
+static void
+tr (char *string, int c1, int c2)
+{
+  do
+    {
+      if (*string == c1)
+	*string = c2;
+    }
+  while (*string++);
+}
+#endif
+
+const char*
+avr_device_pack (int argc, const char **argv)
+{
+  switch (argc)
+    {
+    case 0:
+      return "";
+    case 1:
+      break;
+    default:
+      warning (0, "Multiple -mdfp options specified. First one is considered.");
+    }
+  char * pack_path;
+  pack_path = xstrdup (argv[0]);
+
+#ifdef DIR_SEPARATOR_2
+  /* Convert DIR_SEPARATOR_2 to DIR_SEPARATOR.  */
+  if (DIR_SEPARATOR_2 != DIR_SEPARATOR)
+    tr (pack_path, DIR_SEPARATOR_2, DIR_SEPARATOR);
+#endif
+
+  PackPrefix = convert_white_space(pack_path);
+
+  /* Ignore all mdfp option here after.
+     Add option -mpack-dir= with DFP path.  */
+  return concat("%<mdfp=* -mpack-dir=", PackPrefix.c_str(), " ", NULL);
+}
+
 /* Implement spec function `device-specs-file´.
 
    Validate mcu name given with -mmcu option. Compose
@@ -99,7 +169,18 @@ avr_devicespecs_file (int argc, const char **argv)
         return X_NODEVLIB;
       }
 
-  return concat (" -specs=device-specs", dir_separator_str, "specs-",
+  /* If DFPack prefix available then add prefix and include directory from DFP
+     directory.  */
+  const char * PackOptions = " ";
+  if (!PackPrefix.empty())
+    {
+      PackOptions = concat (" -B", PackPrefix.c_str(), dir_separator_str, "gcc",
+                            dir_separator_str, "dev", dir_separator_str, mmcu,
+                            " -I", PackPrefix.c_str(), dir_separator_str,
+                            "include", NULL);
+    }
+
+  return concat (PackOptions, " -specs=device-specs", dir_separator_str, "specs-",
                  mmcu, "%s"
 #if defined (WITH_AVRLIBC)
                  " %{mmcu=avr*:" X_NODEVLIB "} %{!mmcu=*:" X_NODEVLIB "}",

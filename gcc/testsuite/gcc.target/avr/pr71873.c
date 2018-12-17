@@ -3,6 +3,11 @@
 
 #include <stdint.h>
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 typedef struct {
   uint8_t x;
   uint32_t y;
@@ -11,7 +16,7 @@ typedef struct {
 A a;
 
 extern int bar(int);
-extern int foo (char *s, ...);
+extern int foo (__CONST char *s, ...);
 
 extern uint8_t param;
 extern uint8_t h,m,s,ld,lm;

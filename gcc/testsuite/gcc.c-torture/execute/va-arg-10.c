@@ -6,6 +6,12 @@
 #define va_copy __va_copy
 #endif
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 extern __SIZE_TYPE__ strlen (const char *);
 
 int
@@ -19,10 +25,10 @@ to_hex (unsigned int a)
 }
 
 void
-fap (int i, char* format, va_list ap)
+fap (int i, __CONST char* format, va_list ap)
 {
   va_list apc;
-  char *formatc;
+  __CONST char *formatc;
 
   va_copy (apc, ap);
   formatc = format;
@@ -38,7 +44,7 @@ fap (int i, char* format, va_list ap)
 }
 
 void
-f0 (char* format, ...)
+f0 (__CONST char* format, ...)
 {
   va_list ap;
 
@@ -48,7 +54,7 @@ f0 (char* format, ...)
 }
 
 void
-f1 (int a1, char* format, ...)
+f1 (int a1, __CONST char* format, ...)
 {
   va_list ap;
 
@@ -58,7 +64,7 @@ f1 (int a1, char* format, ...)
 }
 
 void
-f2 (int a1, int a2, char* format, ...)
+f2 (int a1, int a2, __CONST char* format, ...)
 {
   va_list ap;
 
@@ -68,7 +74,7 @@ f2 (int a1, int a2, char* format, ...)
 }
 
 void
-f3 (int a1, int a2, int a3, char* format, ...)
+f3 (int a1, int a2, int a3, __CONST char* format, ...)
 {
   va_list ap;
 
@@ -78,7 +84,7 @@ f3 (int a1, int a2, int a3, char* format, ...)
 }
 
 void
-f4 (int a1, int a2, int a3, int a4, char* format, ...)
+f4 (int a1, int a2, int a3, int a4, __CONST char* format, ...)
 {
   va_list ap;
 
@@ -89,7 +95,7 @@ f4 (int a1, int a2, int a3, int a4, char* format, ...)
 
 void
 f5 (int a1, int a2, int a3, int a4, int a5,
-    char* format, ...)
+    __CONST char* format, ...)
 {
   va_list ap;
 
@@ -101,7 +107,7 @@ f5 (int a1, int a2, int a3, int a4, int a5,
 void
 f6 (int a1, int a2, int a3, int a4, int a5,
     int a6,
-    char* format, ...)
+    __CONST char* format, ...)
 {
   va_list ap;
 
@@ -113,7 +119,7 @@ f6 (int a1, int a2, int a3, int a4, int a5,
 void
 f7 (int a1, int a2, int a3, int a4, int a5,
     int a6, int a7,
-    char* format, ...)
+    __CONST char* format, ...)
 {
   va_list ap;
 
@@ -125,7 +131,7 @@ f7 (int a1, int a2, int a3, int a4, int a5,
 void
 f8 (int a1, int a2, int a3, int a4, int a5,
     int a6, int a7, int a8,
-    char* format, ...)
+    __CONST char* format, ...)
 {
   va_list ap;
 
@@ -137,7 +143,7 @@ f8 (int a1, int a2, int a3, int a4, int a5,
 void
 f9 (int a1, int a2, int a3, int a4, int a5,
     int a6, int a7, int a8, int a9,
-    char* format, ...)
+    __CONST char* format, ...)
 {
   va_list ap;
 
@@ -149,7 +155,7 @@ f9 (int a1, int a2, int a3, int a4, int a5,
 void
 f10 (int a1, int a2, int a3, int a4, int a5,
      int a6, int a7, int a8, int a9, int a10,
-     char* format, ...)
+     __CONST char* format, ...)
 {
   va_list ap;
 
@@ -162,7 +168,7 @@ void
 f11 (int a1, int a2, int a3, int a4, int a5,
      int a6, int a7, int a8, int a9, int a10,
      int a11,
-     char* format, ...)
+     __CONST char* format, ...)
 {
   va_list ap;
 
@@ -175,7 +181,7 @@ void
 f12 (int a1, int a2, int a3, int a4, int a5,
      int a6, int a7, int a8, int a9, int a10,
      int a11, int a12,
-     char* format, ...)
+     __CONST char* format, ...)
 {
   va_list ap;
 
@@ -188,7 +194,7 @@ void
 f13 (int a1, int a2, int a3, int a4, int a5,
      int a6, int a7, int a8, int a9, int a10,
      int a11, int a12, int a13,
-     char* format, ...)
+     __CONST char* format, ...)
 {
   va_list ap;
 
@@ -201,7 +207,7 @@ void
 f14 (int a1, int a2, int a3, int a4, int a5,
      int a6, int a7, int a8, int a9, int a10,
      int a11, int a12, int a13, int a14,
-     char* format, ...)
+     __CONST char* format, ...)
 {
   va_list ap;
 
@@ -214,7 +220,7 @@ void
 f15 (int a1, int a2, int a3, int a4, int a5,
      int a6, int a7, int a8, int a9, int a10,
      int a11, int a12, int a13, int a14, int a15,
-     char* format, ...)
+     __CONST char* format, ...)
 {
   va_list ap;
 
@@ -225,7 +231,7 @@ f15 (int a1, int a2, int a3, int a4, int a5,
 
 main ()
 {
-  char *f = "0123456789abcdef";
+  __CONST char *f = "0123456789abcdef";
 
   f0 (f+0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
   f1 (0, f+1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);

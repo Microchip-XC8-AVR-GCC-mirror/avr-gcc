@@ -1,6 +1,6 @@
 /* Verify that io and address attributes handled  */
 /* { dg-do run } */
-/* { dg-options "-mext=cci" } */
+/* { dg-options "-mext=cci -mno-const-data-in-progmem" } */
 
 #include <xc.h>
 

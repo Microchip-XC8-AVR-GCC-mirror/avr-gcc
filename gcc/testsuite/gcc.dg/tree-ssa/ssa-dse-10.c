@@ -1,6 +1,12 @@
 /* { dg-do compile } */
 /* { dg-options "-O -w -fdump-tree-dse1-vops" } */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 __extension__ typedef __SIZE_TYPE__ size_t;
 typedef struct _IO_FILE FILE;
 typedef struct
@@ -409,7 +415,7 @@ typedef struct _HMAC_INFO {
 } HMAC_INFO, *PHMAC_INFO;
 typedef struct _CRYPTOAPI_BLOB {
   DWORD cbData;
-  BYTE* pbData;
+  __CONST BYTE* pbData;
 } CRYPT_INTEGER_BLOB, *PCRYPT_INTEGER_BLOB,
   CRYPT_OBJID_BLOB, *PCRYPT_OBJID_BLOB,
   CERT_NAME_BLOB, *PCERT_NAME_BLOB,
@@ -895,10 +901,10 @@ static BYTE graphicCommonNameValue[] = {
 static BYTE utf8CommonNameValue[] = {
  0x0c,0x0a,0x4a,0x75,0x61,0x6e,0x20,0x4c,0x61,0x6e,0x67,0x00 };
 static struct EncodedNameValue nameValues[] = {
- { { 5, { sizeof(commonName), (BYTE *)commonName } },
+ { { 5, { sizeof(commonName), (__CONST BYTE *)commonName } },
      sizeof(bin42) },
  { { 4, { sizeof(bogusPrintable),
-     (BYTE *)bogusPrintable } }, bin43, sizeof(bin43) },
+     (__CONST BYTE *)bogusPrintable } }, bin43, sizeof(bin43) },
 };
 static void test_encodeNameValue(DWORD dwEncoding)
 {
@@ -1161,13 +1167,13 @@ static const unsigned char bin67[] = {
 static const unsigned char bin69[] = {
     0x0f};
 static unsigned char bin72[] = { 0x05,0x00};
-static CHAR oid_bogus[] = "1.2.3",
+static __CONST CHAR oid_bogus[] = "1.2.3",
             oid_rsa[] = "1.2.840.113549";
 static const struct encodedPublicKey pubKeys[] = {
- { { { oid_rsa, { 0, ((void *)0) } }, { 0, ((void *)0), 0} },
-  { { oid_rsa, { 2, bin72 } }, { sizeof(aKey), (BYTE *)aKey, 0} } },
- { { { oid_rsa, { sizeof(params), (BYTE *)params } }, { sizeof(aKey),
-  (BYTE *)aKey, 0 } } },
+ { { { oid_rsa, { 0, ((__CONST void *)0) } }, { 0, ((__CONST void *)0), 0} },
+  { { oid_rsa, { 2, bin72 } }, { sizeof(aKey), (__CONST BYTE *)aKey, 0} } },
+ { { { oid_rsa, { sizeof(params), (__CONST BYTE *)params } }, { sizeof(aKey),
+  (__CONST BYTE *)aKey, 0 } } },
 };
 static void test_encodePublicKeyInfo(DWORD dwEncoding)
 {

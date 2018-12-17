@@ -3278,6 +3278,13 @@ gimplify_modify_expr_to_memcpy (tree *expr_p, tree size, bool want_value,
 
   mark_addressable (from);
   from_ptr = build_fold_addr_expr_loc (loc, from);
+
+  addr_space_t as = TYPE_ADDR_SPACE (TREE_TYPE (TREE_TYPE (from_ptr)));
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE && ADDR_SPACE_GENERIC_P (as))
+    {
+      from_ptr = fold_convert_loc(loc, const_ptr_type_node, from_ptr);
+    }
+
   gimplify_arg (&from_ptr, seq_p, loc);
 
   mark_addressable (to);
@@ -3285,7 +3292,6 @@ gimplify_modify_expr_to_memcpy (tree *expr_p, tree size, bool want_value,
   gimplify_arg (&to_ptr, seq_p, loc);
 
   t = builtin_decl_implicit (BUILT_IN_MEMCPY);
-
   gs = gimple_build_call (t, 3, to_ptr, from_ptr, size);
 
   if (want_value)
@@ -4785,6 +4791,20 @@ gimplify_variable_sized_compare (tree *expr_p)
   arg = SUBSTITUTE_PLACEHOLDER_IN_EXPR (arg, op0);
   src = build_fold_addr_expr_loc (loc, op1);
   dest = build_fold_addr_expr_loc (loc, op0);
+
+  addr_space_t as = TYPE_ADDR_SPACE (TREE_TYPE (TREE_TYPE (src)));
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE && ADDR_SPACE_GENERIC_P (as))
+  {
+    src = fold_convert_loc(loc, const_ptr_type_node, src);
+  }
+
+  as = TYPE_ADDR_SPACE (TREE_TYPE (TREE_TYPE (src)));
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE && ADDR_SPACE_GENERIC_P (as))
+  {
+    dest = fold_convert_loc(loc, const_ptr_type_node, dest);
+  }
+
+
   t = builtin_decl_implicit (BUILT_IN_MEMCMP);
   t = build_call_expr_loc (loc, t, 3, dest, src, arg);
 

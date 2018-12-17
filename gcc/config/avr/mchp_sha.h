@@ -29,7 +29,7 @@ alng with GCC; see the file COPYING3.  If not see
 # elif defined(__linux__)
 #  define MCHP_XCLM_SHA256_DIGEST   25c59700405f1de167e24681e90af0f4c354fac1e111b55b9bc3ba8f3e562c82
 # elif defined(__MACH__)
-#  define MCHP_XCLM_SHA256_DIGEST   2d97361e93c150bbcdd9726923eae00e1ce1a2a5f00a550f9b1f34774ad69baa
+#  define MCHP_XCLM_SHA256_DIGEST   f4ca13443ff4e138b2922501e5b8850837135f94b2660272d69ccf55dc9b2a76
 # else
 #  error "Unknown host"
 # endif

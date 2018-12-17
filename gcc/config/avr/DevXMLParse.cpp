@@ -190,6 +190,8 @@ bool
 DXMLParser::GetRegisterConfig (xmlNodePtr SectorNode, ConfigSpace &Space)
 {
   xmlNodePtr Node = SectorNode->xmlChildrenNode;
+  uint8_t nRegParsed = 0;
+  uint32_t LastRegAddr = 0;
   for (xmlNodePtr RegNode = Node; RegNode; RegNode = RegNode->next)
     {
       if (RegNode->type != XML_ELEMENT_NODE) continue;
@@ -203,7 +205,7 @@ DXMLParser::GetRegisterConfig (xmlNodePtr SectorNode, ConfigSpace &Space)
           Str = GetAttribute(RegNode, "offset");
           RegSizeInBits = (strtol (Str, NULL, 0) * 8);
           ConfigReg Reg(RegAddr, RegSizeInBits, (1 << RegSizeInBits) - 1);
-
+          nRegParsed += RegSizeInBits / 8;
           Space.registers.push_back(Reg);
         }
       else
@@ -213,14 +215,35 @@ DXMLParser::GetRegisterConfig (xmlNodePtr SectorNode, ConfigSpace &Space)
           uint32_t RegDefaultVal = strtol(Str, NULL, 0);
           Str = GetAttribute(RegNode, "nzwidth");
           RegSizeInBits = strtol(Str, NULL, 0);
-
+          if (RegSizeInBits % 8)
+            {
+              fprintf (stderr, "Unsupported config register size (%d), "
+                       "expected to be multiple of 8 bits.\n", RegSizeInBits);
+              return false;
+            }
+          nRegParsed += RegSizeInBits / 8;
           ConfigReg Reg(RegName, RegAddr, RegSizeInBits, RegDefaultVal);
           if (!GetFieldsConfig(RegNode, Reg))
             return false;
 
           Space.registers.push_back(Reg);
         }
+      LastRegAddr = RegAddr;
     }
+
+  /* If the last bytes are reserved, there may not be any <AdjustPoint> nodes
+     in PIC file. Create reserved byte registers for remaining config
+     registers. */
+  uint8_t lRemRegs = Space.width - nRegParsed;
+
+  while (lRemRegs > 0)
+  {
+	  LastRegAddr++;
+	  ConfigReg Reg(LastRegAddr, 8, 0xff);
+	  Space.registers.push_back(Reg);
+	  lRemRegs--;
+  }
+
   return true;
 }
 
@@ -256,7 +279,10 @@ DXMLParser::GetSectorConfig (std::string SpaceName, std::string SectorName,
 
   Space.SetValues(SectorName, SectorAddress, FuseSectorWidth);
   if (!GetRegisterConfig (FusesSectorNode, Space))
-    return false;
+    {
+      sprintf (Error, "Error in reading config registers.");
+      return false;
+    }
 
   xmlXPathFreeObject(xpathObj);
   return true;

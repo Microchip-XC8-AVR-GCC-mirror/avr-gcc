@@ -1,5 +1,10 @@
 /* { dg-do run } */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 extern void abort (void);
 
 struct Ustr
@@ -24,7 +29,7 @@ ustr_len(const struct Ustr *s1)
 int
 main()
 {
-  if (ustr_len (((struct Ustr *) "\x01" "\x0002" "s2")) != 2)
+  if (ustr_len (((__CONST struct Ustr *) "\x01" "\x0002" "s2")) != 2)
     abort ();
 
   return 0;

@@ -2,12 +2,18 @@
 /* { dg-do run } */
 
 extern void abort (void);
+ 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 
 void func (void)
 {
   int i;
   int nops;
-  char *codestr =
+  __CONST char *codestr =
     "|\000\000Ee\000\000Z\001\000d\000\000Z\002\000d\025\000Z\003\000"
     "\t\t\t\t\t\t\t\t\t\t\t\td\026\000Z\004\000d\005\000\204\000\000Z"
     "\005\000e\006\000e\a\000j\005\000e\b\000d\006\000\204\002\000\203"

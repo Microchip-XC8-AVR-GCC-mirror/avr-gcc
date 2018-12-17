@@ -2,9 +2,14 @@
 /* { dg-options "-O2 -fdump-tree-strlen" } */
 
 #include "strlenopt.h"
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 
 __attribute__((noinline, noclone)) char *
-foo (char *p, char *r)
+foo (__CONST char *p, __CONST char *r)
 {
   char *q = malloc (strlen (p) + strlen (r) + 64);
   if (q == NULL) return NULL;
@@ -24,8 +29,8 @@ foo (char *p, char *r)
 int
 main ()
 {
-  char *volatile p = "string1";
-  char *volatile r = "string2";
+  __CONST char *volatile p = "string1";
+  __CONST char *volatile r = "string2";
   char *q = foo (p, r);
   if (q != NULL)
     {

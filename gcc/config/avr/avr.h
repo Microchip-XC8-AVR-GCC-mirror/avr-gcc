@@ -78,6 +78,9 @@ enum
 #define AVR_HAVE_RAMPZ (avr_arch->have_elpm             \
                         || avr_arch->have_rampd)
 #define AVR_HAVE_EIJMP_EICALL (avr_arch->have_eijmp_eicall)
+#define AVR_HAVE_PROGMEM_IN_DATA_ADDRESS_SPACE ((AVR_XMEGA3) || (AVR_TINY))
+#define AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE \
+    (avr_const_data_in_progmem && !AVR_HAVE_PROGMEM_IN_DATA_ADDRESS_SPACE)
 
 /* Handling of 8-bit SP versus 16-bit SP is as follows:
 
@@ -105,6 +108,7 @@ FIXME: DRIVER_SELF_SPECS has changed.
 
 #define AVR_XMEGA (avr_arch->xmega_p)
 #define AVR_TINY  (avr_arch->tiny_p)
+#define AVR_XMEGA3 (avr_arch == &avr_arch_types[ARCH_AVRXMEGA3])
 
 #define BITS_BIG_ENDIAN 0
 #define BYTES_BIG_ENDIAN 0
@@ -519,10 +523,12 @@ typedef struct avr_args
 #define ADJUST_INSN_LENGTH(INSN, LENGTH)                \
     (LENGTH = avr_adjust_insn_length (INSN, LENGTH))
 
+extern const char *avr_device_pack (int, const char**);
 extern const char *avr_devicespecs_file (int, const char**);
 extern const char *avr_language_extension (int, const char**);
 
 #define EXTRA_SPEC_FUNCTIONS                                   \
+  { "device-pack", avr_device_pack },              \
   { "device-specs-file", avr_devicespecs_file },   \
   { "lang-extn", avr_language_extension },
 
@@ -532,8 +538,7 @@ extern const char *avr_language_extension (int, const char**);
 
 #undef  DRIVER_SELF_SPECS
 #define DRIVER_SELF_SPECS " \
-  %{mmcu=*: %<mmcu=* } \
-  %{mdfp=*: -B%*/gcc/dev/%{mmcu=*:%*} -I%*/include} \
+  %:device-pack(%{mdfp=*:%*}) \
   %:device-specs-file(device-specs%s %{mmcu=*:%*}) \
   %:lang-extn(%{mext=*:%*}) \
   "
@@ -655,10 +660,12 @@ extern int avr_accumulate_outgoing_args (void);
 #define AVR_SECTION_CONST           (MCHP_ULL(SECTION_MACH_DEP) << 5ull)
 #define AVR_SECTION_AT              (MCHP_ULL(SECTION_MACH_DEP) << 6ull)
 #define AVR_SECTION_PERSISTENT      (MCHP_ULL(SECTION_MACH_DEP) << 7ULL)
+#define AVR_SECTION_FUNCRODATA      (MCHP_ULL(SECTION_MACH_DEP) << 8ULL)
 
 #define SECTION_ATTR_BSS            "bss"
 #define SECTION_ATTR_CODE           "code"
 #define SECTION_ATTR_DATA           "data"
+#define SECTION_ATTR_RODATA         "rodata"
 #define SECTION_ATTR_INFO           "info"
 #define SECTION_ATTR_NOLOAD         "noload"
 #define SECTION_ATTR_KEEP           "keep"

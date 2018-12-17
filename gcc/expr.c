@@ -1380,6 +1380,11 @@ emit_block_move_via_libcall (rtx dst, rtx src, rtx size, bool tailcall)
   dst_tree = make_tree (ptr_type_node, dst_addr);
   src_tree = make_tree (ptr_type_node, src_addr);
 
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    {
+      src_tree = fold_convert(const_ptr_type_node, src_tree);
+    }
+
   size_mode = TYPE_MODE (sizetype);
 
   size = convert_to_mode (size_mode, size, 1);
@@ -3452,7 +3457,7 @@ undefined_operand_subword_p (const_rtx op, int i)
    pattern.  Note that you will get better code if you define such
    patterns, even if they must turn into multiple assembler instructions.  */
 
-static rtx_insn *
+rtx_insn *
 emit_move_multi_word (machine_mode mode, rtx x, rtx y)
 {
   rtx_insn *last_insn = 0;

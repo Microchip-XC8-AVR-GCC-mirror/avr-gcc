@@ -1,6 +1,10 @@
 /* Compiler Test Generator Program.
    Copyright (C) 1989 FSF.  */
-
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 
 #define E0 ((type *)10000000)
 #define reg0 r0
@@ -26,9 +30,9 @@ int glob0, glob1;
 
 #define type double
 
-char *a0[] = {"reg0", "indreg0", "imm0", "limm0",
+__CONST char * __CONST a0[] = {"reg0", "indreg0", "imm0", "limm0",
 		"adr0", "adrreg0", "adrx0", "regx0"};
-char *a1[] = {"reg1", "indreg1", "imm1", "limm1",
+__CONST char * __CONST a1[] = {"reg1", "indreg1", "imm1", "limm1",
 		"adr1", "adrreg1", "adrx1", "regx1"};
 
 main_compare ()

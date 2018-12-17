@@ -39,12 +39,12 @@ void test(void)
 	pc = z0;
 	pc = z1;
 	pc = z2;
-	transpose0(pc, p); /* { dg-error "passing argument 1 of 'transpose0' discards 'const' qualifier from pointer target type" } */
-	transpose1(pc, p); /* { dg-error "passing argument 1 of 'transpose1' discards 'const' qualifier from pointer target type" } */
-	transpose2(pc, p); /* { dg-error "passing argument 1 of 'transpose2' discards 'const' qualifier from pointer target type" } */
+	transpose0(pc, p); /* { dg-error "passing argument 1 of 'transpose0' discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
+	transpose1(pc, p); /* { dg-error "passing argument 1 of 'transpose1' discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
+	transpose2(pc, p); /* { dg-error "passing argument 1 of 'transpose2' discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
 	transpose0(p, pc);
-	transpose1(p, pc); /* { dg-error "passing argument 2 of 'transpose1' discards 'const' qualifier from pointer target type" } */
-	transpose2(p, pc); /* { dg-error "passing argument 2 of 'transpose2' discards 'const' qualifier from pointer target type" } */
+	transpose1(p, pc); /* { dg-error "passing argument 2 of 'transpose1' discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
+	transpose2(p, pc); /* { dg-error "passing argument 2 of 'transpose2' discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
 	// passing as arguments
 	transpose0(y0, x0);
 	transpose1(y1, o1); /* { dg-error "passing argument 2 of 'transpose1' from incompatible pointer type" } */
@@ -86,7 +86,7 @@ void test(void)
 	v0p = (1 ? z0 : v0p); /* { dg-error "assignment discards 'const' qualifier from pointer target type" } */
 	v1p = (1 ? z1 : v1p); /* { dg-error "pointers to arrays with different qualifiers|assignment discards" } */
 	v2p = (1 ? z2 : v2p); /* { dg-error "pointers to arrays with different qualifiers|assignment discards" } */
-	v0p = (1 ? x0 : x0p); /* { dg-error "assignment discards 'const' qualifier from pointer target type" } */
+	v0p = (1 ? x0 : x0p); /* { dg-error "assignment discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
 	v1p = (1 ? x1 : x1p); /* { dg-error "pointers to arrays with different qualifiers|assignment discards" } */
 	v2p = (1 ? x2 : x2p); /* { dg-error "pointers to arrays with different qualifiers|assignment discards" } */
 	(1 ? x0 : z0)[0] = 1; /* { dg-error "assignment of read-only location" } */
@@ -95,8 +95,9 @@ void test(void)
 	v0p = (1 ? p : z0); /* { dg-error "assignment discards 'const' qualifier from pointer target type" } */
 	v1p = (1 ? p : z1); /* { dg-warning "pointer to array loses qualifier in conditional expression" } */
 	v2p = (1 ? p : z2); /* { dg-warning "pointer to array loses qualifier in conditional expression" } */
-	v0p = (1 ? pc : x0); /* { dg-error "assignment discards 'const' qualifier from pointer target type" } */
-	v1p = (1 ? pc : x1); /* { dg-error "assignment discards 'const' qualifier from pointer target type" } */
-	v2p = (1 ? pc : x2); /* { dg-error "assignment discards 'const' qualifier from pointer target type" } */
+	v0p = (1 ? pc : x0); /* { dg-error "assignment discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
+	v1p = (1 ? pc : x1); /* { dg-error "assignment discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
+	v2p = (1 ? pc : x2); /* { dg-error "assignment discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
 }
+/* { dg-prune-output "pointer to non-enclosed address space" } */
 

@@ -6,7 +6,7 @@
    Written by Kaveh R. Ghazi, 11/6/2000.  */
 
 extern void abort(void);
-extern char *strstr (const char *, const char *);
+extern const char *strstr (const char *, const char *);
 
 void
 main_test (void)

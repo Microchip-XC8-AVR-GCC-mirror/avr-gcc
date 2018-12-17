@@ -12,6 +12,7 @@
 #include <stdbool.h>
 
 extern void abort();
+extern int memcmp (const void*, const void*, __SIZE_TYPE__);
 
 typedef struct test {
   int array[10];

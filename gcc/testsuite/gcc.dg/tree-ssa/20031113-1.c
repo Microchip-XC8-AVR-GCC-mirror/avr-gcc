@@ -7,12 +7,17 @@
 /* { dg-do compile } */
 /* { dg-options "-O1" } */ 
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 extern __SIZE_TYPE__ strlen (const char *);
 
 int i; 
 
 static void 
-SendEventProc (char *resultString) 
+SendEventProc (__CONST char *resultString) 
 { 
   char *p; 
  

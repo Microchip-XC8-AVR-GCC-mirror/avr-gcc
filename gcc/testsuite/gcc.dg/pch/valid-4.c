@@ -2,5 +2,5 @@
 
 #include "valid-4.h"
 
-char * x = "??/";  /* { dg-warning "trigraph" } */
+__CONST char * x = "??/";  /* { dg-warning "trigraph" } */
 

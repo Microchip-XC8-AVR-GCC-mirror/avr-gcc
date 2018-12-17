@@ -2,13 +2,18 @@
 /* { dg-do compile } */
 /* { dg-options "-Wall -Wno-sizeof-array-argument" } */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 typedef __SIZE_TYPE__ size_t;
 #ifdef __cplusplus
 extern "C" {
 #endif
 extern int snprintf (char *, size_t, const char *, ...);
 extern int vsnprintf (char *, size_t, const char *, __builtin_va_list);
-extern void *memchr (const void *, int, size_t);
+extern __CONST void *memchr (const void *, int, size_t);
 #ifdef __cplusplus
 }
 #endif
@@ -23,7 +28,7 @@ typedef struct B *PB;
 typedef TB *PTB;
 typedef int X[3][3][3];
 
-void foo (void **);
+void foo (__CONST void **);
 
 void
 f1 (void *x)
@@ -32,7 +37,7 @@ f1 (void *x)
   TA *pa2 = &a;
   PA pa3 = &a;
   PTA pa4 = &a;
-  void *arr[100];
+  __CONST void *arr[100];
   int i = 0;
   arr[i++] = memchr (&a, 0, sizeof (&a));		/* { dg-warning "call is the same expression as the source; did you mean to remove the addressof" } */
   arr[i++] = memchr (pa1, 0, sizeof (pa1));		/* { dg-warning "call is the same expression as the source; did you mean to dereference it" } */
@@ -72,7 +77,7 @@ f2 (void *x)
   TB *pb2 = &b;
   PB pb3 = &b;
   PTB pb4 = &b;
-  void *arr[100];
+  __CONST void *arr[100];
   int i = 0;
   arr[i++] = memchr (&b, 0, sizeof (&b));		/* { dg-warning "call is the same expression as the source; did you mean to remove the addressof" } */
   arr[i++] = memchr (pb1, 0, sizeof (pb1));		/* { dg-warning "call is the same expression as the source; did you mean to dereference it" } */
@@ -115,7 +120,7 @@ f3 (void *x, char *y, int z, X w)
   int *buf4[9];
   signed char *y2 = buf2;
   char c;
-  void *arr[100];
+  __CONST void *arr[100];
   int i = 0;
   arr[i++] = memchr (y, 0, sizeof (y));			/* { dg-warning "call is the same expression as the source; did you mean to provide an explicit length" } */
   arr[i++] = memchr (y1, 0, sizeof (y1));		/* { dg-warning "call is the same expression as the source; did you mean to provide an explicit length" } */

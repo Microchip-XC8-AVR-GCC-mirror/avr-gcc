@@ -6,10 +6,10 @@
    Written by Jakub Jelinek, 11/7/2000.  */
 
 extern void abort (void);
-extern char *strrchr (const char *, int);
-extern char *rindex (const char *, int);
+extern const char *strrchr (const char *, int);
+extern const char *rindex (const char *, int);
 
-char *bar = "hi world";
+const char *bar = "hi world";
 int x = 7;
 
 void

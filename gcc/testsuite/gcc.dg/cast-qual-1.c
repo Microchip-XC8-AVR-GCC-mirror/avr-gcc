@@ -26,5 +26,6 @@ good_assign(const void *bar)
 void
 bad_assign(const void *bar)
 {
-  const char **foo = bar; /* { dg-warning "initialization discards" "discarding `const' warning" } */
+  const char **foo = bar; /* { dg-warning "initialization discards" "discarding `const' warning" { xfail avr_const_data_in_progmem } } */
+	/* { dg-prune-output "pointer to non-enclosed address space" } */
 }

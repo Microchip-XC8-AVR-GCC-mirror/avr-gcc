@@ -1,5 +1,7 @@
 /* Verify that section directives generated */
 /* { dg-do compile } */
+/* { dg-options "-mno-const-data-in-progmem" } */
+/* { dg-skip-if "skip if global option is to enable const data in progmem" { *-*-* } { "-mconst-data-in-progmem" } { "" } } */
 
 int   bss1;
 short bss2;
@@ -28,7 +30,7 @@ int main ()
 /* { dg-final { scan-assembler "\t.section\t.data,data" } } */
 /* { dg-final { scan-assembler "\t.type\tdata1, @object" } } */
 /* { dg-final { scan-assembler "\t.type\tdata2, @object" } } */
-/* { dg-final { scan-assembler "\t.section\t.rodata,data" } } */
+/* { dg-final { scan-assembler "\t.section\t.rodata,rodata" } } */
 /* { dg-final { scan-assembler "\t.type\trodata1, @object" } } */
 /* { dg-final { scan-assembler "\t.type\trodata2, @object" } } */
 /* { dg-final { scan-assembler "\t.section\tsecname,code" } } */

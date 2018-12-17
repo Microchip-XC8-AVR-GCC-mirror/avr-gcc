@@ -10,7 +10,7 @@ foo (char *x, int n)
 {
   int i;
   char a[64];
-  char *p = strchr (x, '\0');
+  char *p = (char*)strchr (x, '\0');
   struct S s;
   /* strcpy here is optimized into memcpy, length computed as p - x + 1.  */
   strcpy (a, x);

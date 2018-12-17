@@ -1,7 +1,13 @@
 /* PR middle-end/34134 */
 /* { dg-require-effective-target alloca } */
 
-extern void bar (void *, int);
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
+extern void bar (__CONST void *, int);
 
 int foo (int i)
 {

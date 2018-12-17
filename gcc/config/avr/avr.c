@@ -598,6 +598,16 @@ avr_option_override (void)
   if (!avr_set_core_architecture())
     return;
 
+/*
+  if (!avr_const_data_in_progmem && ((AVR_XMEGA3) || (AVR_TINY)))
+    {
+      warning (0, "could not disable const data allocation to progmem (%qs) "
+               "for avrxmega3 and avrtiny architectures",
+               "-mno-const-data-in-progmem");
+      avr_const_data_in_progmem = 1;
+    }
+*/
+
   /* RAM addresses of some SFRs common to all devices in respective arch. */
 
   /* SREG: Status Register containing flags like I (global IRQ) */
@@ -7510,7 +7520,17 @@ avr_out_plus_1 (rtx *xop, int *plen, enum rtx_code code, int *pcc,
     {
       /* We operate byte-wise on the destination.  */
       rtx reg8 = simplify_gen_subreg (QImode, xop[0], mode, i);
-      rtx xval8 = simplify_gen_subreg (QImode, xval, imode, i);
+      rtx xval8;
+      /* Restrict PSI pointer arithmetic with constant to HImode integer.
+         Use sign-extend-ed 2nd byte as third byte of PSImode.  */
+      if ((imode == PSImode) && (i == 2))
+        {
+          rtx t = simplify_gen_subreg (QImode, xval, imode, 1);
+          int8_t ThirdByteVal = INTVAL (t) < 0 ? -1 : 0;
+          xval8 = gen_int_mode (ThirdByteVal, QImode);
+        }
+      else
+        xval8 = simplify_gen_subreg (QImode, xval, imode, i);
 
       /* 8-bit value to operate with this byte. */
       unsigned int val8 = UINTVAL (xval8) & GET_MODE_MASK (QImode);
@@ -7960,7 +7980,9 @@ avr_out_plus (rtx insn, rtx *xop, int *plen, int *pcc, bool out_label)
 
   /* Saturation will need the sign of the original operand.  */
 
-  rtx xmsb = simplify_gen_subreg (QImode, op[2], imode, n_bytes-1);
+  /* Restrict PSI pointer arithmetic with constant to HImode.
+     Use sign-extend-ed 2nd byte as third byte of PSImode.  */
+  rtx xmsb = simplify_gen_subreg (QImode, op[2], imode, imode == PSImode ? 1 : n_bytes-1);
   int sign = INTVAL (xmsb) < 0 ? -1 : 1;
 
   /* If we subtract and the subtrahend is a constant, then negate it
@@ -9412,14 +9434,15 @@ avr_handle_addr_attribute (tree *node, tree name, tree args,
 			   int flags ATTRIBUTE_UNUSED, bool *no_add)
 {
   bool io_p = (strncmp (IDENTIFIER_POINTER (name), "io", 2) == 0);
-  location_t loc = DECL_SOURCE_LOCATION (*node);
 
   if (TREE_CODE (*node) != VAR_DECL)
     {
-      warning_at (loc, 0, "%qE attribute only applies to variables", name);
+      warning (OPT_Wattributes, "%qE attribute only applies to variables", name);
       *no_add = true;
+      return NULL_TREE;
     }
 
+  location_t loc = DECL_SOURCE_LOCATION (*node);
   if (args != NULL_TREE)
     {
       if (TREE_CODE (TREE_VALUE (args)) == NON_LVALUE_EXPR)
@@ -9427,8 +9450,8 @@ avr_handle_addr_attribute (tree *node, tree name, tree args,
       tree arg = TREE_VALUE (args);
       if (TREE_CODE (arg) != INTEGER_CST)
 	{
-	  warning (0, "%qE attribute allows only an integer constant argument",
-		   name);
+	  warning (OPT_Wattributes,
+               "%qE attribute allows only an integer constant argument", name);
 	  *no_add = true;
 	}
       else if (io_p
@@ -9437,8 +9460,8 @@ avr_handle_addr_attribute (tree *node, tree name, tree args,
 			? low_io_address_operand : io_address_operand)
 			 (GEN_INT (TREE_INT_CST_LOW (arg)), QImode)))
 	{
-	  warning_at (loc, 0, "%qE attribute address out of range or "
-                          "not bit addressable", name);
+	  warning_at (loc, OPT_Wattributes, "%qE attribute address out of range "
+                  "or not bit addressable", name);
 	  *no_add = true;
 	}
       else
@@ -9450,7 +9473,7 @@ avr_handle_addr_attribute (tree *node, tree name, tree args,
 	      tree other = lookup_attribute (*p, attribs);
 	      if (other && TREE_VALUE (other))
 		{
-		  warning_at (loc, 0,
+		  warning_at (loc, OPT_Wattributes,
 			      "both %s and %qE attribute provide address",
 			      *p, name);
 		  *no_add = true;
@@ -9461,7 +9484,8 @@ avr_handle_addr_attribute (tree *node, tree name, tree args,
     }
 
   if (*no_add == false && io_p && !TREE_THIS_VOLATILE (*node))
-    warning_at (loc, 0, "%qE attribute on non-volatile variable", name);
+    warning_at (loc, OPT_Wattributes,
+                "%qE attribute on non-volatile variable", name);
 
   return NULL_TREE;
 }
@@ -9474,25 +9498,28 @@ static tree
 avr_handle_at_attribute (tree *node, tree name, tree args,
 			   int flags ATTRIBUTE_UNUSED, bool *donot_add)
 {
+  if ((TREE_CODE (*node) != VAR_DECL) && (TREE_CODE (*node) != FUNCTION_DECL))
+    {
+      warning (OPT_Wattributes,
+        "at(address) attribute only applies to variables and functions");
+      *donot_add = true;
+      return NULL_TREE;
+    }
+
   location_t loc = DECL_SOURCE_LOCATION (*node);
 
-  if (TREE_CODE(*node) == VAR_DECL)
+  if ((TREE_CODE(*node) == VAR_DECL) &&
+      (!(TREE_STATIC (*node)) || (DECL_EXTERNAL (*node))))
     {
-      if (TREE_STATIC (*node) || DECL_EXTERNAL (*node))
-          *donot_add = false;
-      else
-        {
-          warning_at (loc, 0,
-            "%qE attribute only applies to static duration variables", name);
-          *donot_add = true;
-		}
-    }
-  else if (TREE_CODE (*node) != FUNCTION_DECL)
-    {
-      warning_at (loc, 0,
-        "%qE attribute only applies to variables and functions", name);
+      warning_at (loc, OPT_Wattributes,
+        "%qE attribute only applies to static duration variables", name);
       *donot_add = true;
+      return NULL_TREE;
     }
+
+  gcc_assert ((TREE_CODE (*node) == VAR_DECL) ||
+              (TREE_CODE (*node) == FUNCTION_DECL));
+  *donot_add = false;
 
   if (args != NULL_TREE)
     {
@@ -9502,8 +9529,8 @@ avr_handle_at_attribute (tree *node, tree name, tree args,
       tree arg = TREE_VALUE (args);
       if (TREE_CODE (arg) != INTEGER_CST)
         {
-          warning (0, "%qE attribute allows only an integer constant argument",
-                   name);
+          warning_at (loc, OPT_Wattributes,
+            "%qE attribute allows only an integer constant argument", name);
           *donot_add = true;
         }
     }
@@ -9524,23 +9551,27 @@ static tree
 avr_handle_persistent_attribute (tree *node, tree name, tree args,
 			   int flags ATTRIBUTE_UNUSED, bool *donot_add)
 {
-  location_t loc = DECL_SOURCE_LOCATION (*node);
-
   if (TREE_CODE(*node) != VAR_DECL)
     {
-      warning_at (loc, 0,
-        "%qE attribute only applies to variables", name);
+      warning (OPT_Wattributes, "%qE attribute only applies to variables",
+               name);
       *donot_add = true;
+      return NULL_TREE;
     }
-  else if (!((TREE_STATIC (*node) || DECL_EXTERNAL (*node))))
+
+  gcc_assert (TREE_CODE(*node) == VAR_DECL);
+
+  location_t loc = DECL_SOURCE_LOCATION (*node);
+
+  if (!((TREE_STATIC (*node) || DECL_EXTERNAL (*node))))
     {
-      warning_at (loc, 0,
+      warning_at (loc, OPT_Wattributes,
         "%qE attribute only applies to static duration variables", name);
       *donot_add = true;
     }
   else if (avr_progmem_p (*node, DECL_ATTRIBUTES (*node)))
     {
-      warning_at (loc, 0,
+      warning_at (loc, OPT_Wattributes,
         "%qE attribute can not be applied to flash address space variables",
         name);
       *donot_add = true;
@@ -9551,6 +9582,37 @@ avr_handle_persistent_attribute (tree *node, tree name, tree args,
       DECL_COMMON (*node) = 0;
     }
 
+  return NULL_TREE;
+}
+
+/* Report the unsupported attributes.
+*/
+
+static tree
+avr_report_unsupported_attribute (tree *node, tree name, tree args,
+			   int flags ATTRIBUTE_UNUSED, bool *donot_add)
+{
+  gcc_assert (TARGET_CCI);
+
+  /* unsupported attribute syntax expects an argument.  */
+  gcc_assert (args != NULL_TREE);
+
+  location_t loc = DECL_SOURCE_LOCATION (*node);
+
+
+  const char * attr_name;
+  if (TREE_VALUE (args) == NULL_TREE
+      || TREE_CODE (TREE_VALUE (args)) != STRING_CST)
+    warning_at (loc, OPT_Wattributes,
+      "incorrect use of unsupported attribute, expects a string argument");
+  else
+    {
+      attr_name = TREE_STRING_POINTER (TREE_VALUE (args));
+      warning_at (loc, OPT_Wattributes,
+        "%s attribute is not supported by this compiler", attr_name);
+    }
+
+  *donot_add = true;
   return NULL_TREE;
 }
 
@@ -9612,6 +9674,8 @@ avr_attribute_table[] =
   { "at",        1, 1, false, false, false, avr_handle_at_attribute,
     false },
   { "persistent",0, 0, false, false, false, avr_handle_persistent_attribute,
+    false },
+  { "unsupported",1, 1, false, false, false, avr_report_unsupported_attribute,
     false },
   { NULL,        0, 0, false, false, false, NULL, false }
 };
@@ -9986,7 +10050,7 @@ avr_text_section_asm_op (void)
 const char*
 avr_readonly_data_section_asm_op (void)
 {
-  return "\t.section\t.rodata,data";
+  return "\t.section\t.rodata,rodata";
 }
 
 /* DATA_SECTION_ASM_OP */
@@ -10122,7 +10186,9 @@ avr_asm_function_rodata_section (tree decl)
               const char *rname = ACONCAT ((new_prefix,
                                             name + strlen (old_prefix), NULL));
               flags &= ~SECTION_CODE;
-              flags |= AVR_HAVE_JMP_CALL ? AVR_SECTION_PROGMEM : SECTION_CODE;
+              /* Set flas function_rodata if have jmp/call. It shall be translated
+                 to "progmem" section flag when emitting.  */
+              flags |= AVR_HAVE_JMP_CALL ? AVR_SECTION_FUNCRODATA : SECTION_CODE;
 
               return get_section (rname, flags, frodata->named.decl);
             }
@@ -10150,15 +10216,9 @@ avr_get_named_section_flags (const char* pSectionName, uint64_t flags,
     {
       addr_space_t as = (flags & AVR_SECTION_PROGMEM_MASK) / SECTION_MACH_DEP;
 
-      switch (as) {
-      default:
-      case ADDR_SPACE_FLASH:  f += sprintf (f, ",progmem"); break;
-      case ADDR_SPACE_FLASH1: f += sprintf (f, ",progmem1"); break;
-      case ADDR_SPACE_FLASH2: f += sprintf (f, ",progmem2"); break;
-      case ADDR_SPACE_FLASH3: f += sprintf (f, ",progmem3"); break;
-      case ADDR_SPACE_FLASH4: f += sprintf (f, ",progmem4"); break;
-      case ADDR_SPACE_FLASH5: f += sprintf (f, ",progmem5"); break;
-      }
+      gcc_assert (as != 0);
+
+      f += sprintf (f, ",%s", avr_addrspace[as].section_flag);
 
       if (flags & AVR_SECTION_AT)
         {
@@ -10184,10 +10244,9 @@ avr_get_named_section_flags (const char* pSectionName, uint64_t flags,
       f += sprintf(f, "," SECTION_ATTR_DATA);
       avr_need_copy_data_p = true;
     }
-
-  if (flags & AVR_SECTION_READONLY)
+  else if (flags & AVR_SECTION_READONLY)
     {
-      f += sprintf(f, "," SECTION_ATTR_DATA);
+      f += sprintf(f, "," SECTION_ATTR_RODATA);
       avr_need_copy_data_p = true;
     }
 
@@ -10204,8 +10263,13 @@ avr_get_named_section_flags (const char* pSectionName, uint64_t flags,
     {
       gcc_assert(STR_PREFIX_P (pSectionName, ".rodata"));
 
-      f += sprintf(f, "," SECTION_ATTR_DATA);
+      f += sprintf(f, "," SECTION_ATTR_RODATA);
       avr_need_copy_data_p = true;
+    }
+
+  if (flags & AVR_SECTION_FUNCRODATA)
+    {
+      f += sprintf (f, "," SECTION_ATTR_PROGMEM);
     }
 
   if (flags & AVR_SECTION_AT)
@@ -10243,6 +10307,29 @@ avr_asm_named_section (const char *name, uint64_t flags, tree decl)
         }
     }
 
+  const char *new_section_name = NULL;
+
+  if ((flags & AVR_SECTION_PROGMEM_MASK) &&
+      (!avr_decl_at_p (decl, DECL_ATTRIBUTES (decl))))
+    {
+      addr_space_t as = (flags & AVR_SECTION_PROGMEM_MASK) / SECTION_MACH_DEP;
+      const char *old_prefix = ".rodata";
+      const char *new_prefix = avr_addrspace[as].section_name;
+
+      if (STR_PREFIX_P (name, old_prefix))
+        {
+          new_section_name = ACONCAT ((new_prefix,
+                                        name + strlen (old_prefix), NULL));
+          fprintf (asm_out_file, "\t.section\t%s%s\n", new_section_name,
+                   avr_get_named_section_flags (new_section_name, flags, decl));
+          return;
+        }
+
+      fprintf (asm_out_file, "\t.section\t%s%s\n", new_prefix,
+               avr_get_named_section_flags (new_prefix, flags, decl));
+      return;
+    }
+
   fprintf(asm_out_file, "\t.section\t%s%s\n", name,
           avr_get_named_section_flags(name, flags, decl));
 
@@ -10276,7 +10363,10 @@ avr_section_type_flags (tree decl, const char *name, int reloc)
 		 ".noinit section");
     }
 
-  if (decl && DECL_P (decl))
+  if (!decl)
+    return flags;
+
+  if (DECL_P (decl))
     {
       if (avr_progmem_p (decl, DECL_ATTRIBUTES (decl)))
       {
@@ -10314,6 +10404,16 @@ avr_section_type_flags (tree decl, const char *name, int reloc)
           else
             flags |= AVR_SECTION_PERSISTENT;
         }
+    }
+  /* Add MEMX address space flag for string constant if constant data
+     are need to be in program memory.  */
+  else if ((TREE_CODE (decl) == STRING_CST)
+           && AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    {
+      addr_space_t as = TYPE_ADDR_SPACE (TREE_TYPE (decl));
+      gcc_assert (as == ADDR_SPACE_MEMX);
+      flags |= as * SECTION_MACH_DEP;
+      flags |= AVR_SECTION_READONLY;
     }
 
   return flags;
@@ -10504,7 +10604,22 @@ avr_get_section_name (tree decl)
   char defaultSectionName[128] = {0};
   bool isProgmemData;
 
-  if ((!decl) || !DECL_P(decl))
+  if (!decl)
+    return 0;
+
+  /* Return MEMX section name if the DECL is string constant and
+     constants are expected to be in program memory.  */
+  if ((TREE_CODE(decl) == STRING_CST)
+      && AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    {
+      addr_space_t as = TYPE_ADDR_SPACE (TREE_TYPE (decl));
+      gcc_assert (as == ADDR_SPACE_MEMX);
+      ptr = sname;
+      sprintf (ptr, "%s", avr_addrspace[as].section_name);
+      return sname;
+    }
+
+  if (!DECL_P(decl))
     return 0;
 
   if (!((TREE_CODE (decl) == FUNCTION_DECL) || (TREE_CODE(decl) == VAR_DECL)))
@@ -10524,7 +10639,19 @@ avr_get_section_name (tree decl)
   if (IN_NAMED_SECTION (decl))
     userSectionName = DECL_SECTION_NAME(decl);
 
-  sprintf (defaultSectionName, "*_%8.8lx%lx", (unsigned long)decl, ltime);
+  if (isProgmemData && !avr_decl_cci_attrs_p (decl))
+    {
+      /* address space may not be set if __attribute__((__progmem__)) is given.  */
+      addr_space_t as = TYPE_ADDR_SPACE (TREE_TYPE (decl));
+      if (as == 0)
+        sprintf (defaultSectionName, "%s", avr_addrspace[ADDR_SPACE_FLASH].section_name);
+      else
+        sprintf (defaultSectionName, "%s", avr_addrspace[as].section_name);
+    }
+  else
+    {
+      sprintf (defaultSectionName, "*_%8.8lx%lx", (unsigned long)decl, ltime);
+    }
 
   ptr = sname;
 
@@ -10621,12 +10748,27 @@ avr_output_configurations (void)
       for (RegIterator itR = itSpace->registers.begin();
            itR != itSpace->registers.end(); itR++)
         {
+          uint8_t RegWidthBits = itR->width;
+          if (RegWidthBits == 0 || RegWidthBits > 32)
+            {
+              error ("Invalid size (%d bits) for config register %qs.",
+                     RegWidthBits, itR->rname.c_str());
+              return;
+            }
           fprintf (asm_out_file, "\t.type\t__config_REG_%02X, @object\n",
                    RegIndex);
-          fprintf (asm_out_file, "\t.size\t__config_REG_%02X, 1\n", RegIndex);
+          fprintf (asm_out_file, "\t.size\t__config_REG_%02X, %d\n", RegIndex,
+                   RegWidthBits / 8);
           fprintf (asm_out_file, "__config_REG_%02X:\n", RegIndex);
-          fprintf (asm_out_file, "\t.byte\t0x%02X\n", itR->GetValue());
-          RegIndex += 1;
+
+          uint32_t RegValue = itR->GetValue();
+          int8_t index = 0;
+          while (index < RegWidthBits)
+          {
+            fprintf (asm_out_file, "\t.byte\t0x%02X\n", (0x000000ff & (RegValue >> index)));
+            index += 8;
+          }
+          RegIndex += RegWidthBits / 8;
         }
     }
 }
@@ -13079,8 +13221,13 @@ static bool
 avr_addr_space_subset_p (addr_space_t subset ATTRIBUTE_UNUSED,
                          addr_space_t superset ATTRIBUTE_UNUSED)
 {
+  /* MEMX is always a superset of other address spaces, and never
+     a subset. */
+  if (superset == ADDR_SPACE_MEMX)
+    return true;
+  if (subset == ADDR_SPACE_MEMX)
+    return false;
   /* Allow any kind of pointer mess.  */
-
   return true;
 }
 
@@ -13195,6 +13342,29 @@ avr_fix_inputs (rtx *op, unsigned opmask, unsigned rmask)
   avr_fix_operands (op, NULL, opmask, rmask);
 }
 
+/* When expanding ALL8 mode add/sub etc.., attempting to use
+   ACC_A and ACC_B hard regs (see avr-dimode.md) right away will
+   cause miscompilation, if the input operand(s) are in the memx
+   addr space. xload calls to load the input operands could clobber
+   R21 and R22 upto R25 when loading the operand into R18:R25.
+   Instead, load them into pseudos first, get the xload calls out of
+   the way, and then move to ACC_A or optionally ACC_B.
+   This function is a helper that creates pseudos for operands specified
+   by opmask and moves them into the created pseudos. */
+void
+avr_fix_memx_all8_inputs (rtx *op, unsigned opmask)
+{
+  for (; opmask; opmask >>= 1, op++)
+    {
+      if ((opmask & 1)
+          && (avr_mem_memx_p (*op)))
+        {
+          rtx temp = *op;
+          *op = gen_reg_rtx (GET_MODE (temp));
+          emit_move_insn (*op, temp);
+        }
+    }
+}
 
 /* Helper for the function below:  If bit n of MASK is set and
    HREG[n] != NULL, then emit a move insn to copy OP[n] to HREG[n].
@@ -13253,6 +13423,34 @@ avr_emit3_fix_outputs (rtx (*gen)(rtx,rtx,rtx), rtx *op,
   return avr_move_fixed_operands (op, hreg, opmask);
 }
 
+/* Same as avr_emit3_fix_outputs, but for 2 operands */
+bool
+avr_emit2_fix_outputs (rtx (*gen)(rtx,rtx), rtx *op,
+                       unsigned opmask, unsigned rmask)
+{
+  const int n = 2;
+  rtx hreg[n];
+
+  /* It is letigimate for GEN to call this function, and in order not to
+     get self-recursive we use the following static kludge.  This is the
+     only way not to duplicate all expanders and to avoid ugly and
+     hard-to-maintain C-code instead of the much more appreciated RTL
+     representation as supplied by define_expand.  */
+  static bool lock = false;
+
+  gcc_assert (opmask < (1u << n));
+
+  if (lock)
+    return false;
+
+  avr_fix_operands (op, hreg, opmask, rmask);
+
+  lock = true;
+  emit_insn (gen (op[0], op[1]));
+  lock = false;
+
+  return avr_move_fixed_operands (op, hreg, opmask);
+}
 
 /* Worker function for movmemhi expander.
    XOP[0]  Destination as MEM:BLK

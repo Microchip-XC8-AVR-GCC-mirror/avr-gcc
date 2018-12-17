@@ -1,9 +1,14 @@
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 long a, c;
 int b;
 int d;
 void ut_dbg_assertion_failed() __attribute__((noreturn));
 long dict_index_is_spatial(int *);
-void btr_block_get_func(char *);
+void btr_block_get_func(__CONST char *);
 long btr_page_get_level_low(unsigned char *);
 void btr_validate_level(long p1) {
   unsigned char *e;

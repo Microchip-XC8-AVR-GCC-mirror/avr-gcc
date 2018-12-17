@@ -33,7 +33,7 @@ int test4()
   return sprintf(buffer,"%s","bar");
 }
 
-void test5(char *ptr)
+void test5(const char *ptr)
 {
   sprintf(buffer,"%s",ptr);
 }

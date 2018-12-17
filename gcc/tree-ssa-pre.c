@@ -2705,7 +2705,12 @@ create_component_ref_by_pieces_1 (basic_block block, vn_reference_t ref,
 	    if (!genop2)
 	      return NULL_TREE;
 	  }
-	return fold_build3 (COMPONENT_REF, TREE_TYPE (op1), op0, op1, genop2);
+
+	int quals = TYPE_QUALS (strip_array_types (TREE_TYPE (op1)));
+	if (TREE_CODE (TREE_TYPE (op1)) != ARRAY_TYPE)
+		quals |= TYPE_QUALS (TREE_TYPE (op0));
+	tree subtype = build_qualified_type (TREE_TYPE (op1), quals);
+	return fold_build3 (COMPONENT_REF, subtype, op0, op1, genop2);
       }
 
     case SSA_NAME:

@@ -3314,7 +3314,19 @@ build_constant_desc (tree exp)
 				    get_block_for_section (sect), -1);
     }
   else
-    symbol = gen_rtx_SYMBOL_REF (Pmode, ggc_strdup (label));
+    {
+      /* Set PSI mode for string constant if it gets allocated to
+         MEMX address space.  */
+      if ((TREE_CODE (exp) == STRING_CST)
+          && AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+        {
+          gcc_assert (TYPE_ADDR_SPACE( TREE_TYPE (exp)) == ADDR_SPACE_MEMX);
+          symbol = gen_rtx_SYMBOL_REF (PSImode, ggc_strdup (label));
+        }
+      else
+        symbol = gen_rtx_SYMBOL_REF (Pmode, ggc_strdup (label));
+    }
+
   SYMBOL_REF_FLAGS (symbol) |= SYMBOL_FLAG_LOCAL;
   SET_SYMBOL_REF_DECL (symbol, decl);
   TREE_CONSTANT_POOL_ADDRESS_P (symbol) = 1;

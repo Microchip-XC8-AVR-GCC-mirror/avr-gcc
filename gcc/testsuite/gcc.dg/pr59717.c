@@ -236,7 +236,7 @@ stdio (FILE *fp, void *p, __SIZE_TYPE__ sz)
   sscanf ("", ""); /* { dg-warning "incompatible implicit" } */
   /* { dg-message "include ..stdio.h.." "" { target *-*-* } 236 } */
 }
-
+/* { dg-prune-output "pointer to non-enclosed address space" } */
 void
 stdlib (void *p, void *q, __SIZE_TYPE__ sz)
 {

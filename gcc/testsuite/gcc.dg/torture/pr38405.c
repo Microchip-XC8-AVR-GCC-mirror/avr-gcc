@@ -1,7 +1,12 @@
 /* { dg-do run } */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 extern void abort ();
-extern int printf (char *__format, ...);
+extern int printf (__CONST char *__format, ...);
 
 struct vpiBinaryConst {
  int signed_flag :1;

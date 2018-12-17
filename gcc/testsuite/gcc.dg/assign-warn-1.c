@@ -24,11 +24,16 @@ TESTASS(ofqc, fp, nrfp);
 TESTINI(ofqd, fp, nrfp);
 TESTRET(ofqe, fp, nrfp);
 
-TESTARG(qa, char *, const char *); /* { dg-warning "passing argument 1 of 'qaF' discards 'const' qualifier from pointer target type" } */
-TESTARP(qb, char *, const char *); /* { dg-warning "passing argument 1 of 'qbFp.x' discards 'const' qualifier from pointer target type" } */
-TESTASS(qc, char *, const char *); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" } */
-TESTINI(qd, char *, const char *); /* { dg-warning "initialization discards 'const' qualifier from pointer target type" } */
-TESTRET(qe, char *, const char *); /* { dg-warning "return discards 'const' qualifier from pointer target type" } */
+TESTARG(qa, char *, const char *); /* { dg-warning "passing argument 1 of 'qaF' discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
+/* { dg-prune-output "pointer to non-enclosed address space" } */
+TESTARP(qb, char *, const char *); /* { dg-warning "passing argument 1 of 'qbFp.x' discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
+/* { dg-prune-output "pointer to non-enclosed address space" } */
+TESTASS(qc, char *, const char *); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
+/* { dg-prune-output "pointer to non-enclosed address space" } */
+TESTINI(qd, char *, const char *); /* { dg-warning "initialization discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
+/* { dg-prune-output "pointer to non-enclosed address space" } */
+TESTRET(qe, char *, const char *); /* { dg-warning "return discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
+/* { dg-prune-output "pointer to non-enclosed address space" } */
 
 TESTARG(oqa, const char *, char *);
 TESTARP(oqb, const char *, char *);

@@ -1,6 +1,11 @@
 /* PR tree-optimization/51315 */
 /* Reported by Jurij Smakov <jurij@wooyd.org> */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 typedef __SIZE_TYPE__ size_t;
 
 extern void *memcpy (void *__restrict __dest,
@@ -24,9 +29,9 @@ do_something (int item)
 }
 
 int
-pack_unpack (char *s, char *p)
+pack_unpack (__CONST char *s, __CONST char *p)
 {
-  char *send, *pend;
+  __CONST char *send, *pend;
   char type;
   int integer_size;
 

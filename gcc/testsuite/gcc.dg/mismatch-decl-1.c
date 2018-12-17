@@ -8,8 +8,13 @@
    "previous declaration was here" message, leaving you with no clue
    where the previous declaration came from.  */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 extern char foo(int,int); /* { dg-message "previous declaration of 'foo' was here" } */
-extern char *index(const char *,int); /* { dg-message "previous declaration of 'index' was here" } */
+extern __CONST char *index(const char *,int); /* { dg-message "previous declaration of 'index' was here" } */
 
 /* This changes the type of "index", which is both a builtin and an
    explicit decl.  */

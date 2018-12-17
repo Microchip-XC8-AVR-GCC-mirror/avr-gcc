@@ -5,18 +5,24 @@
 
    Written by Jakub Jelinek, 11/7/2000.  */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 extern void abort (void);
 extern __SIZE_TYPE__ strlen (const char *);
 extern int strcmp (const char *, const char *);
-extern char *strchr (const char *, int);
-extern char *strrchr (const char *, int);
+extern __CONST char *strchr (const char *, int);
+extern __CONST char *strrchr (const char *, int);
 extern char *strncpy (char *, const char *, __SIZE_TYPE__);
 extern void *memset (void *, int, __SIZE_TYPE__);
 extern int memcmp (const void *, const void *, __SIZE_TYPE__);
 
 int x = 6;
 int y = 1;
-char *bar = "hi world";
+__CONST char *bar = "hi world";
 char buf [64];
 
 int main()

@@ -1,7 +1,12 @@
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 
 struct tag {
   int m1;
-  char *m2[5];
+  __CONST char *m2[5];
 } s1, *p1;
 
 int i;

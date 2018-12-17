@@ -1,3 +1,8 @@
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 int i;
 
 __attribute__((noinline, noclone)) void
@@ -11,7 +16,7 @@ bar (char *p)
 }
 
 __attribute__((noinline, noclone)) void
-foo (char *p, unsigned long l)
+foo (__CONST char *p, unsigned long l)
 {
   if (l < 1 || l > 6)
     return;

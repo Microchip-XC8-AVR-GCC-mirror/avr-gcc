@@ -6,5 +6,10 @@
 /* { dg-do compile } */
 /* { dg-options "-std=gnu99" } */
 
-char *strchr(const char *, int); /* { dg-error "prototype declaration" } */
-char *strchr(a) const char *a; { return 0; } /* { dg-error "number of arguments doesn't match prototype" } */
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+__CONST char *strchr(const char *, int); /* { dg-error "prototype declaration" } */
+__CONST char *strchr(a) const char *a; { return 0; } /* { dg-error "number of arguments doesn't match prototype" } */

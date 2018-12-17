@@ -4802,7 +4802,27 @@ finish_decl (tree decl, location_t init_loc, tree init,
 	}
 
       if (DECL_INITIAL (decl))
-	TREE_TYPE (DECL_INITIAL (decl)) = type;
+        {
+          if (TREE_CODE (DECL_INITIAL (decl)) == STRING_CST)
+            {
+              tree string_init = DECL_INITIAL (decl);
+              addr_space_t string_cst_addrspace =
+                TYPE_ADDR_SPACE (TREE_TYPE (string_init));
+
+              if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+                {
+                  gcc_assert (string_cst_addrspace == ADDR_SPACE_MEMX);
+                }
+
+              /* string constant address space may change (to memx), so copy the type
+                 and preserve the address space in it.  */
+              tree new_init_type = build_distinct_type_copy (type);
+              TYPE_ADDR_SPACE (new_init_type) = string_cst_addrspace;
+              TREE_TYPE (string_init) = new_init_type;
+            }
+          else
+	        TREE_TYPE (DECL_INITIAL (decl)) = type;
+        }
 
       relayout_decl (decl);
     }
@@ -5543,6 +5563,14 @@ grokdeclarator (const struct c_declarator *declarator,
   as2 = TYPE_ADDR_SPACE (element_type);
   address_space = ADDR_SPACE_GENERIC_P (as1)? as2 : as1;
 
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE
+      && ADDR_SPACE_GENERIC_P (address_space)
+      && decl_context == NORMAL
+      && TREE_CODE (type) != FUNCTION_TYPE
+      && (current_scope == file_scope || storage_class == csc_static)
+      && constp)
+    address_space = ADDR_SPACE_MEMX;
+
   if (constp > 1)
     pedwarn_c90 (loc, OPT_Wpedantic, "duplicate %<const%>");
   if (restrictp > 1)
@@ -5754,6 +5782,16 @@ grokdeclarator (const struct c_declarator *declarator,
 	    array_parm_vla_unspec_p = declarator->u.array.vla_unspec_p;
 
 	    declarator = declarator->declarator;
+
+	    // Switch address space for static storage duration arrays if
+	    // type_quals got TYPE_QUAL_CONST after processing cdk_pointer.
+	    // For e.g., int * const arr[2];
+	    if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE
+	        && ADDR_SPACE_GENERIC_P (DECODE_QUAL_ADDR_SPACE (type_quals))
+	        && (decl_context == NORMAL)
+	        && (current_scope == file_scope || storage_class == csc_static)
+	        && type_quals & TYPE_QUAL_CONST)
+	      type_quals |= ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX);
 
 	    /* Check for some types that there cannot be arrays of.  */
 
@@ -6006,6 +6044,17 @@ grokdeclarator (const struct c_declarator *declarator,
 	       below.  */
 	      {
 		addr_space_t as = DECODE_QUAL_ADDR_SPACE (type_quals);
+
+		// Switch array address space if it's not the last declarator before id
+		// This is necessary for cases like const int (*p)[2] declared as an auto
+		// variable - p should point to a const array in the memx addr space.
+		if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE
+		    && ADDR_SPACE_GENERIC_P (as)
+		    && (decl_context != TYPENAME)
+		    && (declarator && declarator->kind == cdk_pointer)
+		    && type_quals & TYPE_QUAL_CONST)
+		  as = ADDR_SPACE_MEMX;
+
 		if (!ADDR_SPACE_GENERIC_P (as) && as != TYPE_ADDR_SPACE (type))
 		  type = build_qualified_type (type,
 					       ENCODE_QUAL_ADDR_SPACE (as));
@@ -6157,6 +6206,13 @@ grokdeclarator (const struct c_declarator *declarator,
 	  }
 	case cdk_pointer:
 	  {
+	    /* Switch address space of generic const pointers to __memx */
+	    address_space = DECODE_QUAL_ADDR_SPACE (type_quals);
+	    if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE
+	        && ADDR_SPACE_GENERIC_P (address_space)
+	        && TREE_CODE (type) != FUNCTION_TYPE
+	        && (type_quals & TYPE_QUAL_CONST))
+	      type_quals |= ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX);
 	    /* Merge any constancy or volatility into the target type
 	       for the pointer.  */
 	    if ((type_quals & TYPE_QUAL_ATOMIC)
@@ -6227,10 +6283,18 @@ grokdeclarator (const struct c_declarator *declarator,
 
   /* Now TYPE has the actual type, apart from any qualifiers in
      TYPE_QUALS.  */
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE
+      && ADDR_SPACE_GENERIC_P (DECODE_QUAL_ADDR_SPACE (type_quals))
+      && decl_context == NORMAL
+      && (current_scope == file_scope || storage_class == csc_static)
+      && TREE_CODE (type) != FUNCTION_TYPE
+      && type_quals & TYPE_QUAL_CONST)
+    type_quals |= ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX);
 
   /* Warn about address space used for things other than static memory or
      pointers.  */
   address_space = DECODE_QUAL_ADDR_SPACE (type_quals);
+
   if (!ADDR_SPACE_GENERIC_P (address_space))
     {
       if (decl_context == NORMAL)
@@ -6480,6 +6544,11 @@ grokdeclarator (const struct c_declarator *declarator,
 		else
 		  orig_qual_indirect--;
 	      }
+	    addr_space_t address_space = DECODE_QUAL_ADDR_SPACE (type_quals);
+	    if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE
+	        && ADDR_SPACE_GENERIC_P (address_space)
+	        && (type_quals & TYPE_QUAL_CONST))
+	      type_quals |= ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX);
 	    if (type_quals)
 	      type = c_build_qualified_type (type, type_quals, orig_qual_type,
 					     orig_qual_indirect);
@@ -10884,7 +10953,7 @@ c_register_addr_space (const char *word, addr_space_t as)
 
   /* Address space qualifiers are only supported
      in C with GNU extensions enabled.  */
-  if (c_dialect_objc () || flag_no_asm)
+  if (!avr_const_data_in_progmem && (c_dialect_objc () || flag_no_asm))
     return;
 
   id = get_identifier (word);

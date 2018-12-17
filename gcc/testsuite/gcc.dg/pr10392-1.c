@@ -15,6 +15,11 @@
 /* { dg-options "-O2 -m4" { target sh4-*-* } } */
 extern void abort (void);
 const char *dont_optimize_function_away;
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 
 const char *use(const char *str)
 {
@@ -28,13 +33,13 @@ const char *use(const char *str)
 	return str[2] ? "notused" : "v6";
 }
 
-const char *func(char *a, char *b)
+const char *func(__CONST char *a, __CONST char *b)
 {
 	char buf[128];
 	unsigned char i;
 	const char *result;
 
-	char *item[] = {
+	__CONST char *item[] = {
 		"v1",
 		"v2",
 	};

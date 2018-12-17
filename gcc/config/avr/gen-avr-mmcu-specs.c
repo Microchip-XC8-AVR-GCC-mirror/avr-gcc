@@ -123,6 +123,8 @@ print_mcu (const avr_mcu_t *mcu)
 {
   const char *sp8_spec;
   const char *rcall_spec;
+  const char *memxconst_spec = "";
+
   const avr_mcu_t *arch_mcu;
   const avr_arch_t *arch;
   enum avr_arch_id arch_id = mcu->arch_id;
@@ -172,6 +174,13 @@ print_mcu (const avr_mcu_t *mcu)
   else
     {
       rcall_spec = rcall ? "-mshort-calls" : "%<mshort-calls";
+    }
+
+  // Reject mconst-data-in-progmem option for AVR1 (assembler only)
+  // devices
+  if (ARCH_AVR1 == arch_id)
+    {
+      memxconst_spec = "%<mconst-data-in-progmem";
     }
 
   fprintf (f, "#\n"
@@ -282,8 +291,9 @@ print_mcu (const avr_mcu_t *mcu)
   if (is_device)
     {
       fprintf (f, "*self_spec:\n");
-      fprintf (f, "\t%%{!mmcu=avr*: %%<mmcu=* -mmcu=%s} ", arch->name);
+      fprintf (f, "\t%%<mmcu=* -mmcu=%s ", arch->name);
       fprintf (f, "-mdevice=%s ", mcu->name);
+      fprintf (f, "%s ", memxconst_spec);
       fprintf (f, "%s ", rcall_spec);
       fprintf (f, "%s\n\n", sp8_spec);
 

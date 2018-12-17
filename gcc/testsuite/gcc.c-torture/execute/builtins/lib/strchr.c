@@ -2,7 +2,7 @@ extern void abort (void);
 extern int inside_main;
 
 __attribute__ ((__noinline__))
-char *
+const char *
 strchr (const char *s, int c)
 {
 #ifdef __OPTIMIZE__
@@ -13,7 +13,7 @@ strchr (const char *s, int c)
   for (;;)
     {
       if (*s == c)
-	return (char *) s;
+	return (const char *) s;
       if (*s == 0)
 	return 0;
       s++;
@@ -21,7 +21,7 @@ strchr (const char *s, int c)
 }
 
 __attribute__ ((__noinline__))
-char *
+const char *
 index (const char *s, int c)
 {
   return strchr (s, c);

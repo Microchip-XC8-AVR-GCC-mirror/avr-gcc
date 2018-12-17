@@ -27,7 +27,11 @@ extern void abort (void);
 void *
 dummy1 (void *x)
 {
-  return "";
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+	return (char*)"";
+#else
+	return "";
+#endif
 }
 
 void *

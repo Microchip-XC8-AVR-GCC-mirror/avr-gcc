@@ -3063,6 +3063,8 @@ expand_builtin_strlen (tree exp, rtx target,
 	}
       if (insn_mode == VOIDmode)
 	return NULL_RTX;
+      if (!ADDR_SPACE_GENERIC_P (TYPE_ADDR_SPACE (TREE_TYPE (TREE_TYPE (src)))))
+	return NULL_RTX;
 
       /* Make a place to hold the source address.  We will not expand
 	 the actual source until we are sure that the expansion will
@@ -3218,6 +3220,9 @@ expand_builtin_memcpy_args (tree dest, tree src, tree len, rtx target, tree exp)
   /* If either SRC is not a pointer type, don't do this
      operation in-line.  */
   if (src_align == 0)
+    return NULL_RTX;
+
+  if (!ADDR_SPACE_GENERIC_P (TYPE_ADDR_SPACE (TREE_TYPE (TREE_TYPE (src)))))
     return NULL_RTX;
 
   if (currently_expanding_gimple_stmt)
@@ -3425,6 +3430,10 @@ expand_builtin_mempcpy_args (tree dest, tree src, tree len,
       /* If LEN is not constant, call the normal function.  */
       if (! tree_fits_uhwi_p (len))
 	return NULL_RTX;
+
+      if (!ADDR_SPACE_GENERIC_P (TYPE_ADDR_SPACE (TREE_TYPE (TREE_TYPE (src)))))
+	return NULL_RTX;
+
 
       len_rtx = expand_normal (len);
       src_str = c_getstr (src);
@@ -3993,6 +4002,9 @@ expand_builtin_memcmp (tree exp, ATTRIBUTE_UNUSED rtx target,
     if (arg1_align == 0 || arg2_align == 0)
       return NULL_RTX;
 
+    if (!ADDR_SPACE_GENERIC_P (TYPE_ADDR_SPACE (TREE_TYPE (TREE_TYPE (arg1))))
+        || !ADDR_SPACE_GENERIC_P (TYPE_ADDR_SPACE (TREE_TYPE (TREE_TYPE (arg2)))))
+      return NULL_RTX;
     /* Make a place to write the result of the instruction.  */
     result = target;
     if (! (result != 0
@@ -8881,13 +8893,22 @@ fold_builtin_strcmp (location_t loc, tree arg1, tree arg2)
 	return integer_zero_node;
     }
 
+  tree cst_uchar_node;
+  machine_mode mode = ptr_mode;
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    {
+      cst_uchar_node = build_qualified_type (unsigned_char_type_node,
+                         TYPE_QUAL_CONST
+                         | ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX));
+      mode = PSImode;
+    }
+  else
+    cst_uchar_node = build_type_variant (unsigned_char_type_node, 1, 0);
+	tree cst_uchar_ptr_node
+		= build_pointer_type_for_mode (cst_uchar_node, mode, true);
   /* If the second arg is "", return *(const unsigned char*)arg1.  */
   if (p2 && *p2 == '\0')
     {
-      tree cst_uchar_node = build_type_variant (unsigned_char_type_node, 1, 0);
-      tree cst_uchar_ptr_node
-	= build_pointer_type_for_mode (cst_uchar_node, ptr_mode, true);
-
       return fold_convert_loc (loc, integer_type_node,
 			       build1 (INDIRECT_REF, cst_uchar_node,
 				       fold_convert_loc (loc,
@@ -8898,10 +8919,6 @@ fold_builtin_strcmp (location_t loc, tree arg1, tree arg2)
   /* If the first arg is "", return -*(const unsigned char*)arg2.  */
   if (p1 && *p1 == '\0')
     {
-      tree cst_uchar_node = build_type_variant (unsigned_char_type_node, 1, 0);
-      tree cst_uchar_ptr_node
-	= build_pointer_type_for_mode (cst_uchar_node, ptr_mode, true);
-
       tree temp
 	= fold_convert_loc (loc, integer_type_node,
 			    build1 (INDIRECT_REF, cst_uchar_node,
@@ -8949,6 +8966,19 @@ fold_builtin_strncmp (location_t loc, tree arg1, tree arg2, tree len)
       else
 	return integer_zero_node;
     }
+  tree cst_uchar_node;
+  machine_mode mode = ptr_mode;
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    {
+      cst_uchar_node = build_qualified_type (unsigned_char_type_node,
+                                             TYPE_QUAL_CONST
+                                             | ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX));
+      mode = PSImode;
+    }
+  else
+    cst_uchar_node = build_type_variant (unsigned_char_type_node, 1, 0);
+  tree cst_uchar_ptr_node
+    = build_pointer_type_for_mode (cst_uchar_node, mode, true);
 
   /* If the second arg is "", and the length is greater than zero,
      return *(const unsigned char*)arg1.  */
@@ -8956,10 +8986,6 @@ fold_builtin_strncmp (location_t loc, tree arg1, tree arg2, tree len)
       && TREE_CODE (len) == INTEGER_CST
       && tree_int_cst_sgn (len) == 1)
     {
-      tree cst_uchar_node = build_type_variant (unsigned_char_type_node, 1, 0);
-      tree cst_uchar_ptr_node
-	= build_pointer_type_for_mode (cst_uchar_node, ptr_mode, true);
-
       return fold_convert_loc (loc, integer_type_node,
 			       build1 (INDIRECT_REF, cst_uchar_node,
 				       fold_convert_loc (loc,
@@ -8973,10 +8999,6 @@ fold_builtin_strncmp (location_t loc, tree arg1, tree arg2, tree len)
       && TREE_CODE (len) == INTEGER_CST
       && tree_int_cst_sgn (len) == 1)
     {
-      tree cst_uchar_node = build_type_variant (unsigned_char_type_node, 1, 0);
-      tree cst_uchar_ptr_node
-	= build_pointer_type_for_mode (cst_uchar_node, ptr_mode, true);
-
       tree temp = fold_convert_loc (loc, integer_type_node,
 				    build1 (INDIRECT_REF, cst_uchar_node,
 					    fold_convert_loc (loc,
@@ -8989,10 +9011,6 @@ fold_builtin_strncmp (location_t loc, tree arg1, tree arg2, tree len)
      (*(const unsigned char*)arg1 - (const unsigned char*)arg2).  */
   if (tree_fits_uhwi_p (len) && tree_to_uhwi (len) == 1)
     {
-      tree cst_uchar_node = build_type_variant (unsigned_char_type_node, 1, 0);
-      tree cst_uchar_ptr_node
-	= build_pointer_type_for_mode (cst_uchar_node, ptr_mode, true);
-
       tree ind1 = fold_convert_loc (loc, integer_type_node,
 				    build1 (INDIRECT_REF, cst_uchar_node,
 					    fold_convert_loc (loc,

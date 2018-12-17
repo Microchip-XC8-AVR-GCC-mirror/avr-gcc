@@ -1,6 +1,7 @@
 /* Verify that section, at attributes work with progmem.  */
 /* { dg-do compile } */
-/* { dg-options "-mext=cci" } */
+/* { dg-options "-mext=cci -mno-const-data-in-progmem" } */
+/* { dg-skip-if "skip if global option is to enable const data in progmem" { *-*-* } { "-mconst-data-in-progmem" } { "" } } */
 
 #include<xc.h>
 #include<avr/pgmspace.h>

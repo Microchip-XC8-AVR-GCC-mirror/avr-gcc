@@ -4,14 +4,20 @@
 /* { dg-options "-O2" } */
 /* { dg-options "-O2 -fPIC" { target s390*-*-* } } */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 extern void abort (void);
 
 int count = 0;
-char *str;
+__CONST char *str;
 
 void test (int flag)
 {
-  char *p;
+  __CONST char *p;
 
   for (;;)
     {

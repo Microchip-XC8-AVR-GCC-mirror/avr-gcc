@@ -9,6 +9,11 @@ extern void abort (void);
 
 #include "../gcc.c-torture/execute/builtins/chk.h"
 #include <stdarg.h>
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 
 volatile void *vx;
 char buf1[20];
@@ -80,7 +85,7 @@ test (int arg, ...)
   memset (q, 'd', 10);
 }
 
-char *str = "ABCDEFG";
+__CONST char *str = "ABCDEFG";
 typedef struct { char b[16]; } H;
 
 /* Some brown paper bag bugs found in real applications.

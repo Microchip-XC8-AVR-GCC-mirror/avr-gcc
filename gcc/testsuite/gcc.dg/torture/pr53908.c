@@ -1,5 +1,10 @@
 /* { dg-do run } */
 /* SEGV at comment below.  */
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 typedef unsigned int size_t;
 typedef enum har {
   he_fatal = (-199),
@@ -31,20 +36,20 @@ typedef enum realm_type
 } realm_type;
 
 __attribute__((__noclone__, __noinline__))
-har has_www_auth(char *, size_t, realm_type, har);
+har has_www_auth(__CONST char *, size_t, realm_type, har);
 
 __attribute__((__noclone__, __noinline__))
-har has_auth_user(const char *, const char *, realm_type, char *, size_t);
+har has_auth_user(const char *, const char *, realm_type, __CONST char *, size_t);
 
 __attribute__((__noclone__, __noinline__))
-char *ha_get_string_value(void);
+__CONST char *ha_get_string_value(void);
 
 typedef struct
 {
   unsigned int track_id;
-  char* user;
-  char* realm;
-  char* authent;
+  __CONST char* user;
+  __CONST char* realm;
+  __CONST char* authent;
   int internal_realm;
 } request;
 enum user_response {
@@ -54,18 +59,18 @@ enum user_response {
   ok_user_response = 0
 };
 struct realm_group {
-  char *name;
+  __CONST char *name;
   int id;
   struct realm_group *next;
 };
 struct realm {
-  char *name;
-  char *space;
+  __CONST char *name;
+  __CONST char *space;
   struct realm_group *groups;
   struct realm *next;
 };
 struct user_info {
-  char *name;
+  __CONST char *name;
   int no_groups;
   int groups[128];
   struct user_info *next;
@@ -104,14 +109,14 @@ is_member_of_groups(const struct user_info *user_item,
   }
   return -1;
 }
-char *foo (void) __attribute__((__noclone__, __noinline__));
-char* g_strdup (const char *str) __attribute__((__malloc__, __noclone__, __noinline__));
+__CONST char *foo (void) __attribute__((__noclone__, __noinline__));
+__CONST char* g_strdup (const char *str) __attribute__((__malloc__, __noclone__, __noinline__));
 int g_strcmp0 (const char *str1, const char *str2);
 static int
-is_basic(char **user)
+is_basic(__CONST char **user)
 {
-  char *passwd_ptr;
-  char *authent = foo();
+  __CONST char *passwd_ptr;
+  __CONST char *authent = foo();
   passwd_ptr = __builtin_strchr(authent, ':');
   if (passwd_ptr != ((void *)0)) {
     *user = g_strdup(authent);
@@ -120,10 +125,10 @@ is_basic(char **user)
   return -1;
 }
 static int
-is_digest(char **user)
+is_digest(__CONST char **user)
 {
   int ret_val = -1;
-  char *authent;
+  __CONST char *authent;
   authent = ha_get_string_value();
   if (authent) {
     *user = g_strdup(authent);
@@ -132,10 +137,10 @@ is_digest(char **user)
   return ret_val;
 }
 __attribute__((__noclone__, __noinline__))
-void g_free (void * mem);
+void g_free (__CONST void * mem);
 static enum user_response
 get_user_info_from_header(const realm_type type,
-                          char **user_name,
+                          __CONST char **user_name,
                           struct user_info **user_item)
 {
   int ret_val = no_user_response;
@@ -160,10 +165,10 @@ get_user_info_from_header(const realm_type type,
 }
 static enum user_response
 authenticate_user(request *req,
-                  char **user_name,
+                  __CONST char **user_name,
                   struct user_info **user_item)
 {
-  char *authent = ((void *)0);
+  __CONST char *authent = ((void *)0);
   har resp = ha_no_value;
   enum user_response user_resp;
   int ret_val = no_user_response;
@@ -190,7 +195,7 @@ int __attribute__ ((__noinline__, __noclone__))
 authent_author(request *req)
 {
   struct realm *realm;
-  char *user_name = ((void *)0);
+  __CONST char *user_name = ((void *)0);
   struct user_info *user_item = ((void *)0);
   int res = 0;
   asm ("");
@@ -214,7 +219,7 @@ authent_author_return:
 int good0, good1, good2;
 
 __attribute__ ((__noinline__, __noclone__))
-char *foo(void)
+__CONST char *foo(void)
 {
   asm ("");
   good0++;
@@ -222,7 +227,7 @@ char *foo(void)
 }
 
 __attribute__ ((__noinline__, __noclone__))
-char *ha_get_string_value(void)
+__CONST char *ha_get_string_value(void)
 {
   asm ("");
   good1++;
@@ -230,7 +235,7 @@ char *ha_get_string_value(void)
 }
 
 __attribute__ ((__noinline__, __noclone__))
-har has_auth_user(const char *a, const char *b, realm_type c, char *d, size_t e)
+har has_auth_user(const char *a, const char *b, realm_type c, __CONST char *d, size_t e)
 {
   asm ("");
   if (*a != 'z' || a[1] != 0 || b != 0 || c != axis_realm || *d != 0
@@ -240,7 +245,7 @@ har has_auth_user(const char *a, const char *b, realm_type c, char *d, size_t e)
 }
 
 __attribute__ ((__noinline__, __noclone__))
-har has_www_auth(char *a, size_t b, realm_type c, har d)
+har has_www_auth(__CONST char *a, size_t b, realm_type c, har d)
 {
   (void)(*a+b+c+d);
   asm ("");
@@ -248,9 +253,9 @@ har has_www_auth(char *a, size_t b, realm_type c, har d)
 }
 
 
-char *strdupped_user = "me";
+__CONST char *strdupped_user = "me";
 __attribute__((__malloc__, __noclone__, __noinline__))
-char* g_strdup (const char *str)
+__CONST char* g_strdup (const char *str)
 {
   asm ("");
   if (*str != 'f')
@@ -260,7 +265,7 @@ char* g_strdup (const char *str)
 }
 
 __attribute__((__noclone__, __noinline__))
-void g_free (void * mem)
+void g_free (__CONST void * mem)
 {
   (void)mem;
   asm ("");
@@ -273,7 +278,7 @@ struct realm_group xgroups = { .name = "*", .id = 42, .next = 0};
 
 int main(void)
 {
-  char *orig_user = "?";
+  __CONST char *orig_user = "?";
   struct realm r = { .name = "x", .space = "space?", .groups = &xgroups, .next = 0};
   request req = { .user = orig_user, .realm = "!", .authent = "z",
 		  .internal_realm = axis_realm};

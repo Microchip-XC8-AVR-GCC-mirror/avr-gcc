@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+int strcmp (const char*, const *);
+
 char buf[50];
 int
 va (int a, double b, int c, ...)

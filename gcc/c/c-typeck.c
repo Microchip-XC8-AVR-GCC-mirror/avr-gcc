@@ -2349,6 +2349,10 @@ build_component_ref (location_t loc, tree datum, tree component)
 	  if (TREE_THIS_VOLATILE (subdatum)
 	      || (use_datum_quals && TREE_THIS_VOLATILE (datum)))
 	    TREE_THIS_VOLATILE (ref) = 1;
+	  if (use_datum_quals
+	      && !ADDR_SPACE_GENERIC_P (TYPE_ADDR_SPACE (TREE_TYPE (datum))))
+	    TYPE_ADDR_SPACE( TREE_TYPE (ref)) = TYPE_ADDR_SPACE( TREE_TYPE (datum));
+
 
 	  if (TREE_DEPRECATED (subdatum))
 	    warn_deprecated_use (subdatum, NULL_TREE);
@@ -6718,7 +6722,20 @@ digest_init (location_t init_loc, tree type, tree init, tree origtype,
 		}
 	    }
 
-	  TREE_TYPE (inside_init) = type;
+      addr_space_t string_cst_addrspace =
+        TYPE_ADDR_SPACE (TREE_TYPE (inside_init));
+
+      if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+        {
+          gcc_assert (string_cst_addrspace == ADDR_SPACE_MEMX);
+        }
+
+      /* string constant address space may change (to memx), so copy the type
+         and preserve the address space in it.  */ 
+      tree new_init_type = build_distinct_type_copy (type);
+      TREE_TYPE (inside_init) = new_init_type;
+      TYPE_ADDR_SPACE ( TREE_TYPE (inside_init)) = string_cst_addrspace;
+
 	  if (TYPE_DOMAIN (type) != 0
 	      && TYPE_SIZE (type) != 0
 	      && TREE_CODE (TYPE_SIZE (type)) == INTEGER_CST)

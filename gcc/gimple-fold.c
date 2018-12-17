@@ -1041,6 +1041,15 @@ gimple_fold_builtin_memory_op (gimple_stmt_iterator *gsi,
       if (!POINTER_TYPE_P (TREE_TYPE (src))
 	  || !POINTER_TYPE_P (TREE_TYPE (dest)))
 	return false;
+
+	/* Don't attempt inline expansion if src is not in the generic address
+	  space. Besides bloating code size, the code below freely mixes type of
+	  dest and src (when building MEM_REF, for e.g.), and that will generate
+	  wrong code if dest is in the generic address space and src is __memx . */
+	if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE
+	     && !ADDR_SPACE_GENERIC_P (TREE_TYPE (TREE_TYPE (src))))
+	  return false;
+
       /* In the following try to find a type that is most natural to be
 	 used for the memcpy source and destination and that allows
 	 the most optimization when memcpy is turned into a plain assignment

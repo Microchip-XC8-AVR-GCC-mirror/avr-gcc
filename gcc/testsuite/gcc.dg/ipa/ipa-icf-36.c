@@ -1,11 +1,16 @@
 /* { dg-do compile } */
 /* { dg-options "-O2 -fdump-ipa-icf -fmerge-all-constants"  } */
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 static int a;
 static int b;
 static const int c = 2;
 static const int d = 2;
-static char * e = "test";
-static char * f = "test";
+static __CONST char * e = "test";
+static __CONST char * f = "test";
 static int g[3]={1,2,3};
 static int h[3]={1,2,3};
 static const int *i=&c;

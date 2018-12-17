@@ -435,6 +435,24 @@ avr_cpu_cpp_builtins (struct cpp_reader *pfile)
           }
     }
 
+  /* Define macro to denote const data allocation in program memory.  */
+  if (avr_const_data_in_progmem)
+    {
+      cpp_define (pfile, "__AVR_CONST_DATA_IN_PROGMEM__");
+    }
+
+  /* Define macro to denote program memory access from data address space.  */
+  if (AVR_HAVE_PROGMEM_IN_DATA_ADDRESS_SPACE)
+    {
+      cpp_define (pfile, "__AVR_PROGMEM_IN_DATA_ADDRESS_SPACE__");
+    }
+
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    {
+      cpp_define (pfile, "__AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__");
+    }
+	
+
   /* Define builtin macros so that the user can easily query whether or
      not a specific builtin is available. */
 
@@ -512,8 +530,8 @@ avr_handle_config_pragma (struct cpp_reader *pfile)
   while (1)
     {
       const cpp_token *raw_token;
-      const char *setting_name;
-      unsigned char *value_name;
+      const char *setting_name = NULL;
+      unsigned char *value_name = NULL;
 
       /* the current token should be the setting name */
       if (tok != CPP_NAME)
@@ -538,7 +556,8 @@ avr_handle_config_pragma (struct cpp_reader *pfile)
         value_name = (unsigned char *)IDENTIFIER_POINTER (tok_value);
       else if (tok == CPP_NUMBER)
         {
-          if (tree_fits_uhwi_p (tok_value))
+          /* transform the token to number if no error in lex  */
+          if ((tok_value != error_mark_node) && (tree_fits_uhwi_p (tok_value)))
           {
             #define MAX_VALUE_NAME_LENGTH 22
             HOST_WIDE_INT i;
@@ -554,26 +573,36 @@ avr_handle_config_pragma (struct cpp_reader *pfile)
           break;
         }
 
-			char ErrorMsg[127] = "";
-			if (!DeviceConfigurations.SetConfig(std::string(setting_name),
-																				 std::string((const char*)value_name),
-																				 ErrorMsg))
-				{
-					error ("Error in setting config (%s)", ErrorMsg);
-					break;
-				}
-
-      /* if the next token is ',' then we have another setting. */
+      /* get the next (look ahead) token. */
       tok = pragma_lex (&tok_value);
-      if (tok == CPP_COMMA)
-        tok = pragma_lex (&tok_value);
-      /* if it's EOF, we're done */
-      else if (tok == CPP_EOF)
-        break;
-      /* otherwise, we have spurious input */
-      else
+
+      /* issue error if we have spurious input.  */
+      if ((tok != CPP_COMMA) && (tok != CPP_EOF))
         {
           error ("',' or end of line expected in configuration pragma");
+          break;
+        }
+
+      /* Set the configuration if we have setting name and value.  */
+      char ErrorMsg[127] = "";
+      if ((setting_name && value_name) &&
+          !DeviceConfigurations.SetConfig(std::string(setting_name),
+                                          std::string((const char*)value_name),
+                                          ErrorMsg))
+        {
+          error ("Error in setting config (%s)", ErrorMsg);
+          break;
+        }
+
+      /* Continue if the next token is comma, otherwise we are done.  */
+      if (tok == CPP_COMMA)
+        {
+          tok = pragma_lex (&tok_value);
+          continue;
+        }
+      else
+        {
+          gcc_assert (tok == CPP_EOF);
           break;
         }
     }

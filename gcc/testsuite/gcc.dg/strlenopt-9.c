@@ -3,10 +3,16 @@
 
 #include "strlenopt.h"
 
-__attribute__((noinline, noclone)) char *
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
+__attribute__((noinline, noclone)) __CONST char *
 fn1 (int r)
 {
-  char *p = r ? "a" : "bc";
+  __CONST char *p = r ? "a" : "bc";
   /* String length for p varies, therefore strchr below isn't
      optimized away.  */
   return strchr (p, '\0');
@@ -15,7 +21,7 @@ fn1 (int r)
 __attribute__((noinline, noclone)) size_t
 fn2 (int r)
 {
-  char *p, q[10];
+  __CONST char *p; char q[10];
   strcpy (q, "abc");
   p = r ? "a" : q;
   /* String length is constant for both alternatives, and strlen is
@@ -27,7 +33,7 @@ __attribute__((noinline, noclone)) size_t
 fn3 (char *p, int n)
 {
   int i;
-  p = strchr (p, '\0');
+  p = (char*)strchr (p, '\0');
   /* strcat here can be optimized into memcpy.  */
   strcat (p, "abcd");
   for (i = 0; i < n; i++)
@@ -47,7 +53,7 @@ fn4 (char *x, int n)
   int i;
   size_t l;
   char a[64];
-  char *p = strchr (x, '\0');
+  char *p = (char*)strchr (x, '\0');
   /* strcpy here is optimized into memcpy, length computed as p - x + 1.  */
   strcpy (a, x);
   /* strcat here is optimized into memcpy.  */

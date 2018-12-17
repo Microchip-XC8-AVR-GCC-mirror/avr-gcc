@@ -17,8 +17,8 @@ extern void *memset (void *, int, size_t);
 
 const char s1[] = "123";
 char p[32] = "";
-char *s2 = "defg";
-char *s3 = "FGH";
+const char *s2 = "defg";
+const char *s3 = "FGH";
 char *s4;
 size_t l1 = 1;
 char *s5;

@@ -2,7 +2,7 @@ extern void abort(void);
 extern int inside_main;
 
 __attribute__ ((__noinline__))
-void *
+const void *
 memchr (const void *s, int c, __SIZE_TYPE__ n)
 {
   const unsigned char uc = c;
@@ -16,7 +16,7 @@ memchr (const void *s, int c, __SIZE_TYPE__ n)
   sp = s;
   for (; n != 0; ++sp, --n)
     if (*sp == uc)
-      return (void *) sp;
+      return (const void *) sp;
 
   return 0;
 }

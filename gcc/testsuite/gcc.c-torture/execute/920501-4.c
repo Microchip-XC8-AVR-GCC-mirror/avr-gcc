@@ -1,8 +1,13 @@
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST
+#else
+#define __CONST const
+#endif
 #ifndef NO_LABEL_VALUES
 int
 x (int i)
 {
-  static const void *j[] = {&& x, && y, && z};
+  static __CONST void *j[] = {&& x, && y, && z};
   
   goto *j[i];
   

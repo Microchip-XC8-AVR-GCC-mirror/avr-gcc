@@ -61,7 +61,7 @@ LIB1ASMFUNCS += \
 	_prologue \
 	_epilogue \
 	_load_3 _load_4 \
-	_xload_1 _xload_2 _xload_3 _xload_4 \
+	_xload_1 _xload_2 _xload_3 _xload_4 _xload_8 \
 	_movmemx \
 	_clzdi2 \
 	_paritydi2 \

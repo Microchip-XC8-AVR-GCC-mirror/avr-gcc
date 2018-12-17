@@ -1,3 +1,9 @@
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 f(x, d1, d2, d3)
    double d1, d2, d3;
 {
@@ -5,7 +11,7 @@ f(x, d1, d2, d3)
 }
 
 g(b,s,x,y,i,j)
-     char *b,*s;
+     __CONST char *b,*s;
      double x,y;
 {
   if (x != 1.0 || y != 2.0 || i != 3 || j != 4)

@@ -6,11 +6,16 @@
 typedef __CHAR32_TYPE__ char32_t;
 
 extern void abort (void);
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 
-char32_t	*s0 = U"ab";
-char32_t	*s1 = U"a\u0024";
-char32_t	*s2 = U"a\u2029";
-char32_t	*s3 = U"a\U00064321";
+__CONST char32_t	*s0 = U"ab";
+__CONST char32_t	*s1 = U"a\u0024";
+__CONST char32_t	*s2 = U"a\u2029";
+__CONST char32_t	*s3 = U"a\U00064321";
 
 #define A	0x00000061
 #define B	0x00000062

@@ -17,7 +17,7 @@ char buf7[20];
 
 void
 __attribute__((noinline))
-test (long *buf3, char *buf4, char *buf6, int n)
+test (long *buf3, char *buf4, const char *buf6, int n)
 {
   int i = 0;
 

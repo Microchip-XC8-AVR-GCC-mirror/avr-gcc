@@ -588,7 +588,8 @@
 (define_insn "xload<mode>_8"
   [(set (match_operand:ALL1 0 "register_operand"                   "=&r,r")
         (mem:ALL1 (lo_sum:PSI (match_operand:QI 1 "register_operand" "r,r")
-                              (reg:HI REG_Z))))]
+                              (reg:HI REG_Z))))
+   (clobber (reg:HI REG_Z))]
   "!avr_xload_libgcc_p (<MODE>mode)"
   {
     return avr_out_xload (insn, operands, NULL);
@@ -676,7 +677,14 @@
              ; insn-emit does not depend on the mode, it's all about operands.  */
           emit_insn (gen_xload8qi_A (dest, src));
         else
-          emit_insn (gen_xload<mode>_A (dest, src));
+          {
+            operands[0] = dest; operands[1] = src;
+            if (!avr_emit2_fix_outputs (gen_xload<mode>_A, operands, 1 << 0,
+                                      regmask (<MODE>mode, 22)
+                                               | regmask (QImode, 21)
+                                               | regmask (HImode, REG_Z)))
+              FAIL;
+          }
 
         DONE;
       }

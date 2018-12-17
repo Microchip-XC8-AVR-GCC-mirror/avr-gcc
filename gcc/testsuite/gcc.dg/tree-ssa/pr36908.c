@@ -1,10 +1,15 @@
 /* { dg-do compile } */
 /* { dg-options "-O2 -ftree-loop-distribution" } */
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 #define NULL ((void *)0)
 
 __extension__ typedef __SIZE_TYPE__ size_t;
 extern void *foo(size_t nelem, size_t elsize);
-extern void bar (char*, ...);
+extern void bar (__CONST char*, ...);
 
 typedef struct alt_state *alt_state_t;
 typedef struct state *state_t;

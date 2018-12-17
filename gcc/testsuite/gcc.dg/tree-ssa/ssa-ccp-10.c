@@ -1,6 +1,11 @@
 /* { dg-do compile } */
 /* { dg-options "-O1 -fdump-tree-fab1" } */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 /* Check that we fold strlen of equally long strings, and that we do not
    fail to terminate when there is a nontrivial cycle in the corresponding
    ssa graph.  */
@@ -11,7 +16,7 @@ extern int bla (void);
 
 void foo(int i)
 {
-  char *s = "abcde";
+  __CONST char *s = "abcde";
 
   if (i)
     {

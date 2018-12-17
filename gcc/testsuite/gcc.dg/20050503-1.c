@@ -7,6 +7,12 @@
 
 typedef __SIZE_TYPE__ size_t;
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 #define F(n, rettype, name, args, callargs) \
 extern rettype name args;				\
 rettype test##n args					\
@@ -44,7 +50,7 @@ F2 (13a, int, strcmp, const char *, const char *, (a1, a2))
 F2 (13b, int, strcmp, const char *, const char *, (a1, "abcdefghijklm"))
 F3 (14a, int, strncmp, const char *, const char *, size_t, (a1, a2, a3))
 F3 (14b, int, strncmp, const char *, const char *, size_t, (a1, "abcdefghijklm", 10))
-F2 (15, char *, strchr, const char *, int, (a1, a2))
+F2 (15, __CONST char *, strchr, const char *, int, (a1, a2))
 
 /* All the calls above should be tail call optimized on i?86/x86-64.  */
 /* { dg-final { scan-assembler-not "call" { target i?86-*-linux* i?86-*-gnu* x86_64-*-linux* } } } */

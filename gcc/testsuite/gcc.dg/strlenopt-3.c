@@ -2,9 +2,14 @@
 /* { dg-options "-O2 -fdump-tree-strlen -fdump-tree-optimized" } */
 
 #include "strlenopt.h"
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 
 __attribute__((noinline, noclone)) size_t
-fn1 (char *p, char *q)
+fn1 (char *p, __CONST char *q)
 {
   size_t s = strlen (q);
   strcpy (p, q);
@@ -12,7 +17,7 @@ fn1 (char *p, char *q)
 }
 
 __attribute__((noinline, noclone)) size_t
-fn2 (char *p, char *q)
+fn2 (char *p, __CONST char *q)
 {
   size_t s = strlen (q);
   memcpy (p, q, s + 1);
@@ -38,7 +43,7 @@ main ()
 {
   char buf[64];
   char *volatile p = buf;
-  char *volatile q = "ABCDEF";
+  __CONST char *volatile q = "ABCDEF";
   buf[7] = 'G';
   if (fn1 (p, q) != 0 || memcmp (buf, "ABCDEF\0G", 8))
     abort ();

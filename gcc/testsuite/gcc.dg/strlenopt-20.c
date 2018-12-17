@@ -52,7 +52,7 @@ fn3 (char *p)
      strcat is optimized into memcpy.  */
   strcpy (p, "abc");
   p[3] = 'd';
-  c = strchr (p, '\0');
+  c = (char*)strchr (p, '\0');
   strcat (p, "efgh");
   return c;
 }

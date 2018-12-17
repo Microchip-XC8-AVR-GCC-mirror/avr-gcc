@@ -1,12 +1,20 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+extern int strcmp (const char *, const char *);
+extern __SIZE_TYPE__ strlen (const char *);
+#else
+#define __CONST
+#endif
+
 struct spurious
 {
     int anumber;
 };
 
-int first(char *buf, char *fmt, ...)
+int first(char *buf, __CONST char *fmt, ...)
 {
   int pos, number;
   va_list args;
@@ -29,7 +37,7 @@ int first(char *buf, char *fmt, ...)
   return dummy;
 }
 
-struct spurious second(char *buf,char *fmt, ...)
+struct spurious second(char *buf, __CONST char *fmt, ...)
 {
   int pos, number;
   va_list args;

@@ -7719,6 +7719,16 @@ build_pointer_type (tree to_type)
 {
   addr_space_t as = to_type == error_mark_node? ADDR_SPACE_GENERIC
 					      : TYPE_ADDR_SPACE (to_type);
+#if 0
+  if (TREE_CODE (to_type) != FUNCTION_TYPE
+      && AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE
+      && ADDR_SPACE_GENERIC_P (as)
+      && (TYPE_READONLY (to_type)))
+    {
+      TYPE_ADDR_SPACE (to_type) = ADDR_SPACE_MEMX;
+      as = ADDR_SPACE_MEMX;
+    }
+#endif
   machine_mode pointer_mode = targetm.addr_space.pointer_mode (as);
   return build_pointer_type_for_mode (to_type, pointer_mode, false);
 }
@@ -9848,8 +9858,16 @@ build_common_tree_nodes (bool signed_char, bool short_double)
   layout_type (TREE_TYPE (null_pointer_node));
 
   ptr_type_node = build_pointer_type (void_type_node);
-  const_ptr_type_node
-    = build_pointer_type (build_type_variant (void_type_node, 1, 0));
+
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    const_ptr_type_node
+      = build_pointer_type (build_qualified_type (void_type_node,
+                              TYPE_QUAL_CONST
+                              | ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX)));
+  else
+    const_ptr_type_node
+      = build_pointer_type (build_type_variant (void_type_node, 1, 0));
+
   fileptr_type_node = ptr_type_node;
 
   pointer_sized_int_node = build_nonstandard_integer_type (POINTER_SIZE, 1);
@@ -10741,6 +10759,9 @@ build_string_literal (int len, const char *str)
 
   t = build_string (len, str);
   elem = build_type_variant (char_type_node, 1, 0);
+	elem = build_variant_type_copy (elem);
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    TYPE_ADDR_SPACE (elem) = ADDR_SPACE_MEMX;
   index = build_index_type (size_int (len - 1));
   type = build_array_type (elem, index);
   TREE_TYPE (t) = type;

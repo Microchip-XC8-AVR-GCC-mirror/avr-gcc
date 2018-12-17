@@ -17,9 +17,9 @@ fn1 (char *p, const char *y, const char *z, size_t *lp)
   strcpy (buf1, y);
   strcpy (buf2, z);
   strcpy (p, "abcde");
-  q = strchr (p, '\0');
+  q = (char*)strchr (p, '\0');
   strcpy (q, "efghi");
-  r = strchr (q, '\0');
+  r = (char*)strchr (q, '\0');
   strcpy (r, buf1);
   l[2] = strlen (p);
   l[3] = strlen (q);

@@ -6,7 +6,7 @@
    Written by Kaveh R. Ghazi, 11/6/2000.  */
 
 extern void abort(void);
-extern char *strpbrk (const char *, const char *);
+extern const char *strpbrk (const char *, const char *);
 extern int strcmp (const char *, const char *);
 
 void fn (const char *foo, const char *const *bar)

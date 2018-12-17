@@ -1,12 +1,18 @@
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 int v;
 
-char *
+__CONST char *
 g ()
 {
   return "";
 }
 
-char *
+__CONST char *
 f ()
 {
   return (v == 0 ? g () : "abc");

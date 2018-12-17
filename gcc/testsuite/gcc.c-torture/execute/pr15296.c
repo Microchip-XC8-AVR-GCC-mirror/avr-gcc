@@ -3,6 +3,11 @@
    fall-through code, while that register held a pointer used in code at
    the branch target.  */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 typedef __INTPTR_TYPE__ intptr_t;
 typedef intptr_t W;
 union u0
@@ -18,7 +23,7 @@ struct s1
 
 void f (void *, struct s1 *, const union u0 *, W, W, W)
      __attribute__ ((__noinline__));
-void g (void *, char *) __attribute__ ((__noinline__));
+void g (void *, __CONST char *) __attribute__ ((__noinline__));
 
 void
 f (void *a, struct s1 *b, const union u0 *h, W v0, W v1, W v4)
@@ -57,7 +62,7 @@ l3:;
 l4:;
 }
 
-void g (void *a, char *b) { abort (); }
+void g (void *a, __CONST char *b) { abort (); }
 
 int
 main ()

@@ -2,6 +2,11 @@
 
    Ensure builtin __memcpy_chk performs correctly.  */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 extern void abort (void);
 typedef __SIZE_TYPE__ size_t;
 extern size_t strlen(const char *);
@@ -13,8 +18,8 @@ extern int memcmp (const void *, const void *, size_t);
 
 const char s1[] = "123"; 
 char p[32] = "";
-volatile char *s2 = "defg"; /* prevent constant propagation to happen when whole program assumptions are made.  */
-volatile char *s3 = "FGH"; /* prevent constant propagation to happen when whole program assumptions are made.  */
+const volatile char *s2 = "defg"; /* prevent constant propagation to happen when whole program assumptions are made.  */
+const volatile char *s3 = "FGH"; /* prevent constant propagation to happen when whole program assumptions are made.  */
 volatile size_t l1 = 1; /* prevent constant propagation to happen when whole program assumptions are made.  */
 
 void
@@ -88,7 +93,7 @@ char buf7[20];
 
 void
 __attribute__((noinline))
-test2_sub (long *buf3, char *buf4, char *buf6, int n)
+test2_sub (long *buf3, char *buf4, __CONST char *buf6, int n)
 {
   int i = 0;
 
@@ -247,7 +252,7 @@ test2 (void)
 
 static const struct foo
 {
-  char *s;
+  const char *s;
   double d;
   long l;
 } foo[] =
@@ -262,7 +267,7 @@ static const struct foo
 
 static const struct bar
 {
-  char *s;
+  const char *s;
   const struct foo f[3];
 } bar[] =
 {

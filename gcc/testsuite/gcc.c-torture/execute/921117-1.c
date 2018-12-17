@@ -1,3 +1,6 @@
+extern int strcmp (const char *, const char *);
+extern char* strcpy (char *, const char *);
+
 struct s {
   char text[11];
   int flag;

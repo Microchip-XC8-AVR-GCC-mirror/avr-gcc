@@ -1,8 +1,13 @@
 /* { dg-do compile } */
 /* { dg-options "-O2 -fdump-tree-ccp2" } */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 void bar (int *);
-void foo (char *, int);
+void foo (__CONST char *, int);
 
 void
 foo3 ()

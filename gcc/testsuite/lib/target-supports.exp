@@ -6200,6 +6200,41 @@ proc check_effective_target_avr_tiny { } {
     }
 }
 
+# Return 1 if this an AVR core that requires program memory specific
+# instructions (lpm etc.) to read from program memory. Return 0 if
+# the usual data address space insns (ld/lds etc..) can be used - for
+# archs with memory mapped flash.
+
+proc check_effective_target_avr_progmem_insn_for_progmem { } {
+    if { [istarget avr*-*-*] } {
+        return [check_no_compiler_messages avr_progmem_in_data_as object {
+            #ifndef __AVR_PROGMEM_IN_DATA_ADDRESS_SPACE__
+            int dummy;
+            #else
+            #error target does not have program memory mapped into data
+            #endif
+        }]
+    } else {
+        return 0
+    }
+}
+
+# Return 1 if this an AVR core and const-data-in-progmem enabled
+
+proc check_effective_target_avr_const_data_in_progmem { } {
+    if { [istarget avr*-*-*] } {
+        return [check_no_compiler_messages avr_const_data_in_progmem object {
+            #ifdef __AVR_CONST_DATA_IN_PROGMEM__
+            int dummy;
+            #else
+            #error target does not have const-data-in-progmem enabled
+            #endif
+        }]
+    } else {
+        return 0
+    }
+}
+
 # Return 1 if <fenv.h> is available with all the standard IEEE
 # exceptions and floating-point exceptions are raised by arithmetic
 # operations.  (If the target requires special options for "inexact"

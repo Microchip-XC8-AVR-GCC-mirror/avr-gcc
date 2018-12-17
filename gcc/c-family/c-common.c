@@ -1077,6 +1077,16 @@ fix_string_type (tree value)
   if (c_dialect_cxx() || warn_write_strings)
     a_type = c_build_qualified_type (a_type, TYPE_QUAL_CONST);
 
+  /* If string constant need to be in program memory,
+     - add MEMX addr space qualifier to the type
+     - set address space also to MEMX  */
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    {
+      a_type = c_build_qualified_type (a_type, TYPE_QUALS_NO_ADDR_SPACE (a_type)
+                               | ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX));
+      TYPE_ADDR_SPACE(a_type) = ADDR_SPACE_MEMX;
+    }
+
   TREE_TYPE (value) = a_type;
   TREE_CONSTANT (value) = 1;
   TREE_READONLY (value) = 1;
@@ -5675,9 +5685,13 @@ c_common_nodes_and_builtins (void)
     = build_array_type (char_type_node, array_domain_type);
 
   string_type_node = build_pointer_type (char_type_node);
+	int const_string_type_node_quals = TYPE_QUAL_CONST;
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    const_string_type_node_quals |= ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX);
+
   const_string_type_node
     = build_pointer_type (build_qualified_type
-			  (char_type_node, TYPE_QUAL_CONST));
+			  (char_type_node, const_string_type_node_quals));
 
   /* This is special for C++ so functions can be overloaded.  */
   wchar_type_node = get_identifier (MODIFIED_WCHAR_TYPE);

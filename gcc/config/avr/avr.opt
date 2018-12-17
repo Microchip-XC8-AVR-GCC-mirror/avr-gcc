@@ -30,6 +30,10 @@ mn-flash=
 Target RejectNegative Joined Var(avr_n_flash) UInteger Init(-1)
 Set the number of 64 KiB flash segments
 
+mconst-data-in-progmem
+Target Report Var(avr_const_data_in_progmem) UInteger Init(0)
+Allocate read only (constant) data in program memory sections. Disabled by default.
+
 mnon-bit-addressable-registers-mask=
 Target Report Joined Var(avr_deferred_options) Defer
 Set the 32 bit mask for non bit addressable registers.
@@ -120,8 +124,11 @@ Target RejectNegative Joined Var(avr_deferred_options) MissingArgError(missing l
 -mext=lang_extension Specify the language extension. e.g. cci to use CCI keywords and features.
 
 mdfp=
-Target RejectNegative Joined Var(avr_dfp_path)
+Driver Target RejectNegative Joined MissingArgError(missing DFP path after %qs)
 -mdfp=<Microchip Device Family Pack path>. e.g. -mdfp=/packs/mega-206/.
+
+mpack-dir=
+Target RejectNegative Joined Var(avr_dfp_path) Undocumented
 
 mdevice=
 Target RejectNegative Joined Var(avr_device) Undocumented

@@ -1,3 +1,5 @@
+extern int strcmp (const char *, const char*);
+extern char *strcpy (char*, const char *);
 short optab[5];
 char buf[10];
 execute (ip)

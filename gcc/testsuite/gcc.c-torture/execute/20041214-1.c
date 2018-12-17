@@ -1,5 +1,10 @@
 /* { dg-require-effective-target indirect_jumps } */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST
+#else
+#define __CONST const
+#endif
 typedef long unsigned int size_t;
 extern void abort (void);
 extern char *strcpy (char *, const char *);
@@ -11,7 +16,7 @@ int g (char *s, const char *format, va_list ap)
   const char *f;
   const char *string;
   char spec;
-  static const void *step0_jumps[] = {
+  static __CONST void *step0_jumps[] = {
     &&do_precision,
     &&do_form_integer,
     &&do_form_string,

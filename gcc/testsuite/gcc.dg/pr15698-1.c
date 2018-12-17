@@ -6,9 +6,15 @@
 
 int	foobar ();
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 int func (int blah)
 {
-  char *rindex();
+  __CONST char *rindex();
 }
 
 int foobar ()
@@ -16,7 +22,7 @@ int foobar ()
   return 0;
 }
 
-char *rindex(a, b)
+__CONST char *rindex(a, b)
      register char *a, b; /* { dg-warning "argument 'a' doesn't match built-in prototype" } */
 {
   return 0;

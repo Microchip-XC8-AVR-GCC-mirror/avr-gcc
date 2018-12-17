@@ -1,8 +1,14 @@
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 unsigned char lookup_table [257];
 
 static int 
 build_lookup (pattern)
-     unsigned char *pattern;
+     __CONST unsigned char *pattern;
 {
   int m;
 

@@ -6,7 +6,7 @@
 __attribute__((noinline, noclone)) char *
 foo (char *p, const char *q)
 {
-  char *e = strchr (p, '\0');
+  char *e = (char*)strchr (p, '\0');
   strcat (p, q);
   return e;
 }
@@ -15,13 +15,13 @@ __attribute__((noinline, noclone)) char *
 bar (char *p)
 {
   memcpy (p, "abcd", 5);
-  return strchr (p, '\0');
+  return (char*)strchr (p, '\0');
 }
 
 __attribute__((noinline, noclone)) void
 baz (char *p)
 {
-  char *e = strchr (p, '\0');
+  char *e = (char*)strchr (p, '\0');
   strcat (e, "abcd");
 }
 

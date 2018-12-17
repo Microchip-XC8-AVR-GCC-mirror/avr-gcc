@@ -2,14 +2,19 @@
 /* { dg-options "-O2 -fdump-tree-strlen" } */
 
 #include "strlenopt.h"
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 
 __attribute__((noinline, noclone)) size_t
-bar (char *p, char *q)
+bar (char *p, __CONST char *q)
 {
   size_t l1, l2, l3;
-  char *r = strchr (p, '\0');
+  char *r = (char*)strchr (p, '\0');
   strcpy (r, "abcde");
-  char *s = strchr (r, '\0');
+  char *s = (char*)strchr (r, '\0');
   strcpy (s, q);
   l1 = strlen (p);
   l2 = strlen (r);

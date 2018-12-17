@@ -9,7 +9,7 @@ extern void abort (void);
 extern int strcmp (const char *, const char *);
 
 int x = 7;
-char *bar = "hi world";
+const char *bar = "hi world";
 
 void
 main_test (void)

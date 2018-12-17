@@ -10,7 +10,7 @@ fn1 (char *p)
   /* This can be optimized into memcpy and the size can be decreased to one,
      as it is immediately overwritten.  */
   strcpy (p, "z");
-  q = strchr (p, '\0');
+  q = (char*)strchr (p, '\0');
   *q = 32;
   /* This strlen can't be optimized away, string length is unknown here.  */
   return strlen (p);
@@ -28,9 +28,9 @@ fn2 (char *p, const char *z, size_t *lp)
   l[0] = strlen (z);
   strcpy (buf, z);
   strcpy (p, "abcde");
-  q = strchr (p, '\0');
+  q = (char*)strchr (p, '\0');
   strcpy (q, "efghi");
-  r = strchr (q, '\0');
+  r = (char*)strchr (q, '\0');
   strcpy (r, "jkl");
   l[1] = strlen (p);
   l[2] = strlen (q);

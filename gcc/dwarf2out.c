@@ -23651,6 +23651,18 @@ optimize_one_addr_into_implicit_ptr (dw_loc_descr_ref loc)
 
       TREE_TYPE (t)
 	= build_array_type (char_type_node, build_index_type (tlen));
+
+      /* If string constant need to be in program memory,
+         - copy tree type of string as original type might be used
+           by some other declarators
+         - set address space also to MEMX  */
+      if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+        {
+          tree new_string_type = build_distinct_type_copy (TREE_TYPE (t));
+          TREE_TYPE (t) = new_string_type;
+          TYPE_ADDR_SPACE ( TREE_TYPE (t)) = ADDR_SPACE_MEMX;
+        }
+
       rtl = string_cst_pool_decl (t);
       if (!rtl)
 	return false;

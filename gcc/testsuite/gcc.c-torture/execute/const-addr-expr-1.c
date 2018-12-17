@@ -1,11 +1,16 @@
 #include        <stdio.h>
 #include        <stdlib.h>
 extern void abort();
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 
 typedef struct foo
 {
         int     uaattrid;
-        char    *name;
+        __CONST char    *name;
 } FOO;
 
 FOO     Upgrade_items[] =

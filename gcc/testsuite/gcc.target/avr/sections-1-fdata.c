@@ -1,6 +1,7 @@
 /* Verify that section directives generated */
 /* { dg-do compile } */
-/* { dg-options "-fdata-sections" } */
+/* { dg-options "-mno-const-data-in-progmem -fdata-sections" } */
+/* { dg-skip-if "skip if global option is to enable const data in progmem" { *-*-* } { "-mconst-data-in-progmem" } { "" } } */
 
 int   bss1;
 short bss2;
@@ -19,8 +20,8 @@ const int  rodata2 = 12;
 /* { dg-final { scan-assembler "\t.type\tdata1, @object" } } */
 /* { dg-final { scan-assembler "\t.section\t.data.data2,data" } } */
 /* { dg-final { scan-assembler "\t.type\tdata2, @object" } } */
-/* { dg-final { scan-assembler "\t.section\t.rodata.rodata1,data" } } */
+/* { dg-final { scan-assembler "\t.section\t.rodata.rodata1,rodata" } } */
 /* { dg-final { scan-assembler "\t.type\trodata1, @object" } } */
-/* { dg-final { scan-assembler "\t.section\t.rodata.rodata2,data" } } */
+/* { dg-final { scan-assembler "\t.section\t.rodata.rodata2,rodata" } } */
 /* { dg-final { scan-assembler "\t.type\trodata2, @object" } } */
 

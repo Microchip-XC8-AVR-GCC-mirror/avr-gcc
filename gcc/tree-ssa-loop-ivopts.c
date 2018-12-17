@@ -936,6 +936,7 @@ determine_base_object (tree expr)
       return NULL_TREE;
 
     case ADDR_EXPR:
+    {
       obj = TREE_OPERAND (expr, 0);
       base = get_base_address (obj);
 
@@ -945,9 +946,16 @@ determine_base_object (tree expr)
       if (TREE_CODE (base) == MEM_REF)
 	return determine_base_object (TREE_OPERAND (base, 0));
 
-      return fold_convert (ptr_type_node,
+      tree ret_type = ptr_type_node;
+      addr_space_t base_addr_space = TYPE_ADDR_SPACE (TREE_TYPE (base));
+      if (!ADDR_SPACE_GENERIC_P (base_addr_space))
+        ret_type = build_pointer_type (
+                     build_qualified_type (void_type_node,
+                       ENCODE_QUAL_ADDR_SPACE (base_addr_space)));
+      return fold_convert (ret_type,
 		           build_fold_addr_expr (base));
 
+    }
     case POINTER_PLUS_EXPR:
       return determine_base_object (TREE_OPERAND (expr, 0));
 
@@ -957,7 +965,16 @@ determine_base_object (tree expr)
       gcc_unreachable ();
 
     default:
-      return fold_convert (ptr_type_node, expr);
+    {
+      tree ret_type = ptr_type_node;
+      addr_space_t expr_addr_space = TYPE_ADDR_SPACE (
+                                      TREE_TYPE (TREE_TYPE (expr)));
+      if (!ADDR_SPACE_GENERIC_P (expr_addr_space))
+        ret_type = build_pointer_type (
+                    build_qualified_type (void_type_node,
+                      ENCODE_QUAL_ADDR_SPACE (expr_addr_space)));
+      return fold_convert (ret_type, expr);
+		}
     }
 }
 
@@ -4172,6 +4189,9 @@ get_computation_cost_at (struct ivopts_data *data,
 				: VOIDmode);
 
   *depends_on = NULL;
+
+  if (can_autoinc)
+    *can_autoinc = false;
 
   /* Only consider real candidates.  */
   if (!cand->iv)

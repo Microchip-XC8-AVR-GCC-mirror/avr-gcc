@@ -21,7 +21,7 @@ foo (void)
 __attribute__((noinline, noclone)) size_t
 bar (char *p)
 {
-  char *r = strchr (p, '\0');
+  char *r = (char*)strchr (p, '\0');
   /* This store shouldn't be optimized away, because we
      want to crash if p is e.g. a string literal.  */
   *r = '\0';

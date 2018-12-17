@@ -1,4 +1,9 @@
-struct { char *m; long n; } a[20];
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+struct { __CONST char *m; long n; } a[20];
 int b = 20, c;
 void bar(void) __attribute__((__noreturn__));
 

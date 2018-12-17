@@ -4,6 +4,12 @@
    output to reference a label that had been eliminated.  */
 /* { dg-do link } */
 /* { dg-options "-O2" } */
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 typedef struct _IO_FILE FILE;
 char const *RCSname;
 void *Locks;
@@ -11,7 +17,7 @@ void * Head;
 struct Revpairs{
     struct Revpairs * rnext;
 };
-extern char *strchr(const char *s, int c);
+extern __CONST char *strchr(const char *s, int c);
 extern int fprintf(FILE *, const char *format, ...);
 static void getrevpairs (char*);
 static int branchflag;

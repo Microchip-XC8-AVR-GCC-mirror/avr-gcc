@@ -1,5 +1,9 @@
 /* Test IEEE +0/-0 rules */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+extern int memcmp (const void *, const void *expected, __SIZE_TYPE__);
+#endif
+
 static double pzero = +0.0;
 static double nzero = -0.0;
 static double pinf  = +1.0 / 0.0;

@@ -18,16 +18,16 @@
 #define __section(name) __attribute__((section(name)))
 #define asm(arg)  __asm(arg)
 
-/*
-#define __far  __attribute__((unsupported("__far is not defined in this architecture")))
-#define __near  __attribute__((unsupported("__near is not defined in this architecture")))
-#define __xdata  __attribute__((unsupported("__xdata is not defined in this architecture")))
-#define __ydata  __attribute__((unsupported("__ydata is not defined in this architecture")))
-#define __bank(num)  __attribute__((unsupported("__bank(n) is not defined in this architecture")))
-#define __eeprom  __attribute__((unsupported("__eeprom is not defined in this architecture")))
-#define __nonreentrant  __attribute__((unsupported("__nonreentrant is not defined in this architecture")))
-#define __reentrant  __attribute__((unsupported("__reentrant is not defined in this architecture")))
-*/
+/* Unsupported CCI attributes by this compiler.  */
+#define __far  __attribute__((unsupported("__far")))
+#define __near  __attribute__((unsupported("__near")))
+#define __xdata  __attribute__((unsupported("__xdata")))
+#define __ydata  __attribute__((unsupported("__ydata")))
+#define __eeprom  __attribute__((unsupported("__eeprom")))
+#define __nonreentrant  __attribute__((unsupported("__nonreentrant")))
+#define __reentrant  __attribute__((unsupported("__reentrant")))
+#define __bank(num)  __attribute__((unsupported("__bank(n)")))
+
 #endif  /* ifdef __CCI__ */
 
 #endif  /* ifndef _CCI_H_ */

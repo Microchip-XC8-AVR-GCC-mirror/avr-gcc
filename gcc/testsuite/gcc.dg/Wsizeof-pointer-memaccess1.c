@@ -4,7 +4,7 @@
 
 typedef __SIZE_TYPE__ size_t;
 extern void bzero (void *, size_t);
-extern void bcopy (void *, const void *, size_t);
+extern void bcopy (const void *, void *, size_t);
 extern int bcmp (const void *, const void *, size_t);
 
 struct A { short a, b; int c, d; long e, f; };

@@ -17,12 +17,12 @@ extern int vsnprintf (char *, size_t, const char *, va_list);
 
 const char s1[] = "123";
 char p[32] = "";
-char *s2 = "defg";
-char *s3 = "FGH";
+const char *s2 = "defg";
+const char *s3 = "FGH";
 char *s4;
 size_t l1 = 1;
 static char buffer[32];
-char * volatile ptr = "barf";  /* prevent constant propagation to happen when whole program assumptions are made.  */
+const char * volatile ptr = "barf";  /* prevent constant propagation to happen when whole program assumptions are made.  */
 
 int
 __attribute__((noinline))

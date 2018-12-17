@@ -1,3 +1,8 @@
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 __attribute__ ((__noinline__, __noclone__))
 int foo(void *x)
 {
@@ -20,7 +25,7 @@ struct rtc_class_ops {
 struct rtc_device
 {
  void *owner;
- struct rtc_class_ops *ops;
+ __CONST struct rtc_class_ops *ops;
  int ops_lock;
 };
 

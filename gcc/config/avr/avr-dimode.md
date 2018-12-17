@@ -30,7 +30,11 @@
 ;;
 ;; The DImode insns are all straight forward -- except movdi.  The approach
 ;; of this implementation is to provide DImode insns without the burden of
-;; introducing movdi.
+;; introducing movdi. Without movdi though, if the source operand is a MEM in
+;; the memx address space, the generated code is bloated with 8 xload_1 calls.
+;; So make an exception for that case, by introducing a mov expander that
+;; works like FAIL for non MEM memx source operands, and expands to xload_8
+;; libgcc call otherwise.
 ;;
 ;; The caveat is that if there are insns for some mode, there must also be a
 ;; respective move insn that describes reloads.  Therefore, this
@@ -52,6 +56,96 @@
 (define_mode_iterator ALL8U [UDQ UDA UTA])
 (define_mode_iterator ALL8S [ DQ  DA  TA])
 
+(define_insn "xload_<mode>_libgcc"
+  [(set (reg:ALL8 18)
+        (mem:ALL8 (lo_sum:PSI (reg:QI 21)
+                                 (reg:HI REG_Z))))
+   (clobber (reg:HI REG_Z))]
+  "avr_xload_libgcc_p (<MODE>mode)"
+  {
+    rtx x_bytes = GEN_INT (GET_MODE_SIZE (<MODE>mode));
+
+    output_asm_insn ("%~call __xload_%0", &x_bytes);
+    return "";
+  }
+  [(set_attr "type" "xcall")
+   (set_attr "cc" "clobber")])
+
+(define_insn_and_split "xload<mode>8_A"
+  [(set (match_operand:ALL8 0 "register_operand" "=r")
+        (match_operand:ALL8 1 "memory_operand"    "m"))
+   (clobber (reg:ALL8 18))
+   (clobber (reg:HI REG_Z))]
+  "can_create_pseudo_p()
+   && avr_mem_memx_p (operands[1])
+   && REG_P (XEXP (operands[1], 0))"
+  { gcc_unreachable(); }
+  "&& 1"
+  [(clobber (const_int 0))]
+  {
+    rtx addr = XEXP (operands[1], 0);
+    rtx reg_z = gen_rtx_REG (HImode, REG_Z);
+    rtx addr_hi8 = simplify_gen_subreg (QImode, addr, PSImode, 2);
+    addr_space_t as = MEM_ADDR_SPACE (operands[1]);
+    rtx_insn *insn;
+
+    /* Split the address to R21:Z */
+    emit_move_insn (reg_z, simplify_gen_subreg (HImode, addr, PSImode, 0));
+    emit_move_insn (gen_rtx_REG (QImode, 21), addr_hi8);
+
+    /* Load with code from libgcc */
+    insn = emit_insn (gen_xload_<mode>_libgcc ());
+    set_mem_addr_space (SET_SRC (single_set (insn)), as);
+
+    /* Move to destination */
+    emit_move_insn (operands[0], gen_rtx_REG (<MODE>mode, 18));
+
+    DONE;
+  })
+
+(define_expand "mov<mode>"
+  [(set (match_operand:ALL8 0 "nonimmediate_operand" "")
+        (match_operand:ALL8 1 "general_operand" ""))]
+  ""
+  {
+    rtx dest = operands[0];
+    rtx src  = avr_eval_addr_attrib (operands[1]);
+
+    if (avr_mem_flash_p (dest))
+      DONE;
+
+    /* One of the operands has to be in a register.  */
+    if (!register_operand (dest, <MODE>mode)
+        && !reg_or_0_operand (src, <MODE>mode))
+      {
+        operands[1] = src = copy_to_mode_reg (<MODE>mode, src);
+      }
+
+    /* If the source is not in the memx addr space, fallback to default
+       expansion of mov<ALL8>. FAIL is not an option - doesn't work for mov
+       expanders. To get default behavior, do what emit_move_insn_1 does, when
+       optab_handler returns CODE_FOR_nothing when queried for an ALL8 mode. */
+
+    if (!avr_mem_memx_p (src))
+      {
+        emit_move_multi_word (<MODE>mode, operands[0], operands[1]);
+        DONE;
+      }
+
+
+    rtx addr = XEXP (src, 0);
+
+    if (!REG_P (addr))
+      src = replace_equiv_address (src, copy_to_mode_reg (PSImode, addr));
+
+    operands[0] = dest; operands[1] = src;
+    if (!avr_emit2_fix_outputs (gen_xload<mode>8_A, operands, 1 << 0,
+                               regmask (<MODE>mode, 18)
+                               | regmask (HImode, REG_Z)))
+      FAIL;
+    DONE;
+  })
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Addition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -69,6 +163,8 @@
     rtx acc_a = gen_rtx_REG (<MODE>mode, ACC_A);
 
     avr_fix_inputs (operands, 1 << 2, regmask (<MODE>mode, ACC_A));
+    avr_fix_memx_all8_inputs (operands, 0x3 << 1);
+
     emit_move_insn (acc_a, operands[1]);
 
     if (DImode == <MODE>mode
@@ -147,6 +243,8 @@
     rtx acc_a = gen_rtx_REG (<MODE>mode, ACC_A);
 
     avr_fix_inputs (operands, 1 << 2, regmask (<MODE>mode, ACC_A));
+    avr_fix_memx_all8_inputs (operands, 0x3 << 1);
+
     emit_move_insn (acc_a, operands[1]);
 
     if (const_operand (operands[2], GET_MODE (operands[2])))
@@ -204,6 +302,8 @@
     rtx acc_a = gen_rtx_REG (<MODE>mode, ACC_A);
 
     avr_fix_inputs (operands, 1 << 2, regmask (<MODE>mode, ACC_A));
+
+    avr_fix_memx_all8_inputs (operands, 0x3 << 1);
     emit_move_insn (acc_a, operands[1]);
 
     if (const_operand (operands[2], GET_MODE (operands[2])))
@@ -253,6 +353,8 @@
     rtx acc_a = gen_rtx_REG (<MODE>mode, ACC_A);
 
     avr_fix_inputs (operands, 1 << 2, regmask (<MODE>mode, ACC_A));
+    avr_fix_memx_all8_inputs (operands, 0x3 << 1);
+
     emit_move_insn (acc_a, operands[1]);
 
     if (const_operand (operands[2], GET_MODE (operands[2])))
@@ -300,6 +402,7 @@
   {
     rtx acc_a = gen_rtx_REG (DImode, ACC_A);
 
+    avr_fix_memx_all8_inputs (operands, 0x1 << 1);
     emit_move_insn (acc_a, operands[1]);
     emit_insn (gen_negdi2_insn ());
     emit_move_insn (operands[0], acc_a);
@@ -343,6 +446,8 @@
     rtx acc_a = gen_rtx_REG (<MODE>mode, ACC_A);
 
     avr_fix_inputs (operands, 1 << 2, regmask (<MODE>mode, ACC_A));
+    avr_fix_memx_all8_inputs (operands, 0x3 << 1);
+
     emit_move_insn (acc_a, operands[1]);
 
     if (s8_operand (operands[2], VOIDmode))
@@ -430,6 +535,8 @@
     rtx acc_a = gen_rtx_REG (<MODE>mode, ACC_A);
 
     avr_fix_inputs (operands, 1 << 2, regmask (<MODE>mode, ACC_A));
+    avr_fix_memx_all8_inputs (operands, 0x3 << 1);
+
     emit_move_insn (acc_a, operands[1]);
     emit_move_insn (gen_rtx_REG (QImode, 16), operands[2]);
     emit_insn (gen_<code_stdname><mode>3_insn ());

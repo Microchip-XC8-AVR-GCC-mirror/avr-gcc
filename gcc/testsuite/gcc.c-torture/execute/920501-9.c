@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+int strcmp (const char*, const *);
 long long proc1(){return 1LL;}
 long long proc2(){return 0x12345678LL;}
 long long proc3(){return 0xaabbccdd12345678LL;}

@@ -4014,7 +4014,11 @@ expand_debug_expr (tree exp)
 	  if (strlen (TREE_STRING_POINTER (exp)) + 1
 	      != (size_t) TREE_STRING_LENGTH (exp))
 	    return NULL_RTX;
-	  op0 = gen_rtx_CONST_STRING (Pmode, TREE_STRING_POINTER (exp));
+
+      addr_space_t as = TYPE_ADDR_SPACE (TREE_TYPE (TREE_TYPE (exp)));
+      machine_mode xmode = targetm.addr_space.pointer_mode (as);
+
+	  op0 = gen_rtx_CONST_STRING (xmode, TREE_STRING_POINTER (exp));
 	  op0 = gen_rtx_MEM (BLKmode, op0);
 	  set_mem_attributes (op0, exp, 0);
 	  return op0;

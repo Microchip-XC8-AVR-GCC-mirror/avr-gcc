@@ -4,6 +4,11 @@
    when expanding the expression the second time it was
    !X ? Y : Y - 1.  */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 extern void abort (void);
 extern void exit (int);
 
@@ -17,8 +22,8 @@ int z;
 
 int main (int argc, char **argv)
 {
-  char *a = "test";
-  char *b = a + 2;
+  __CONST char *a = "test";
+  __CONST char *b = a + 2;
 
   foo (z > 0 ? b - a : b - a - 1);
   exit (0);

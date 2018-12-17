@@ -23,9 +23,10 @@ foo (void)
   foo_sc (1, 2, f); /* { dg-warning "17:passing argument" } */
   foo_sc (1, 2, sc); /* { dg-warning "17:passing argument" } */
   foo_sc (uc, 2, &sc); /* { dg-warning "11:passing argument" } */
-  foo_sc (1, 2, csc); /* { dg-warning "17:passing argument" } */
+  foo_sc (1, 2, csc); /* { dg-warning "17:passing argument" "" { xfail avr_const_data_in_progmem } } */
 }
 
 typedef void (*fp)(void);
 typedef void (*nrfp)(void) __attribute__((noreturn));
 void f1 (nrfp); void f2 (fp x) { f1 (x); } extern int e; /* { dg-warning "38:passing argument" } */
+/* { dg-prune-output "pointer to non-enclosed address space" } */

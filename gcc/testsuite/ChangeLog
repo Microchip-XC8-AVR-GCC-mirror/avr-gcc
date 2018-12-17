@@ -1,3 +1,13 @@
+2018-12-17  Senthil Kumar Selvaraj  <senthilkumar.selvaraj@microchip.com>
+
+	PR rtl-optimization/88253
+	* gcc.target/avr/pr88253.c: New test.
+
+2017-02-21  Jakub Jelinek  <jakub@redhat.com>
+
+    PR tree-optimization/79649
+	* gcc.target/i386/pr79649.c: New test.
+
 2016-11-14  Georg-Johann Lay  <avr@gjlay.de>
 
 	PR target/78093

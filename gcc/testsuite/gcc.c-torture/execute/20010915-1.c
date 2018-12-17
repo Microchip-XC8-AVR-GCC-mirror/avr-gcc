@@ -1,11 +1,16 @@
 /* Bug in reorg.c, deleting the "++" in the last loop in main.
    Origin: <hp@axis.com>.  */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 extern void f (void);
-extern int x (int, char **);
+extern int x (int, __CONST char **);
 extern int r (const char *);
-extern char *s (char *, char **);
-extern char *m (char *);
+extern char *s (__CONST char *, char **);
+extern char *m (__CONST char *);
 char *u;
 char *h;
 int check = 0;
@@ -13,13 +18,13 @@ int o = 0;
 
 int main (int argc, char **argv)
 {
-  char *args[] = {"a", "b", "c", "d", "e"};
+  __CONST char *args[] = {"a", "b", "c", "d", "e"};
   if (x (5, args) != 0 || check != 2 || o != 5)
     abort ();
   exit (0);
 }
 
-int x (int argc, char **argv)
+int x (int argc, __CONST char **argv)
 {
   int opt = 0;
   char *g = 0;
@@ -49,12 +54,12 @@ int x (int argc, char **argv)
   return 0;
 }
 
-char *m (char *x) { abort (); }
-char *s (char *v, char **pp)
+char *m (__CONST char *x) { abort (); }
+char *s (__CONST char *v, char **pp)
 {
   if (strcmp (v, "a") != 0 || check++ > 1)
     abort ();
-  *pp = v+1;
+  *pp = (char*)v+1;
   return 0;
 }
 

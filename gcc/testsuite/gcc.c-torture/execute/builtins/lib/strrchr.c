@@ -2,7 +2,7 @@ extern void abort (void);
 extern int inside_main;
 
 __attribute__ ((__noinline__))
-char *
+const char *
 strrchr (const char *s, int c)
 {
   __SIZE_TYPE__ i;
@@ -18,14 +18,14 @@ strrchr (const char *s, int c)
 
   do
     if (s[i] == c)
-      return (char *) s + i;
+      return (const char *) s + i;
   while (i-- != 0);
 
   return 0;
 }
 
 __attribute__ ((__noinline__))
-char *
+const char *
 rindex (const char *s, int c)
 {
   return strrchr (s, c);

@@ -3,7 +3,11 @@
 
 char *const f(void)
 {
-        char *const line = "/dev/ptyXX";
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+	char *const line = (char*)"/dev/ptyXX";
+#else
+	char *const line = "/dev/ptyXX";
+#endif
         line[8] = 1;
         return line;
 }

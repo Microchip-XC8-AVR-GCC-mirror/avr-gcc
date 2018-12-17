@@ -1,7 +1,6 @@
 /* { dg-do run } */
 /* { dg-require-alias "" } */
 /* { dg-options "-O2" } */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

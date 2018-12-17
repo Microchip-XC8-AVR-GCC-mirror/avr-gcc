@@ -1,6 +1,11 @@
 /* On the i960 any arg bigger than 16 bytes causes all subsequent args
    to be passed on the stack.  We test this.  */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 #include <stdarg.h>
 
 typedef struct {
@@ -8,7 +13,7 @@ typedef struct {
 } big;
 
 void
-f (big x, char *s, ...)
+f (big x, __CONST char *s, ...)
 {
   va_list ap;
 

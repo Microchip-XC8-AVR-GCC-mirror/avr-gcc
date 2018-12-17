@@ -1,3 +1,19 @@
+2018-12-17  Senthil Kumar Selvaraj  <senthilkumar.selvaraj@microchip.com>
+
+	PR rtl-optimization/88253
+	* combine.c (combine_simplify_rtx): Test for side-effects before
+	substituting by zero.
+
+2016-06-09  Eric Botcazou  <ebotcazou@adacore.com>
+
+	* df-problems.c (df_note_bb_compute): Guard use of DF_INSN_INFO_GET.
+
+2017-02-21  Jakub Jelinek  <jakub@redhat.com>
+
+	PR tree-optimization/79649
+	* tree-loop-distribution.c (classify_partition): Give up on
+	non-generic address space loads/stores.
+
 2017-06-13  Georg-Johann Lay  <avr@gjlay.de>
 
 	PR target/81072

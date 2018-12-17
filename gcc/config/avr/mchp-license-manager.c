@@ -102,7 +102,6 @@ along with GCC; see the file COPYING3.  If not see
 
 /* Static Variables to modify the optimizatrion option levels */
 
-static int nullify_O2 = 0;
 static int nullify_Os = 0;
 static int nullify_O3 = 0;
 static int nullify_lto = 0;
@@ -482,44 +481,6 @@ void avr_override_options_after_change(void) {
           }
         NULLIFY(optimize_size, "Optimize for size") = 0;
       }
-    if (nullify_O2)
-      {
-        int opt1_max;
-        /* Disable -O2 optimizations */
-        if (optimize > 1)
-          {
-            NULLIFY(optimize, "Optimization level > 1") = 1;
-          }
-        NULLIFY(flag_indirect_inlining, "indirect inlining") = 0;
-        NULLIFY(flag_thread_jumps, "thread jumps") = 0;
-        NULLIFY(flag_crossjumping, "crossjumping") = 0;
-        NULLIFY(flag_optimize_sibling_calls, "optimize sibling calls") = 0;
-        NULLIFY(flag_cse_follow_jumps, "cse follow jumps") = 0;
-        NULLIFY(flag_gcse, "gcse") = 0;
-        NULLIFY(flag_expensive_optimizations, "expensive optimizations") = 0;
-        NULLIFY(flag_rerun_cse_after_loop, "cse after loop") = 0;
-        NULLIFY(flag_caller_saves, "caller saves") = 0;
-        NULLIFY(flag_peephole2, "peephole2") = 0;
-#ifdef INSN_SCHEDULING
-        NULLIFY(flag_schedule_insns, "schedule insns") = 0;
-        NULLIFY(flag_schedule_insns_after_reload, "schedule insns after reload") = 0;
-#endif
-        NULLIFY(flag_strict_aliasing, "strict aliasing") = 0;
-        NULLIFY(flag_strict_overflow, "strict overflow") = 0;
-        NULLIFY(flag_reorder_functions, "reorder functions") = 0;
-        NULLIFY(flag_tree_vrp, "tree vrp") = 0;
-        NULLIFY(flag_tree_pre, "tree pre") = 0;
-        NULLIFY(flag_tree_switch_conversion, "tree switch conversion") = 0;
-        NULLIFY(flag_ipa_cp, "ipa cp") = 0;
-        NULLIFY(flag_ipa_sra, "ipa sra") = 0;
-
-        /* Just -O1/-O0 optimizations.  */
-        opt1_max = (optimize <= 1);
-        align_loops = opt1_max;
-        align_jumps = opt1_max;
-        align_labels = opt1_max;
-        align_functions = opt1_max;
-      }
     if (nullify_O3)
       {
         if (optimize >= 3)
@@ -552,8 +513,6 @@ static void mchp_print_license_warning (void)
         invalid_license = "because the XC8 evaluation period has expired";
         break;
       case AVR_FREE_LICENSE:
-        invalid_license = "because the free XC8 compiler does not support this feature.";
-        break;
       case AVR_VALID_STANDARD_LICENSE:
         invalid_license = "because this feature requires the MPLAB XC8 PRO compiler";
         break;
@@ -579,7 +538,6 @@ void avr_override_licensed_options (void)
   extern struct cl_decoded_option *save_decoded_options;
 
 #ifndef SKIP_LICENSE_MANAGER
-  nullify_O2     = 1;
   nullify_O3     = 1;
   nullify_Os     = 1;
   nullify_lto    = 1;
@@ -598,13 +556,10 @@ void avr_override_licensed_options (void)
     mchp_avr_license_valid = avr_get_license ();
   }
 
-  if (mchp_avr_license_valid == AVR_VALID_PRO_LICENSE)
+  if ((mchp_avr_license_valid == AVR_VALID_STANDARD_LICENSE) ||
+      (mchp_avr_license_valid == AVR_VALID_PRO_LICENSE))
   {
-    nullify_lto = nullify_O2 =  nullify_O3 = nullify_Os = 0;
-  }
-  else if (mchp_avr_license_valid == AVR_VALID_STANDARD_LICENSE)
-  {
-    nullify_O2 = 0;
+    nullify_lto = nullify_O3 = nullify_Os = 0;
   }
   
   /*

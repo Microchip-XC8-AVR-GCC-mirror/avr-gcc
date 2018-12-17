@@ -3667,7 +3667,7 @@ AS_HELP_STRING([--disable-fix-cortex-a53-843419],
     # RAM so avr-gcc skips __do_copy_data for .rodata objects.
     AC_MSG_CHECKING(binutils for avrxmega3 .rodata support)
     cat > conftest.s <<EOF
-        .section .rodata,data
+        .section .rodata,rodata
         .global xxvaryy
     ;; avr-nm should print "... R xxvaryy", not "... D xxvaryy".
     xxvaryy:

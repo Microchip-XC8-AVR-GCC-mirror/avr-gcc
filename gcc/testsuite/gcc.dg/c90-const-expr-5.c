@@ -22,7 +22,7 @@ f (void)
   (void (*)(void))(void *)0;
   /* Pointers to qualified void are not valid null pointer
      constants.  */
-  fp = (const void *)0; /* { dg-error "6:ISO C forbids assignment between function pointer and 'void \\*'" } */
+  fp = (const void *)0; /* { dg-error "6:ISO C forbids assignment between function pointer and 'void \\*'" "" { xfail avr_const_data_in_progmem } } */
   fp = (void *)0;
   fp = (V *)0;
   fp = 0;
@@ -37,3 +37,4 @@ f (void)
   fp == (const void *)0; /* { dg-error "6:ISO C forbids comparison of 'void \\*' with function pointer" } */
   (const void *)0 == fp; /* { dg-error "19:ISO C forbids comparison of 'void \\*' with function pointer" } */
 }
+/* { dg-prune-output "assignment from pointer to non-enclosed address space" } */

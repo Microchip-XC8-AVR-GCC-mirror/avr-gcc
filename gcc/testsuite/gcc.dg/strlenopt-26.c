@@ -7,7 +7,7 @@ __attribute__((noinline, noclone)) size_t
 fn1 (char *p, const char *r)
 {
   size_t len1 = strlen (r);
-  char *q = strchr (p, '\0');
+  char *q = (char*)strchr (p, '\0');
   *q = '\0';
   return len1 - strlen (r); // This strlen should be optimized into len1.
 }

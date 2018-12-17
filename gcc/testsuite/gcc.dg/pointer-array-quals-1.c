@@ -42,9 +42,9 @@ void test(void)
 	pc = z0;
 	pc = z1;
 	pc = z2;
-	transpose0(pc, p); /* { dg-warning "passing argument 1 of 'transpose0' discards 'const' qualifier from pointer target type" } */
-	transpose1(pc, p); /* { dg-warning "passing argument 1 of 'transpose1' discards 'const' qualifier from pointer target type" } */
-	transpose2(pc, p); /* { dg-warning "passing argument 1 of 'transpose2' discards 'const' qualifier from pointer target type" } */
+	transpose0(pc, p); /* { dg-warning "passing argument 1 of 'transpose0' discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
+	transpose1(pc, p); /* { dg-warning "passing argument 1 of 'transpose1' discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
+	transpose2(pc, p); /* { dg-warning "passing argument 1 of 'transpose2' discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
 	transpose0(p, pc);
 	transpose1(p, pc);
 	transpose2(p, pc);
@@ -57,8 +57,8 @@ void test(void)
 	const double (*u1p)[2] = x1;
 	const double (*u2p)[2][2] = x2;
 	double (*v0p) = z0; /* { dg-warning "initialization discards 'const' qualifier from pointer target type" } */
-	double (*v1p)[2] = z1; /* { dg-warning "initialization discards 'const' qualifier from pointer target type" } */
-	double (*v2p)[2][2] = z2; /* { dg-warning "initialization discards 'const' qualifier from pointer target type" } */
+	double (*v1p)[2] = z1; /* { dg-warning "initialization discards 'const' qualifier from pointer target type" { xfail avr_const_data_in_progmem } } */
+	double (*v2p)[2][2] = z2; /* { dg-warning "initialization discards 'const' qualifier from pointer target type" { xfail avr_const_data_in_progmem } } */
 	// subtraction
 	&(x0[1]) - &(z0[0]);
 	&(x1[1]) - &(z1[0]);
@@ -90,7 +90,7 @@ void test(void)
 	v0p = (1 ? z0 : v0p); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" } */
 	v1p = (1 ? z1 : v1p); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" } */
 	v2p = (1 ? z2 : v2p); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" } */
-	v0p = (1 ? x0 : u0p); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" } */
+	v0p = (1 ? x0 : u0p); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
 	v1p = (1 ? x1 : u1p); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" } */
 	v2p = (1 ? x2 : u2p); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" } */
 	(1 ? x0 : z0)[0] = 1; /* { dg-error "assignment of read-only location" } */
@@ -99,8 +99,9 @@ void test(void)
 	v0p = (1 ? p : z0); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" } */
 	v1p = (1 ? p : z1); /* { dg-warning "pointer to array loses qualifier in conditional expression" } */
 	v2p = (1 ? p : z2); /* { dg-warning "pointer to array loses qualifier in conditional expression" } */
-	v0p = (1 ? pc : x0); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" } */
-	v1p = (1 ? pc : x1); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" } */
-	v2p = (1 ? pc : x2); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" } */
+	v0p = (1 ? pc : x0); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
+	v1p = (1 ? pc : x1); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
+	v2p = (1 ? pc : x2); /* { dg-warning "assignment discards 'const' qualifier from pointer target type" "" { xfail avr_const_data_in_progmem } } */
 }
+/* { dg-prune-output "pointer to non-enclosed address space" } */
 

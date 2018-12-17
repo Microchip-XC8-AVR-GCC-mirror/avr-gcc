@@ -1,6 +1,11 @@
 /* { dg-lto-do link } */
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 extern int **foo (void);
-extern void mumble (char*, char*, char*);
+extern void mumble (char*, __CONST char*, __CONST char*);
 
 static int *
 bar (char **sp)
@@ -38,6 +43,6 @@ baz (char *s)
 int
 main (void)
 {
- baz ("");
+	baz ((char*)"");
  return 0;
 }

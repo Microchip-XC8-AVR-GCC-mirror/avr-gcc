@@ -812,6 +812,11 @@ build_fn_info_type (tree type, unsigned counters, tree gcov_info_type)
   tree array_type;
 
   gcc_assert (counters);
+
+  int ptr_quals = TYPE_QUAL_CONST;
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    ptr_quals |= ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX);
+
   
   /* ctr_info::num */
   field = build_decl (BUILTINS_LOCATION, FIELD_DECL, NULL_TREE,
@@ -829,7 +834,7 @@ build_fn_info_type (tree type, unsigned counters, tree gcov_info_type)
   /* key */
   field = build_decl (BUILTINS_LOCATION, FIELD_DECL, NULL_TREE,
 		      build_pointer_type (build_qualified_type
-					  (gcov_info_type, TYPE_QUAL_CONST)));
+					  (gcov_info_type, ptr_quals)));
   fields = field;
   
   /* ident */
@@ -936,6 +941,9 @@ build_info_type (tree type, tree fn_info_ptr_type)
 {
   tree field, fields = NULL_TREE;
   tree merge_fn_type;
+  int ptr_quals = TYPE_QUAL_CONST;
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    ptr_quals |= ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX);
 
   /* Version ident */
   field = build_decl (BUILTINS_LOCATION, FIELD_DECL, NULL_TREE,
@@ -946,7 +954,7 @@ build_info_type (tree type, tree fn_info_ptr_type)
   /* next pointer */
   field = build_decl (BUILTINS_LOCATION, FIELD_DECL, NULL_TREE,
 		      build_pointer_type (build_qualified_type
-					  (type, TYPE_QUAL_CONST)));
+					  (type, ptr_quals)));
   DECL_CHAIN (field) = fields;
   fields = field;
 
@@ -959,7 +967,7 @@ build_info_type (tree type, tree fn_info_ptr_type)
   /* Filename */
   field = build_decl (BUILTINS_LOCATION, FIELD_DECL, NULL_TREE,
 		      build_pointer_type (build_qualified_type
-					  (char_type_node, TYPE_QUAL_CONST)));
+					  (char_type_node, ptr_quals)));
   DECL_CHAIN (field) = fields;
   fields = field;
 
@@ -984,7 +992,7 @@ build_info_type (tree type, tree fn_info_ptr_type)
   
   /* function_info pointer pointer */
   fn_info_ptr_type = build_pointer_type
-    (build_qualified_type (fn_info_ptr_type, TYPE_QUAL_CONST));
+    (build_qualified_type (fn_info_ptr_type, ptr_quals));
   field = build_decl (BUILTINS_LOCATION, FIELD_DECL, NULL_TREE,
 		      fn_info_ptr_type);
   DECL_CHAIN (field) = fields;
@@ -1029,6 +1037,11 @@ build_info (tree info_type, tree fn_ary)
   filename_string = build_string (da_file_name_len + 1, da_file_name);
   TREE_TYPE (filename_string) = build_array_type
     (char_type_node, build_index_type (size_int (da_file_name_len)));
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    {
+      TYPE_ADDR_SPACE(TREE_TYPE (filename_string)) = ADDR_SPACE_MEMX;
+    }
+
   CONSTRUCTOR_APPEND_ELT (v1, info_fields,
 			  build1 (ADDR_EXPR, TREE_TYPE (info_fields),
 				  filename_string));
@@ -1142,8 +1155,11 @@ coverage_obj_init (void)
   /* Build the info and fn_info types.  These are mutually recursive.  */
   gcov_info_type = lang_hooks.types.make_type (RECORD_TYPE);
   gcov_fn_info_type = lang_hooks.types.make_type (RECORD_TYPE);
+	int gcov_fn_info_ptr_quals = TYPE_QUAL_CONST;
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    gcov_fn_info_ptr_quals |= ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX);
   gcov_fn_info_ptr_type = build_pointer_type
-    (build_qualified_type (gcov_fn_info_type, TYPE_QUAL_CONST));
+    (build_qualified_type (gcov_fn_info_type, gcov_fn_info_ptr_quals));
   build_fn_info_type (gcov_fn_info_type, n_counters, gcov_info_type);
   build_info_type (gcov_info_type, gcov_fn_info_ptr_type);
   
@@ -1152,6 +1168,14 @@ coverage_obj_init (void)
   gcov_info_var = build_decl (BUILTINS_LOCATION,
 			      VAR_DECL, NULL_TREE, gcov_info_type);
   TREE_STATIC (gcov_info_var) = 1;
+
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    {
+      TYPE_READONLY (TREE_TYPE (gcov_info_var)) = 1;
+      TYPE_ADDR_SPACE (TREE_TYPE (gcov_info_var)) = ADDR_SPACE_MEMX;
+      TREE_READONLY (gcov_info_var) = 1;
+    }
+
   ASM_GENERATE_INTERNAL_LABEL (name_buf, "LPBX", 0);
   DECL_NAME (gcov_info_var) = get_identifier (name_buf);
 
@@ -1169,7 +1193,19 @@ coverage_obj_fn (vec<constructor_elt, va_gc> *ctor, tree fn,
 {
   tree init = build_fn_info (data, gcov_fn_info_type, gcov_info_var);
   tree var = build_var (fn, gcov_fn_info_type, -1);
-  
+
+  /* Put all coverage data in progmem.  */
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    {
+      TYPE_READONLY ( TREE_TYPE (var)) = 1;
+      TYPE_ADDR_SPACE (TREE_TYPE (var)) = ADDR_SPACE_MEMX;
+      TREE_READONLY (var) = 1;
+
+      TYPE_READONLY ( TREE_TYPE (init)) = 1;
+      TYPE_ADDR_SPACE (TREE_TYPE (init)) = ADDR_SPACE_MEMX;
+      TREE_READONLY (init) = 1;
+    }
+
   DECL_INITIAL (var) = init;
   varpool_node::finalize_decl (var);
       
@@ -1193,11 +1229,21 @@ coverage_obj_finish (vec<constructor_elt, va_gc> *ctor)
   char name_buf[32];
 
   TREE_STATIC (fn_info_ary) = 1;
+
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+    {
+      TYPE_READONLY ( TREE_TYPE (fn_info_ary)) = 1;
+      TYPE_ADDR_SPACE (TREE_TYPE (fn_info_ary)) = ADDR_SPACE_MEMX;
+
+      /* FIXME: Needed as it conflicts with LPBX0 decl's flags when
+         output named sections (progmemx.data) */
+      TREE_READONLY (fn_info_ary) = 1;
+    }
+
   ASM_GENERATE_INTERNAL_LABEL (name_buf, "LPBX", 1);
   DECL_NAME (fn_info_ary) = get_identifier (name_buf);
   DECL_INITIAL (fn_info_ary) = build_constructor (fn_info_ary_type, ctor);
   varpool_node::finalize_decl (fn_info_ary);
-  
   DECL_INITIAL (gcov_info_var)
     = build_info (TREE_TYPE (gcov_info_var), fn_info_ary);
   varpool_node::finalize_decl (gcov_info_var);

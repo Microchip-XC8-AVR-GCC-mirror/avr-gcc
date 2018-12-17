@@ -4,6 +4,11 @@
    and to make it easy for a program to parse the output to see if the right
    libcalls are being made.  */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 #include <stdio.h>
 
 float fp_add (float a, float b) { return a + b; }
@@ -45,7 +50,7 @@ unsigned int fixunsdfsi (double d) { return d; }
 int fail_count = 0;
 
 int
-fail (char *msg)
+fail (__CONST char *msg)
 {
   fail_count++;
   fprintf (stderr, "Test failed: %s\n", msg);

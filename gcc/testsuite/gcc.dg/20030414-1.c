@@ -5,7 +5,12 @@
 /* { dg-do assemble } */
 /* { dg-options "-O2 -fPIC" { target *-*-*gnu* } } */
 
-extern int f2 (char *, char *);
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+extern int f2 (char *, __CONST char *);
 extern char *ss[];
 extern char *cc;
 void

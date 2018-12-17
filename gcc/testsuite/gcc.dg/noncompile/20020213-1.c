@@ -12,7 +12,7 @@ FILE *f;
 int main ()
 {
   fputs ("foo");		/* { dg-error "too few" } */
-  fputs ("foo", "bar", "baz");	/* { dg-error "too many" } */
+  fputs ("foo", "bar", "baz");	/* { dg-error "too many" } "" { xfail avr_const_data_in_progmem }*/
   fputs (21, 43);
   bzero (buf);			/* { dg-error "too few" } */
   bzero (21);			/* { dg-error "too few" } */
@@ -23,8 +23,8 @@ int main ()
   bcmp (buf, buf + 16, 16);
   return 0;
 }
-
-/* { dg-warning "passing argument 2 of" "2nd incompatible" { target *-*-* } 15 } */
+/* { dg-prune-output "pointer to non-enclosed address space" } */
+/* { dg-warning "passing argument 2 of" "2nd incompatible" { target { ! avr_const_data_in_progmem } } 15 } */
 /* { dg-message "note: expected '\[^'\n\]*' but argument is of type '\[^'\n\]*'" "note: expected" { target *-*-* } 5 } */
 /* { dg-warning "passing argument 1 of" "1st incompatible" { target *-*-* } 16 } */
 /* { dg-warning "passing argument 2 of" "2nd incompatible" { target *-*-* } 16 } */

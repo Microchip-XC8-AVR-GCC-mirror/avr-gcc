@@ -1,7 +1,7 @@
 /* { dg-do run } */
 /* { dg-options "-O2" } */
+/* { dg-skip-if "string in memx data" { avr_const_data_in_progmem } } */
 /* { dg-require-effective-target alloca } */
-
 typedef __SIZE_TYPE__ size_t;
 extern void abort (void);
 extern void exit (int);

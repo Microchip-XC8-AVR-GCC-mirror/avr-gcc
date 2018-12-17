@@ -1,10 +1,15 @@
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 typedef unsigned T;
 typedef char Tchar;
 T mt (long, char *);
 T ms (long, char *);
 T mv (long, T, char);
 T cons (T, T);
-T decl (T * (*) (T *), char *);
+T decl (T * (*) (T *), __CONST char *);
 
 T*L92(T*),*L15(T*),*L14(T*),*L13(T*),*L12(T*),*L11(T*),*L10(T*),*L9(T*),*L8(T*),*L7(T*),*L6(T*),*L5(T*),*L4(T*),*L3(T*),*L2(T*),*L1(T*);
 

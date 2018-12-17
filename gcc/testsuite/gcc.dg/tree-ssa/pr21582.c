@@ -24,7 +24,12 @@ int i;
 int
 main()
 {
+	#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+	char xxx[4] = "xxx", yyy[4] = "yyy";
+	do_other_thing (xxx, &i, yyy);
+	#else
   do_other_thing ("xxx", &i, "yyy");
+	#endif
 }
 
 /* { dg-final { scan-tree-dump-times "Folding predicate p_.*" 0 "vrp1" } } */

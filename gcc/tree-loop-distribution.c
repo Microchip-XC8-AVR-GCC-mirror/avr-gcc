@@ -877,6 +877,9 @@ generate_memcpy_builtin (struct loop *loop, partition_t partition)
   else
     kind = BUILT_IN_MEMCPY;
 
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+		src = fold_convert (const_ptr_type_node, src);
+
   dest = force_gimple_operand_gsi (&gsi, dest, true, NULL_TREE,
 				   false, GSI_CONTINUE_LINKING);
   src = force_gimple_operand_gsi (&gsi, src, true, NULL_TREE,
@@ -1062,6 +1065,13 @@ classify_partition (loop_p loop, struct graph *rdg, partition_t partition)
       /* But exactly one store and/or load.  */
       for (j = 0; RDG_DATAREFS (rdg, i).iterate (j, &dr); ++j)
 	{
+	  tree type = TREE_TYPE (DR_REF (dr));
+
+	  /* The memset, memcpy and memmove library calls are only
+	     able to deal with generic address space.  */
+	  if (!ADDR_SPACE_GENERIC_P (TYPE_ADDR_SPACE (type)))
+	    return;
+
 	  if (DR_IS_READ (dr))
 	    {
 	      if (single_load != NULL)

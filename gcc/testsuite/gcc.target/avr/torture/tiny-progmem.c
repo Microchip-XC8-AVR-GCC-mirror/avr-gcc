@@ -8,6 +8,12 @@
 #define PM /* Empty */
 #endif
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 #define PSTR(s) (__extension__({ static const char __c[] PM = (s); &__c[0];}))
 
 #define NI __attribute__((noinline,noclone))
@@ -61,7 +67,7 @@ void test_4 (void)
 
 void test_5 (void)
 {
-  __builtin_memcpy (&ram, (void*) &data, 4);
+  __builtin_memcpy (&ram, (__CONST void*) &data, 4);
   if (ram[0] - ram[1] != 1234 - 5678)
     __builtin_abort();
 }

@@ -3,7 +3,12 @@
 /* { dg-do compile } */
 /* { dg-options "-Wuninitialized" } */
 
-extern void error (char *);
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+extern void error (__CONST char *);
 
 int
 parse_charconst (const char *start, const char *end)

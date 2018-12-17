@@ -4,6 +4,12 @@
    to leave the register containing 'C' marked live, though all references
    to the variable had been removed.  */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 struct operand_data
 {
   struct operand_data *next;
@@ -38,7 +44,7 @@ extern void message_with_line (int, const char *, ...)
      __attribute__ ((__format__ (__printf__, 2, 3)));
 extern int have_error;
 
-extern char *strchr (__const char *__s, int __c) __attribute__ ((__pure__));
+extern __CONST char *strchr (__const char *__s, int __c) __attribute__ ((__pure__));
 
 void
 validate_insn_alternatives (d)

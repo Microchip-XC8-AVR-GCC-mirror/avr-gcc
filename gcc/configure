@@ -24319,7 +24319,7 @@ fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking binutils for avrxmega3 .rodata support" >&5
 $as_echo_n "checking binutils for avrxmega3 .rodata support... " >&6; }
     cat > conftest.s <<EOF
-        .section .rodata,data
+        .section .rodata,rodata
         .global xxvaryy
     ;; avr-nm should print "... R xxvaryy", not "... D xxvaryy".
     xxvaryy:

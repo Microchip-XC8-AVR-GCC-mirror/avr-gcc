@@ -1,4 +1,9 @@
 /* { dg-require-effective-target label_values } */
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST
+#else
+#define __CONST const
+#endif
 int code[]={0,0,0,0,1};
 
 void foo(int x) {
@@ -7,7 +12,7 @@ void foo(int x) {
 }
 
 void bar(int *pc) {
-  static const void *l[] = {&&lab0, &&end};
+  static __CONST void *l[] = {&&lab0, &&end};
 
   foo(0);
   goto *l[*pc];

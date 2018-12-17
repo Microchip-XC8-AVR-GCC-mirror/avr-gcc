@@ -2,7 +2,13 @@
 /* { dg-require-effective-target tls_runtime } */
 /* { dg-add-options tls } */
 
-extern int printf (char *,...);
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
+extern int printf (__CONST char *,...);
 extern void abort() ;
 
 static __thread int fstat ;

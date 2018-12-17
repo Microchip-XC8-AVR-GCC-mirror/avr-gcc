@@ -9,15 +9,20 @@ typedef struct _XedwListReturnStruct {
   int      xedwList_index;
   struct _XedwListReturnStruct *next;
 } XedwListReturnStruct;
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+typedef const char * CString;
+#else
+typedef char * CString;
+#endif
 static XedwListReturnStruct *return_list;
 static String   srcdir, dstdir;
 char *strcpy();
   extern void setCursor(Cursor);
-  extern void query_dialog(String, Boolean);
+  extern void query_dialog(CString, Boolean);
   extern Boolean directoryManagerNewDirectory(String);
 trashQueryResult(Widget w, Boolean delete, caddr_t call_data)
 {
-  int  execute(String, String, String, Boolean);
+  int  execute(String, CString, String, Boolean);
   extern void destroy_button_dialog(void);
   extern void changestate(Boolean);
 
@@ -59,7 +64,7 @@ copyQueryResult(Widget w, Boolean copy, caddr_t call_data)
   extern void changestate(Boolean);
   extern Cursor busy, left_ptr;
   extern void freeReturnStruct(void);
-  int execute(String, String, String, Boolean);
+  int execute(String, CString, String, Boolean);
   extern String cwd;
   String copystring;
   int status;

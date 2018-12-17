@@ -2,7 +2,7 @@ extern void abort (void);
 extern int inside_main;
 
 __attribute__ ((__noinline__))
-char *
+const char *
 strstr(const char *s1, const char *s2)
 {
   const char *p, *q;
@@ -23,7 +23,7 @@ strstr(const char *s1, const char *s2)
 	  p++, q++;
 	}
       if (*q == 0)
-	return (char *)s1;
+	return (const char *)s1;
     }
   return 0;
 }

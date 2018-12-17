@@ -1,6 +1,11 @@
 /* { dg-do run } */
 /* { dg-options "-Os --param large-stack-frame=30 -Wno-pointer-to-int-cast" } */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 extern void abort (void);
 
 void __attribute__((noinline))
@@ -9,7 +14,7 @@ bar (char *a)
 }
 
 void __attribute__((noinline))
-foo (char *a, int b)
+foo (__CONST char *a, int b)
 {
 }
 

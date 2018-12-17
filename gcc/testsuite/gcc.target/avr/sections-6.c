@@ -1,8 +1,6 @@
 /* Verify that switch jump table sections generated with valid attributes.  */
 /* { dg-do run } */
-/* { dg-options "-mext=cci -ffunction-sections -save-temps" } */
-
-#include<xc.h>
+/* { dg-options "-ffunction-sections -save-temps" } */
 
 int i1 = 2, i2 = 21, i3 = 32;
 

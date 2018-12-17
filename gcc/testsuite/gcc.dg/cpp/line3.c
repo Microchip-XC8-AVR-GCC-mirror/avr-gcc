@@ -1,5 +1,6 @@
 /* { dg-do compile } */
-/* { dg-options "-Wwrite-strings" } */ 
+/* { dg-options "-Wwrite-strings" } */
+/* { dg-skip-if "const qualifier checks not possible in const-data-in-progmem mode" { avr_const_data_in_progmem } }
 /* The purpose of this test is to ensure that line numbers in diagnostics
    are accurate after macros whose arguments contain newlines and are
    substituted multiple times.  The semicolons are on separate lines because

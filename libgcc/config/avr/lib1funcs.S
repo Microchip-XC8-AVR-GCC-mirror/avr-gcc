@@ -229,7 +229,7 @@ __mulqi3_loop:
 	breq	__mulqi3_exit	; while multiplicand != 0
 	lsr	r_arg1		;
 	brne	__mulqi3_loop	; exit if multiplier = 0
-__mulqi3_exit:	
+__mulqi3_exit:
 	mov	r_arg1,r_res	; result to return register
 	ret
 ENDF __mulqi3
@@ -237,7 +237,7 @@ ENDF __mulqi3
 #undef r_arg2
 #undef r_arg1
 #undef r_res
-	
+
 #endif 	/* defined (L_mulqi3) */
 
 
@@ -474,7 +474,7 @@ DEFUN __mulsi3_helper
     wmov    C2, CC2
 #if defined (__AVR_TINY__)
     pop     B1      ; restore callee saved regs
-    pop     B0 
+    pop     B0
 #endif  /* defined (__AVR_TINY__) */
 
     ret
@@ -740,13 +740,13 @@ ENDF __mulpsi3
 
 DEFUN __mulpsi3
 #if defined (__AVR_TINY__)
-    in r26,__SP_L__ 
+    in r26,__SP_L__
     in r27,__SP_H__
     subi r26, lo8(-3)   ; Add 3 to point past return address
     sbci r27, hi8(-3)
     push B0    ; save callee saved regs
     push B1
-    ld B0,X+   ; load from caller stack 
+    ld B0,X+   ; load from caller stack
     ld B1,X+
     ld B2,X+
 #endif /* defined (__AVR_TINY__) */
@@ -1100,15 +1100,15 @@ ENDF __muldi3
 
 #if defined (__AVR_HAVE_MUL__)
 #define A0 r22
-#define A1 r23 
+#define A1 r23
 #define A2 r24
 #define A3 r25
- 
+
 #define B0 r18
 #define B1 r19
 #define B2 r20
 #define B3 r21
- 
+
 #define C0  18
 #define C1  C0+1
 #define C2  20
@@ -1330,7 +1330,7 @@ ENDF __umulsidi3
 #endif /* L_mulsidi3 && !HAVE_MUL */
 #endif /* if not __AVR_TINY__ */
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	
+
 
 .section .text.libgcc.div, code
 
@@ -1386,8 +1386,8 @@ ENDF __divmodqi4
 #undef r_arg1
 #undef r_arg2
 #undef r_cnt
-	
-		
+
+
 /*******************************************************
        Division 16 / 16 => (result + remainder)
 *******************************************************/
@@ -1401,7 +1401,7 @@ ENDF __divmodqi4
 /* return: quotient */
 #define	r_arg2L	r22	/* divisor Low */
 #define	r_arg2H	r23	/* divisor High */
-	
+
 #define	r_cnt	r21	/* loop count */
 
 #if defined (L_udivmodhi4)
@@ -1474,8 +1474,8 @@ ENDF __divmodhi4
 
 #undef r_arg2H
 #undef r_arg2L
-             	
-#undef r_cnt   	
+
+#undef r_cnt
 
 /*******************************************************
        Division 24 / 24 => (result + remainder)
@@ -1631,7 +1631,7 @@ ENDF __divmodpsi4
 #define	r_arg2HL r20
 #define	r_arg2H  r19
 #define	r_arg2L  r18	/* divisor Low */
-	
+
 #define	r_cnt __zero_reg__  /* loop count (0 after the loop!) */
 
 #if defined (L_udivmodsi4)
@@ -2334,7 +2334,7 @@ DEFUN __tablejump2__
     wsubi 30, -(__AVR_TINY_PM_BASE_ADDRESS__) ; Add PM offset to Z
     ld __tmp_reg__, Z+
     ld r31, Z   ; Use ld instead of lpm to load Z
-    mov r30, __tmp_reg__    
+    mov r30, __tmp_reg__
     ijmp
 #else
     lpm
@@ -2381,6 +2381,7 @@ ENDF __tablejump2__
 
 .section .init4, code
 .global __do_copy_data
+.global __do_clear_bss
 __do_copy_data:
 
 #if defined(__AVR_TINY__)
@@ -2400,6 +2401,7 @@ __do_copy_data:
     ldi r20, hi8(_dinit_end)
 #endif
 
+    rjmp .L__dinit_loop_start
 .L__dinit_loop:
  // Load VMA
     read_flash_byte 27, dinit_ptr_reg
@@ -2615,13 +2617,25 @@ ENDF __load_4
 #if (defined (L_xload_1)            \
      || defined (L_xload_2)         \
      || defined (L_xload_3)         \
-     || defined (L_xload_4))
+     || defined (L_xload_4)         \
+     || defined (L_xload_8)) 
 
 ;; Destination
+#if defined (L_xload_8)
+#define D0  18
+#define D1  D0+1
+#define D2  D0+2
+#define D3  D0+3
+#define D4  D0+4
+#define D5  D0+5
+#define D6  D0+6
+#define D7  D0+7
+#else
 #define D0  22
 #define D1  D0+1
 #define D2  D0+2
 #define D3  D0+3
+#endif
 
 ;; Register containing bits 16+ of the address
 
@@ -2731,7 +2745,35 @@ DEFUN __xload_4
 ENDF __xload_4
 #endif /* L_xload_4 */
 
-#endif /* L_xload_{1|2|3|4} */
+#if defined (L_xload_8)
+DEFUN __xload_8
+    sbrc    HHI8, 7
+    rjmp    1f
+#if defined (__AVR_HAVE_ELPM__)
+    out     __RAMPZ__, HHI8
+	#endif /* __AVR_HAVE_ELPM__ */
+    .xload  D0, 8
+    .xload  D1, 8
+    .xload  D2, 8
+    .xload  D3, 8
+    .xload  D4, 8
+    .xload  D5, 8
+    .xload  D6, 8
+    .xload  D7, 8
+    ret
+1:  ld      D0, Z+
+    ld      D1, Z+
+    ld      D2, Z+
+    ld      D3, Z+
+    ld      D4, Z+
+    ld      D5, Z+
+    ld      D6, Z+
+    ld      D7, Z+
+    ret
+ENDF __xload_8
+#endif /* L_xload_8 */
+
+#endif /* L_xload_{1|2|3|4|8} */
 #endif /* if !defined (__AVR_TINY__) */
 
 #if !defined (__AVR_TINY__)
@@ -2806,7 +2848,7 @@ ENDF __movmemx_hi
 #undef LOOP
 
 #endif /* L_movmemx */
-#endif /* !defined (__AVR_TINY__) */ 
+#endif /* !defined (__AVR_TINY__) */
 
 
 .section .text.libgcc.builtins, code

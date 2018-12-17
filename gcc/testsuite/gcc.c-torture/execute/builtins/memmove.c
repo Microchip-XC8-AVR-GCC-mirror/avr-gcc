@@ -15,7 +15,7 @@ char p[32] = "";
 
 static const struct foo
 {
-  char *s;
+  const char *s;
   double d;
   long l;
 } foo[] =
@@ -30,7 +30,7 @@ static const struct foo
 
 static const struct bar
 {
-  char *s;
+  const char *s;
   const struct foo f[3];
 } bar[] =
 {

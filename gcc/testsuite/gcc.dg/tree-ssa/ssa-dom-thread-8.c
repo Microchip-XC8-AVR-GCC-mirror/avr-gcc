@@ -2,15 +2,21 @@
 /* { dg-options "-O2" } */
 /* { dg-do run } */
 
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
+
 struct A { int a1; };
 struct B { char *b1; int b2; int b3; };
-struct C { char *c1; int c2; struct B *c3; };
-extern struct A *f1 (char *s);
+struct C { __CONST char *c1; int c2; struct B *c3; };
+extern struct A *f1 (__CONST char *s);
 static struct A *f2 (struct C *x);
 __attribute__ ((noinline, noclone)) int f3 (struct A *x, struct A *z) { asm volatile ("" : : "g" (x), "g" (z) : "memory"); return 0; }
 __attribute__ ((noinline, noclone)) void f4 (struct A *x, char *y, struct A *z) { asm volatile ("" : : "g" (x), "g" (z), "g" (y) : "memory"); }
 __attribute__ ((noinline, noclone)) struct B *f5 (void) { static char b[32]; static struct B f3 = { b, 0, 32 }; return &f3; }
-__attribute__ ((noinline, noclone)) int f6 (struct B *p, char *w, int z) { asm volatile ("" : : "g" (p), "g" (w), "g" (z) : "memory"); return 0; }
+__attribute__ ((noinline, noclone)) int f6 (struct B *p, __CONST char *w, int z) { asm volatile ("" : : "g" (p), "g" (w), "g" (z) : "memory"); return 0; }
 __attribute__ ((noinline, noclone)) void f7 (struct B *p) { asm volatile ("" : : "g" (p) : "memory"); }
 __attribute__ ((noinline, noclone)) void f8 (struct B *p) { asm volatile ("" : : "g" (p) : "memory"); }
 __attribute__ ((noinline, noclone)) void f9 (struct A *x) { asm volatile ("" : : "g" (x) : "memory"); }
@@ -20,11 +26,11 @@ __attribute__ ((noinline, noclone)) struct A *f12 (int b) { static struct A j; a
 __attribute__ ((noinline, noclone)) struct A *f13 (int i) { static struct A j; asm volatile ("" : : "g" (i) : "memory"); return &j; }
 __attribute__ ((noinline, noclone)) struct A *f14 (double d) { static struct A j; asm volatile ("" : : "g" (&d) : "memory"); return &j; }
 __attribute__ ((noinline, noclone)) struct A *f15 (char *s) { static struct A j; asm volatile ("" : : "g" (s) : "memory"); return &j; }
-char *t = "0123456789abcdef";
-char *u = "0123456789.+-e";
+__CONST char *t = "0123456789abcdef";
+__CONST char *u = "0123456789.+-e";
 
 __attribute__ ((noinline, noclone)) struct A *
-f1 (char *s)
+f1 (__CONST char *s)
 {
   struct C f;
   struct A *o;

@@ -1,5 +1,6 @@
 /* { dg-do compile } */
-/* { dg-options "-fmerge-all-constants" } */
+/* { dg-options "-mno-const-data-in-progmem -fmerge-all-constants" } */
+/* { dg-skip-if "skip if global option is to enable const data in progmem" { *-*-* } { "-mconst-data-in-progmem" } { "" } } */
 
 char *ca = "123";
 

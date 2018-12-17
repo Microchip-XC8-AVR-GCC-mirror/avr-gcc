@@ -2,9 +2,14 @@
 /* { dg-options "-O2 -fdump-tree-strlen" } */
 
 #include "strlenopt.h"
+#ifdef __AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__
+#define __CONST const
+#else
+#define __CONST
+#endif
 
 __attribute__((noinline, noclone)) char *
-foo (char *x)
+foo (__CONST char *x)
 {
 #ifdef PR50262_FIXED
   /* Once PTA is fixed, we'll need just one strlen here,
@@ -29,7 +34,7 @@ foo (char *x)
   strcat (q, "/");
   /* The strchr can be optimized away, as we know the current
      string length as well as end pointer.  */
-  r = strchr (q, '\0');
+  r = (char*)strchr (q, '\0');
   /* This store can go, as it is overwriting '\0' with the same
      character.  */
   *r = '\0';
@@ -39,7 +44,7 @@ foo (char *x)
 }
 
 __attribute__((noinline, noclone)) char *
-bar (char *p)
+bar (__CONST char *p)
 {
   char buf[26];
   char *r;
@@ -48,7 +53,7 @@ bar (char *p)
   *buf = '\0';
   strcat (buf, p);
   strcat (buf, "/");
-  r = strchr (buf, '\0');
+  r = (char*)strchr (buf, '\0');
   *r = '\0';
   strcat (buf, "abcde");
   return strdup (buf);
@@ -57,8 +62,8 @@ bar (char *p)
 int
 main ()
 {
-  char *volatile p = "string1";
-  char *volatile r = "string2";
+  __CONST char *volatile p = "string1";
+  __CONST char *volatile r = "string2";
   char *q = foo (p);
   if (q != NULL)
     {

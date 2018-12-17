@@ -6,8 +6,8 @@
    Written by Jakub Jelinek, 11/7/2000.  */
 
 extern void abort (void);
-extern char *strchr (const char *, int);
-extern char *index (const char *, int);
+extern const char *strchr (const char *, int);
+extern const char *index (const char *, int);
 
 void
 main_test (void)
