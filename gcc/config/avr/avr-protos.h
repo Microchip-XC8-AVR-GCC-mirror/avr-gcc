@@ -31,6 +31,7 @@ extern int avr_hard_regno_rename_ok (unsigned int, unsigned int);
 extern rtx avr_return_addr_rtx (int count, rtx tem);
 extern void avr_register_target_pragmas (void);
 extern void avr_handle_config_pragma (struct cpp_reader *pfile);
+extern void avr_handle_nocodecov_pragma(struct cpp_reader *pfile);
 extern void avr_init_expanders (void);
 
 #ifdef TREE_CODE
@@ -193,3 +194,11 @@ extern const char* avr_text_section_asm_op();
 extern const char* avr_data_section_asm_op();
 extern const char* avr_bss_section_asm_op();
 extern const char* avr_readonly_data_section_asm_op();
+
+extern void avr_set_default_type_attributes (tree type);
+
+/* Code Coverage Function Prototypes */
+extern void avr_set_cc_bit(unsigned bitno);
+extern int  avr_licensed_xccov_p (void);
+extern void avr_emit_cc_section (const char *name);
+

@@ -34,6 +34,29 @@ mconst-data-in-progmem
 Target Report Var(avr_const_data_in_progmem) UInteger Init(0)
 Allocate read only (constant) data in program memory sections. Disabled by default.
 
+mcodecov=
+Target Report JoinedOrMissing RejectNegative ToLower Var(mchp_codecov) Init()
+Enable code coverage instrumentation
+
+mcodecov
+Target RejectNegative Alias(mcodecov=,)
+
+mcodecov-sb
+Target RejectNegative Alias(mcodecov=,sb) Undocumented
+Use the SB algorithm to determine the code coverage instrumentation points
+
+mpa
+Target Mask(AVR_PROCEDURAL_ABSTRACTION) Undocumented
+Enable procedural abstraction optimization.
+
+mno-pa-on-file=
+Target RejectNegative Joined MissingArgError(missing object or archive filename to be ignored for PA) Undocumented
+Ignore procedural abstraction optimization on specified object or archive file
+
+mno-pa-on-function=
+Target RejectNegative Joined MissingArgError(missing function name to be ignored for PA) Undocumented
+Ignore procedural abstraction optimization on specified function
+
 mnon-bit-addressable-registers-mask=
 Target Report Joined Var(avr_deferred_options) Defer
 Set the 32 bit mask for non bit addressable registers.

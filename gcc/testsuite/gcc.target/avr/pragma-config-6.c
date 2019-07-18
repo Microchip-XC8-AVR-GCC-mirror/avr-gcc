@@ -20,9 +20,12 @@
 #pragma config JTAGEN=CLEAR       //   6:1
 #pragma config OCDEN=SET          //   7:0
 
-// Fuse EXTENDED default: 0xFF, after config: 0b111111101 (0xFD)
-// unused bits 76543
-#pragma config BODLEVEL=BODLEVEL_2V7  // 2-0:101
+// Fuse EXTENDED default: 0xFF
+
+// LOCKBITS: 1 byte, default 0xff, after config: 0b11111110 (0xFE)
+
+#pragma config LB = LB_PROG_DISABLED // 1-0:10
+
 #endif
 
 int main ()
@@ -33,5 +36,7 @@ int main ()
 /* { dg-final { scan-assembler ".section\t.fuse, data" } } */
 /* { dg-final { scan-assembler "__config_FUSES_REG_00:\[\n\r\]+\t.byte\t0x43" } } */
 /* { dg-final { scan-assembler "__config_FUSES_REG_01:\[\n\r\]+\t.byte\t0x52" } } */
-/* { dg-final { scan-assembler "__config_FUSES_REG_02:\[\n\r\]+\t.byte\t0xFD" } } */
+/* { dg-final { scan-assembler "__config_FUSES_REG_02:\[\n\r\]+\t.byte\t0xFF" } } */
+/* { dg-final { scan-assembler ".section\t.lock, data" } } */
+/* { dg-final { scan-assembler "__config_LOCKBITS_REG_00:\[\n\r]+\t.byte\t0xFE" } } */
 

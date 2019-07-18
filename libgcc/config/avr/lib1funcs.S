@@ -152,6 +152,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 .macro DEFUN name
 .global \name
 .func \name
+.type \name, @function
 \name:
 .endm
 

@@ -92,6 +92,8 @@ along with GCC; see the file COPYING3.  If not see
 #if !defined(SKIP_LICENSE_MANAGER)
 #include "xclm_public.h"
 #include "mchp_sha.h"
+#else
+#define MCHP_XCLM_NO_CCOV_LICENSE 0x8
 #endif  /* SKIP_LICENSE_MANAGER */
 
 
@@ -143,14 +145,24 @@ static const char *invalid_license = "due to an invalid XC8 license";
 #endif /* __MINGW32__*/
 
 
+/* TBD = "to be defined" meaning that the license status is unresolved yet */
+#define MCHP_LICENSE_TBD -1
+
 #ifdef SKIP_LICENSE_MANAGER
 #if defined(MCHP_XCLM_VALID_PRO_LICENSE)
-HOST_WIDE_INT mchp_avr_license_valid = MCHP_XCLM_VALID_PRO_LICENSE;
+  HOST_WIDE_INT mchp_avr_license_valid = MCHP_XCLM_VALID_PRO_LICENSE;
 #else
-HOST_WIDE_INT mchp_avr_license_valid = 0x2;
+  HOST_WIDE_INT mchp_avr_license_valid = 0x2;
 #endif /* MCHP_XCLM_VALID_PRO_LICENSE */
+
+#if defined(MCHP_XCLM_VALID_CCOV_LICENSE)
+  HOST_WIDE_INT mchp_xccov_license_valid = MCHP_XCLM_VALID_CCOV_LICENSE;
 #else
-HOST_WIDE_INT mchp_avr_license_valid = -1;
+  HOST_WIDE_INT mchp_xccov_license_valid = 0x9;
+#endif /* MCHP_XCLM_VALID_CCOV_LICENSE */
+#else
+HOST_WIDE_INT mchp_avr_license_valid = MCHP_LICENSE_TBD;
+HOST_WIDE_INT mchp_xccov_license_valid = MCHP_LICENSE_TBD;
 #endif /* SKIP_LICENSE_MANAGER*/
 
 
@@ -301,8 +313,20 @@ get_license_manager_path (void)
 
 
 static int
-avr_get_license ()
+avr_get_license (bool xccov)
 {
+  /* If license type already determined for the corresponding product, 
+     just return it */
+  HOST_WIDE_INT license_type = xccov ? mchp_xccov_license_valid
+                           : mchp_avr_license_valid ;
+  if (license_type != MCHP_LICENSE_TBD)
+  {
+    return license_type;
+  }
+
+  /* assume free/no license for now */
+  license_type = xccov ? MCHP_XCLM_NO_CCOV_LICENSE : MCHP_XCLM_FREE_LICENSE;
+
   /*
    *  On systems where we have a licence manager, call it
    */
@@ -334,7 +358,8 @@ avr_get_license ()
     char kopt[] = "-checkout";
 #endif /* XCLM_FULL_CHECKOUT */
     char productc[] = "swxc8";
-    char version[9] = "";
+    char xccov_product[] = "swxc-cov";
+    char version[9] = "1.0"; /* 1.0 works for xccov; for xc8, the version is determined below */
     char date[] = __DATE__;
 
 #if XCLM_FULL_CHECKOUT
@@ -353,7 +378,7 @@ avr_get_license ()
     int found_xclm = 0, xclm_tampered = 1;
 
     /* Get the version number string from the entire version string */
-    if ((version_string != NULL) && *version_string)
+    if (!xccov && (version_string != NULL) && *version_string)
       {
         char *Microchip;
         gcc_assert(strlen(version_string) < 80);
@@ -382,7 +407,7 @@ avr_get_license ()
 
     /* Arguments to pass to xclm */
     args[1] = kopt;
-    args[2] = productc;
+    args[2] = xccov ? xccov_product : productc;
     args[3] = version;
     
 #if XCLM_FULL_CHECKOUT
@@ -399,14 +424,14 @@ avr_get_license ()
     if (exec == NULL)
       {
          /*Set free edition if the license manager isn't available.*/
-        mchp_avr_license_valid=AVR_FREE_LICENSE;
+        license_type = AVR_FREE_LICENSE;
         warning (0, "Could not retrieve compiler license");
         inform (input_location, "Please reinstall the compiler");
       }
     else if (-1 == stat (exec, &filestat))
       {
          /*Set free edition if the license manager execution fails. */
-        mchp_avr_license_valid=AVR_FREE_LICENSE;
+        license_type = AVR_FREE_LICENSE;
         warning (0, "Could not retrieve compiler license");
         inform (input_location, "Please reinstall the compiler");
       }
@@ -426,7 +451,9 @@ avr_get_license ()
 #define MCHP_XCLM_SHA256_DIGEST_QUOTED xstr(MCHP_XCLM_SHA256_DIGEST)
 
     /* Verify SHA sum and call xclm to determine the license */
-    if (found_xclm && mchp_avr_license_valid==-1 && !TARGET_SKIP_LICENSE_CHECK)
+    if (found_xclm &&
+        (mchp_avr_license_valid == -1 || mchp_xccov_license_valid == -1) &&
+        !TARGET_SKIP_LICENSE_CHECK)
       {
         /* Verify that xclm executable is untampered */
         xclm_tampered = mchp_sha256_validate(exec, (const unsigned char*)MCHP_XCLM_SHA256_DIGEST_QUOTED);
@@ -435,7 +462,7 @@ avr_get_license ()
             /* Set free edition if the license manager SHA digest does not
                match. The free edition disables optimization options without an
                eval period. */
-            mchp_avr_license_valid=AVR_FREE_LICENSE;
+            license_type = AVR_FREE_LICENSE;
             warning (0, "Detected corrupt executable file");
             inform (input_location, "Please reinstall the compiler");
           }
@@ -449,13 +476,13 @@ avr_get_license ()
                 /* Set free edition if the license manager isn't available.
                    The free edition disables optimization options without an
                    eval period. */
-                mchp_avr_license_valid=AVR_FREE_LICENSE;
+                license_type = AVR_FREE_LICENSE;
                 warning (0, "Could not retrieve compiler license (%s)", failure);
                 inform (input_location, "Please reinstall the compiler");
               }
             else if (WIFEXITED(status))
               {
-                mchp_avr_license_valid = WEXITSTATUS(status);
+                license_type = WEXITSTATUS(status);
               }
           }
       }
@@ -466,9 +493,24 @@ avr_get_license ()
 
 #endif /* SKIP_LICENSE_MANAGER */
 
-  return mchp_avr_license_valid;
+  return license_type ;
 }
 
+
+/* xc-coverage.c uses this to check for a valid codecov license */
+int
+avr_licensed_xccov_p ()
+{
+#ifdef SKIP_LICENSE_MANAGER
+#if defined(MCHP_XCLM_VALID_CCOV_LICENSE)
+  return mchp_xccov_license_valid == MCHP_XCLM_VALID_CCOV_LICENSE;
+#else
+  return mchp_xccov_license_valid == 0x9;
+#endif
+#else
+  return mchp_xccov_license_valid == MCHP_XCLM_VALID_CCOV_LICENSE;
+#endif
+}
 
 void avr_override_options_after_change(void) {
     if (nullify_Os)
@@ -550,10 +592,12 @@ void avr_override_licensed_options (void)
   if (TARGET_SKIP_LICENSE_CHECK)
   {
     mchp_avr_license_valid = AVR_FREE_LICENSE;
+    mchp_xccov_license_valid = MCHP_XCLM_NO_CCOV_LICENSE;
   }
   else 
   {
-    mchp_avr_license_valid = avr_get_license ();
+    mchp_avr_license_valid   = avr_get_license (0);
+    mchp_xccov_license_valid = avr_get_license (1);
   }
 
   if ((mchp_avr_license_valid == AVR_VALID_STANDARD_LICENSE) ||

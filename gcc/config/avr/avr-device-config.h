@@ -55,6 +55,7 @@ class ConfigSpace
 {
  public:
 	std::string  sname;
+	std::string  AsmSectionName;
 	unsigned int address;
 	unsigned int width; // size in bytes; endaddress - 1
 	std::vector<class ConfigReg> registers;
@@ -68,7 +69,6 @@ class AvrDeviceConfig
 {
  public:
 	std::string ConfigFile;
-	bool AreConfigsLoaded;
 	bool AreConfigsChanged;
 	std::vector<class ConfigSpace> Spaces;
 	AvrDeviceConfig();

@@ -170,7 +170,6 @@ ConfigSpec::Print(std::ostream &Stream)
 
 AvrDeviceConfig::AvrDeviceConfig()
 {
-  AreConfigsLoaded = false;
   AreConfigsChanged = false;
 }
 
@@ -198,19 +197,40 @@ bool AvrDeviceConfig::LoadConfigurations(std::string File)
 
   if (!status)
     {
+      fprintf(stderr, "Warning: FUSES configurations are not loaded (%s)\n",
+              ErrorMsg);
+
       //cout << "Error: " << ErrorMsg << endl;
-      return false;
+      //return false;
+    }
+  else
+    {
+      FusesSpace.AsmSectionName = std::string(".fuse");
+      Spaces.push_back(FusesSpace);
     }
 
-  Spaces.push_back(FusesSpace);
-  AreConfigsLoaded = true;
+  ConfigSpace LockbitsSpace;
+  status = xmlParser.GetSectorConfig("LockbitsSpace", "LOCKBITS", LockbitsSpace, ErrorMsg);
+  if (!status)
+    {
+	  fprintf(stderr, "Warning: LOCKBITS configurations are not loaded (%s)\n",
+              ErrorMsg);
+
+	  //cout << "Error: " << ErrorMsg << endl;
+	  //return false;
+    }
+  else
+    {
+	  LockbitsSpace.AsmSectionName = std::string(".lock");
+	  Spaces.push_back(LockbitsSpace);
+    }
+
   return true;
 }
 
 bool AvrDeviceConfig::SetConfig(std::string config_name, std::string value,
                                 char* Error)
 {
-  assert (AreConfigsLoaded != false);
   bool isConfigFound = false;
 
   for (SpaceIterator itS = Spaces.begin();

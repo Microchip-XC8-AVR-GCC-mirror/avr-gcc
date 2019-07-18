@@ -281,6 +281,7 @@ avr_register_target_pragmas (void)
 
   // Register actual target pragmas
   c_register_pragma(0, "config", avr_handle_config_pragma);
+  c_register_pragma(0, "nocodecov", avr_handle_nocodecov_pragma);
 }
 
 
@@ -469,7 +470,7 @@ avr_cpu_cpp_builtins (struct cpp_reader *pfile)
   cpp_define_formatted (pfile, "__UINT24_MAX__=16777215%s",
                         INT_TYPE_SIZE == 8 ? "ULL" : "UL");
 
-  cpp_define_formatted (pfile, "XC8_MODE=%d", mchp_avr_license_valid);
+  cpp_define_formatted (pfile, "_XC8_MODE_=%d", mchp_avr_license_valid);
 
 }
 
@@ -511,7 +512,7 @@ avr_handle_config_pragma (struct cpp_reader *pfile)
     }
 
    /* if configurations are not loaded, warn and skip pragma config.  */
-	if (!DeviceConfigurations.AreConfigsLoaded)
+	if (DeviceConfigurations.Spaces.empty())
     {
       if (!shown_no_config_warning)
         {
@@ -611,5 +612,24 @@ avr_handle_config_pragma (struct cpp_reader *pfile)
      clear the rest of the data on the line. */
   if (tok != CPP_EOF)
     CLEAR_REST_OF_INPUT_LINE();
+}
+
+
+extern int avr_pragma_nocodecov ;
+
+/* handler function for the 'nocodecov' pragma (sets avr_pragma_nocodecov) */
+/* syntax: #pragma nocodecov  */
+void
+avr_handle_nocodecov_pragma (struct cpp_reader *pfile ATTRIBUTE_UNUSED)
+{
+  tree tok_value;
+
+  if (pragma_lex (&tok_value) != CPP_EOF)
+    {
+      warning (OPT_Wpragmas, "junk at end of %<#pragma nocodecov%>, ignored");
+      CLEAR_REST_OF_INPUT_LINE();
+    }
+
+  avr_pragma_nocodecov = 1;
 }
 

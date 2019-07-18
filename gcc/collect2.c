@@ -840,6 +840,15 @@ main (int argc, char **argv)
       "ld.gold",
       "ld.bfd"
     };
+  static const char *const avr_pa_suffix = "avr-pa";
+  bool avr_pa_enabled = false;
+  int8_t avr_pa_ignored_objects_count = 0;
+  int8_t avr_pa_ignored_functions_count = 0;
+  bool avr_pa_shortcall = false;
+  const char* avr_pa_file_name = NULL;
+  const char * avr_ignore_file_option = "-mno-pa-on-file=";
+  const char * avr_ignore_function_option = "-mno-pa-on-function=";
+  const char * avr_pa_shortcall_option = "-mpa-short-call";
   static const char *const real_ld_suffix = "real-ld";
   static const char *const collect_ld_suffix = "collect-ld";
   static const char *const nm_suffix	= "nm";
@@ -965,10 +974,62 @@ main (int argc, char **argv)
   if (atexit (collect_atexit) != 0)
     fatal_error (input_location, "atexit failed");
 
+  /* Check COLLECT_GCC_OPTIONS to find if -mpa enabled.
+     Also, check the PA specific options.  */
+  obstack_begin (&temporary_obstack, 0);
+  temporary_firstobj = (char *) obstack_alloc (&temporary_obstack, 0);
+  p = getenv ("COLLECT_GCC_OPTIONS");
+  avr_pa_ignored_objects_count = 0;
+  avr_pa_ignored_functions_count = 0;
+  avr_pa_shortcall = false;
+  while (p && *p)
+    {
+      const char *q = extract_string (&p);
+      if (!avr_pa_enabled && !strcmp (q, "-mpa"))
+		{
+		  avr_pa_enabled = true;
+		}
+      else if (strncmp(q, avr_ignore_file_option,
+                       strlen(avr_ignore_file_option) == 0))
+        avr_pa_ignored_objects_count += 1;
+      else if (strncmp(q, avr_ignore_function_option,
+                       strlen(avr_ignore_function_option) == 0))
+        avr_pa_ignored_functions_count += 1;
+    }
+  obstack_free (&temporary_obstack, temporary_firstobj);
+
+  /* Check for -mpa-short-call in ld args, as that is set
+     via spec processing and therefore is not available in
+     COLLECT_GCC_OPTIONS */
+  if (avr_pa_enabled)
+  {
+    for (i = 1; argv[i] != NULL; i ++)
+      {
+        if (strcmp(argv[i], avr_pa_shortcall_option) == 0)
+          {
+            avr_pa_shortcall = true;
+          }
+				else if (strncmp (argv[i], "-flto", 5) == 0)
+					{
+						avr_pa_enabled = false;
+					}
+      }
+  }
+
   /* Do not invoke xcalloc before this point, since locale needs to be
      set first, in case a diagnostic is issued.  */
 
-  ld1_argv = XCNEWVEC (char *, argc + 4);
+  /* Add number of args to be passed additionally to PA.
+     PA requires, option (--) to denote linker command line
+     Ignore object file options (-i or --pa-ignore) */
+  if (avr_pa_enabled)
+    ld1_argv = XCNEWVEC (char *, argc + 4 +
+		    avr_pa_ignored_objects_count +
+		    avr_pa_ignored_functions_count +
+		    (avr_pa_shortcall ? 1 : 0)
+		    + 1 + 2); /* 2 for -x <xclmpath> */
+  else
+    ld1_argv = XCNEWVEC (char *, argc + 4);
   ld1 = CONST_CAST2 (const char **, char **, ld1_argv);
   ld2_argv = XCNEWVEC (char *, argc + 11);
   ld2 = CONST_CAST2 (const char **, char **, ld2_argv);
@@ -1137,6 +1198,14 @@ main (int argc, char **argv)
       ld_file_name = find_a_file (&cpath, collect_ld_suffix, X_OK);
       use_collect_ld = ld_file_name != 0;
     }
+  /* AVR: Override linker with PA if -mpa enabled.  */
+  if (avr_pa_enabled)
+    {
+      avr_pa_file_name = find_a_file (&cpath, avr_pa_suffix, X_OK);
+      if (avr_pa_file_name == 0)
+        fatal_error (input_location, "can't find %s, check the compiler installation.",
+                     avr_pa_suffix);
+    }
   /* Search the compiler directories for `ld'.  We have protection against
      recursive calls in find_a_file.  */
   if (ld_file_name == 0)
@@ -1197,7 +1266,10 @@ main (int argc, char **argv)
   if (p)
     c_file_name = p;
 
-  *ld1++ = *ld2++ = ld_file_name;
+  if (avr_pa_enabled)
+    *ld1++ = avr_pa_file_name;
+  else
+    *ld1++ = *ld2++ = ld_file_name;
 
   /* Make temp file names.  */
   c_file = make_temp_file (".c");
@@ -1258,6 +1330,53 @@ main (int argc, char **argv)
   *c_ptr++ = "-fno-exceptions";
   *c_ptr++ = "-w";
   *c_ptr++ = "-fno-whole-program";
+
+  /* Add PA options to command line to be passed.  */
+  if (avr_pa_enabled)
+    {
+      obstack_begin (&temporary_obstack, 0);
+      temporary_firstobj = (char *) obstack_alloc (&temporary_obstack, 0);
+			if (avr_pa_shortcall)
+				{
+          const char *arch_option = "shortcall";
+          char *a_option = XNEWVEC (char, 4 + strlen(arch_option));
+          sprintf (a_option, "%s %s", "-a", arch_option);
+          *ld1++ = a_option;
+				}
+      p = getenv ("COLLECT_GCC_OPTIONS");
+      while (p && *p)
+        {
+          const char *q = extract_string (&p);
+          if (!strncmp(q, avr_ignore_file_option,
+                       strlen(avr_ignore_file_option)))
+            {
+              const char *obj = q + strlen(avr_ignore_file_option);
+              char *i_option = XNEWVEC (char, 4 + strlen(obj));
+              sprintf (i_option, "%s %s", "-i", obj);
+              *ld1++ = i_option;
+            }
+          if (!strncmp(q, avr_ignore_function_option,
+                       strlen(avr_ignore_function_option)))
+            {
+              const char *obj = q + strlen(avr_ignore_function_option);
+              char *f_option = XNEWVEC (char, 4 + strlen(obj));
+              sprintf (f_option, "%s %s", "-f", obj);
+              *ld1++ = f_option;
+            }
+        }
+
+      obstack_free (&temporary_obstack, temporary_firstobj);
+
+      /* Add path to XCLM binary */
+      *ld1++ = "-x";
+      *ld1++ = make_relative_prefix(ld_file_name,
+                                    "/avr/bin",
+                                    "/../bin/");
+
+      /* Add flag to denote linker command line.  */
+      *ld1++ = "--";
+      *ld1++ = ld_file_name;
+    }
 
   /* !!! When GCC calls collect2,
      it does not know whether it is calling collect2 or ld.
@@ -1400,7 +1519,14 @@ main (int argc, char **argv)
 	      add_prefix (&cmdline_lib_dirs, arg+2);
 	      break;
 #endif
-
+	    case 'm':
+	      if (strcmp(arg, avr_pa_shortcall_option) == 0)
+		      {
+			      /* Do not pass -mpa-shortcall to the linker. */
+			      ld1--;
+			      ld2--;
+		}
+	      break;
 	    case 'o':
 	      if (arg[2] == '\0')
 		output_file = *ld1++ = *ld2++ = *++argv;
@@ -1589,6 +1715,12 @@ main (int argc, char **argv)
 	       (c_file ? c_file : "not found"));
       fprintf (stderr, "o_file              = %s\n",
 	       (o_file ? o_file : "not found"));
+
+      if (avr_pa_enabled)
+        {
+          fprintf (stderr, "avr_pa_file_name    = %s\n",
+             (avr_pa_file_name ? avr_pa_file_name : "not found"));
+        }
 
       ptr = getenv ("COLLECT_GCC_OPTIONS");
       if (ptr)

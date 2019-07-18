@@ -261,24 +261,29 @@ DXMLParser::GetSectorConfig (std::string SpaceName, std::string SectorName,
   }
 
   unsigned int nConfigFuseSector = xpathObj->nodesetval->nodeNr;
-  if (nConfigFuseSector != 1) // FIXME currently assumes only one valid space
+  if (nConfigFuseSector == 0)
   {
-    sprintf (Error, "No unique FUSES region in ConfigFuseSector, '%d' nodes found.",
-             nConfigFuseSector);
+    sprintf (Error, "No %s region in ConfigFuseSector", SectorName.c_str());
+    return false;
+  }
+  else if (nConfigFuseSector > 1) // FIXME currently assumes only one valid space
+  {
+    sprintf (Error, "No unique %s region in ConfigFuseSector, '%d' nodes found.",
+             SectorName.c_str(), nConfigFuseSector);
     return false;
   }
 
   uint32_t SectorAddress = 0; // FIXME assumed 0 as address, not used anywhere
 
-  xmlNodePtr FusesSectorNode = xpathObj->nodesetval->nodeTab[0];
-  const char *Str = GetAttribute(FusesSectorNode, "beginaddr");
+  xmlNodePtr lSectorNode = xpathObj->nodesetval->nodeTab[0];
+  const char *Str = GetAttribute(lSectorNode, "beginaddr");
   uint32_t saddress = strtol(Str, NULL, 0);
-  Str = GetAttribute(FusesSectorNode, "endaddr");
+  Str = GetAttribute(lSectorNode, "endaddr");
   uint32_t eaddress = strtol(Str, NULL, 0);
-  uint32_t FuseSectorWidth = eaddress - saddress;
+  uint32_t lSectorWidth = eaddress - saddress;
 
-  Space.SetValues(SectorName, SectorAddress, FuseSectorWidth);
-  if (!GetRegisterConfig (FusesSectorNode, Space))
+  Space.SetValues(SectorName, SectorAddress, lSectorWidth);
+  if (!GetRegisterConfig (lSectorNode, Space))
     {
       sprintf (Error, "Error in reading config registers.");
       return false;
@@ -319,6 +324,17 @@ int main(int argc, char*argv[])
 
   FusesSpace.Print(std::cout);
 
+  ConfigSpace LockbitsSpace;
+  status = xmlParser.GetSectorConfig("LockbitsSpace", "LOCKBITS", LockbitsSpace, ErrorMsg);
+
+  if (!status)
+    {
+      std::cout << "Error: " << ErrorMsg << std::endl;
+      return 1;
+    }
+
+  LockbitsSpace.Print(std::cout);
+
   for (ConfigIterator C = FusesSpace.registers[0].configs.begin();
        C != FusesSpace.registers[0].configs.end(); C++)
     {
@@ -332,6 +348,7 @@ int main(int argc, char*argv[])
 
   std::cout << "LOW: def 0x" << std::hex << FusesSpace.registers[0].factorydefault
             << " user 0x" << std::hex << FusesSpace.registers[0].GetValue() << std::endl;
+
   for (ConfigIterator C = FusesSpace.registers[0].configs.begin();
        C != FusesSpace.registers[0].configs.end(); C++)
     {

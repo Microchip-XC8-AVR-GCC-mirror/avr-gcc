@@ -541,6 +541,8 @@ extern const char *avr_language_extension (int, const char**);
   %:device-pack(%{mdfp=*:%*}) \
   %:device-specs-file(device-specs%s %{mmcu=*:%*}) \
   %:lang-extn(%{mext=*:%*}) \
+  %{mcodecov=*:%{mpa:%e-mpa and -mcodecov options are incompatible}} \
+  %{O3|Os:%{!mno-pa:%{!mcodecov=*:-mpa}}}  \
   "
 
 /* No libstdc++ for now.  Empty string doesn't work.  */
@@ -656,11 +658,13 @@ extern int avr_accumulate_outgoing_args (void);
 
 // AVR_SECTION_PROGMEM_MASK   0xf * SECTION_MACH_DEP
 #define AVR_SECTION_PROGMEM         (MCHP_ULL(SECTION_MACH_DEP) * ADDR_SPACE_FLASH)
-#define AVR_SECTION_READONLY        (MCHP_ULL(SECTION_MACH_DEP) << 5ull)
-#define AVR_SECTION_CONST           (MCHP_ULL(SECTION_MACH_DEP) << 5ull)
-#define AVR_SECTION_AT              (MCHP_ULL(SECTION_MACH_DEP) << 6ull)
+#define AVR_SECTION_INFO            (MCHP_ULL(SECTION_MACH_DEP) << 5ULL)
+#define AVR_SECTION_AT              (MCHP_ULL(SECTION_MACH_DEP) << 6ULL)
 #define AVR_SECTION_PERSISTENT      (MCHP_ULL(SECTION_MACH_DEP) << 7ULL)
-#define AVR_SECTION_FUNCRODATA      (MCHP_ULL(SECTION_MACH_DEP) << 8ULL)
+#define AVR_SECTION_KEEP            (MCHP_ULL(SECTION_MACH_DEP) << 8ULL)
+#define AVR_SECTION_READONLY        (MCHP_ULL(SECTION_MACH_DEP) << 9ULL)
+#define AVR_SECTION_CONST           (MCHP_ULL(SECTION_MACH_DEP) << 9ULL)
+#define AVR_SECTION_FUNCRODATA      (MCHP_ULL(SECTION_MACH_DEP) << 10ULL)
 
 #define SECTION_ATTR_BSS            "bss"
 #define SECTION_ATTR_CODE           "code"
@@ -677,4 +681,26 @@ extern int avr_accumulate_outgoing_args (void);
 #define SECTION_ATTR_PROGMEM5       "progmem5"
 #define SECTION_ATTR_AT             "address"
 #define SECTION_ATTR_PERSISTENT     "persist"
+
+#undef  TARGET_SET_DEFAULT_TYPE_ATTRIBUTES
+#define TARGET_SET_DEFAULT_TYPE_ATTRIBUTES     avr_set_default_type_attributes
+
+
+/* Code Coverage target hooks */
+
+#define   xstr(s) str(s)
+#define   str(s)  #s
+
+#define TARGET_XCCOV_LIBEXEC_PATH   "/avr/libexec/gcc/avr/"     \
+                                    str(BUILDING_GCC_MAJOR) "." \
+                                    str(BUILDING_GCC_MINOR) "." \
+                                    str(BUILDING_GCC_PATCHLEVEL)
+
+#define TARGET_XCCOV_SET_CC_BIT     avr_set_cc_bit
+
+#undef  TARGET_ASM_CODE_END
+#define TARGET_ASM_CODE_END         avr_asm_code_end
+
+#define TARGET_XCCOV_LICENSED       avr_licensed_xccov_p
+#define TARGET_XCCOV_EMIT_SECTION   avr_emit_cc_section
 

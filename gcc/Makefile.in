@@ -347,6 +347,7 @@ ZLIB = @zlibdir@ -lz
 ZLIBINC = @zlibinc@
 
 LIBXMLLIB = -lxml2
+EXPATLIB = -lexpat
 
 # How to find GMP
 GMPLIBS = @GMPLIBS@
@@ -1016,7 +1017,7 @@ BUILD_LIBDEPS= $(BUILD_LIBIBERTY)
 LIBS = @LIBS@ libcommon.a $(CPPLIB) $(LIBINTL) $(LIBICONV) $(LIBBACKTRACE) \
 	$(LIBIBERTY) $(LIBDECNUMBER) $(HOST_LIBS)
 BACKENDLIBS = $(ISLLIBS) $(GMPLIBS) $(PLUGINLIBS) $(HOST_LIBS) \
-	$(ZLIB) $(LIBXMLLIB)
+	$(ZLIB) $(LIBXMLLIB) $(EXPATLIB)
 # Any system libraries needed just for GNAT.
 SYSLIBS = @GNAT_LIBEXC@
 
@@ -1497,6 +1498,8 @@ OBJS = \
 	web.o \
 	wide-int.o \
 	wide-int-print.o \
+	xc-coverage.o \
+	xc-covtool-comm.o \
 	xcoffout.o \
 	$(out_object_file) \
 	$(EXTRA_OBJS) \

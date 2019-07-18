@@ -423,7 +423,7 @@
         //                  (reg:HI 28)))
         //    (set (mem:HI (post_dec:HI (reg:HI 32 SP))
         //         (reg:HI **)))
- 
+
         emit_insn (gen_pushhi1_insn (operands[0]));
         DONE;
       }
@@ -4743,7 +4743,7 @@
 ;; Combine will create zero extract patterns for single bit tests.
 ;; permit any mode in source pattern by using VOIDmode.
 
-(define_insn "*sbrx_branch<mode>"
+(define_insn "sbrx_branch<mode>"
   [(set (pc)
         (if_then_else
          (match_operator 0 "eqne_operator"
@@ -4980,7 +4980,7 @@
            : "rjmp %x0";
   }
   [(set (attr "length")
-        (if_then_else (match_operand 0 "symbol_ref_operand" "")	
+        (if_then_else (match_operand 0 "symbol_ref_operand" "")
                       (if_then_else (match_test "!AVR_HAVE_JMP_CALL")
                                     (const_int 1)
                                     (const_int 2))
@@ -5181,6 +5181,35 @@
   "sez"
   [(set_attr "length" "1")
    (set_attr "cc" "compare")])
+
+;; set a single bit in status register
+(define_insn "bit_set_sreg"
+  [(set (mem:QI (match_operand 0 "status_io_address_operand" "i"))
+        (ior:QI (mem:QI (match_dup 0))
+                (match_operand:QI 1 "single_one_operand" "n")))]
+""
+{
+  operands[2] = GEN_INT (exact_log2 (INTVAL (operands[1]) & 0xff));
+  return "bset %2";
+}
+[(set_attr "length" "1")
+ (set_attr "cc" "none")])
+
+;; Bit Load from the T Flag in SREG to a Bit in Register.
+;;  T flag is the 6th bit in SREG.
+;;  e.g. bld temp_reg, 6
+
+(define_insn "bit_load_sreg"
+  [(set (match_operand:QI 0 "register_operand" "=r")
+        (ior:QI (match_dup 0)
+                (ashift:QI (lshiftrt:QI (and:QI (mem:QI (match_operand 1 "status_io_address_operand" "i"))
+                                                (const_int 64))
+                                        (const_int 6))
+                           (match_operand:QI 2 "const_0_to_7_operand" "n"))))]
+""
+"bld %0, %2"
+[(set_attr "length" "1")
+ (set_attr "cc" "none")])
 
 ;; Clear/set/test a single bit in I/O address space.
 

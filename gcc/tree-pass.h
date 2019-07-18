@@ -580,6 +580,7 @@ extern rtl_opt_pass *make_pass_delay_slots (gcc::context *ctxt);
 extern rtl_opt_pass *make_pass_split_for_shorten_branches (gcc::context *ctxt);
 extern rtl_opt_pass *make_pass_split_before_regstack (gcc::context *ctxt);
 extern rtl_opt_pass *make_pass_convert_to_eh_region_ranges (gcc::context *ctxt);
+extern rtl_opt_pass *make_pass_xc_coverage (gcc::context *ctxt);
 extern rtl_opt_pass *make_pass_shorten_branches (gcc::context *ctxt);
 extern rtl_opt_pass *make_pass_set_nothrow_function_flags (gcc::context *ctxt);
 extern rtl_opt_pass *make_pass_dwarf2_frame (gcc::context *ctxt);

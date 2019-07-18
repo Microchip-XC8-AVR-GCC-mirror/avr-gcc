@@ -66,6 +66,11 @@
        (and (match_code "symbol_ref")
 	    (match_test "SYMBOL_REF_FLAGS (op) & SYMBOL_FLAG_IO"))))
 
+;; Return true if OP is a valid address of status register in I/O space.
+(define_special_predicate "status_io_address_operand"
+  (and (match_code "const_int")
+       (match_test "(INTVAL (op) - avr_arch->sfr_offset) == 0x3F")))
+
 ;; Return 1 if OP is a general operand not in flash memory
 (define_predicate "nop_general_operand"
   (and (match_operand 0 "general_operand")

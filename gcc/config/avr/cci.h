@@ -17,6 +17,7 @@
 #define __deprecate  __attribute__((deprecated))
 #define __section(name) __attribute__((section(name)))
 #define asm(arg)  __asm(arg)
+#define __nopa  __attribute((nopa, noinline))
 
 /* Unsupported CCI attributes by this compiler.  */
 #define __far  __attribute__((unsupported("__far")))

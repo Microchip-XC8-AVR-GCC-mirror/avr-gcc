@@ -90,6 +90,7 @@
 #include "opts.h"
 #include <dirent.h>
 
+#include "xc-coverage.h"
 #include "avr-device-config.h"
 
 /* Maximal allowed offset for an address in the LD command */
@@ -272,6 +273,9 @@ bool avr_have_dimode = true;
 /* To track if code will use .bss and/or .data.  */
 bool avr_need_clear_bss_p = false;
 bool avr_need_copy_data_p = false;
+
+/* avr_pragma_nocodecov is != 0 when #pragma nocodecov is in effect */
+int avr_pragma_nocodecov = 0;
 
 
 /* Transform UP into lowercase and write the result to LO.
@@ -598,6 +602,19 @@ avr_option_override (void)
   if (!avr_set_core_architecture())
     return;
 
+  if (mchp_codecov && (AVR_TINY))
+  {
+    warning(0, "-mcodecov option is not available for avrtiny architecture");
+    mchp_codecov = 0;
+  }
+
+  if ( mchp_codecov &&
+       !(strcmp(mchp_codecov, "ram") ==0 || strcmp(mchp_codecov, "") == 0))
+  {
+    warning(0, "invalid argument for -mcodecov option");
+    mchp_codecov = 0;
+  }
+
 /*
   if (!avr_const_data_in_progmem && ((AVR_XMEGA3) || (AVR_TINY)))
     {
@@ -869,6 +886,13 @@ avr_OS_main_function_p (tree func)
   return avr_lookup_function_attribute1 (func, "OS_main");
 }
 
+/* Return nonzero if FUNC must be excluded from procedural abstraction.  */
+
+static int
+avr_nopa_function_p (tree func)
+{
+  return avr_lookup_function_attribute1 (func, "nopa");
+}
 
 /* Implement `TARGET_SET_CURRENT_FUNCTION'.  */
 /* Sanity cheching for above function attributes.  */
@@ -9616,6 +9640,21 @@ avr_report_unsupported_attribute (tree *node, tree name, tree args,
   return NULL_TREE;
 }
 
+/* if 'avr_pragma_nocodecov' is set, adds 'nocodecov' attribute to function types */
+void
+avr_set_default_type_attributes (tree type)
+{
+  if (avr_pragma_nocodecov
+      && (TREE_CODE (type) == FUNCTION_TYPE || TREE_CODE (type) == METHOD_TYPE))
+    {
+      tree type_attr_list = TYPE_ATTRIBUTES (type);
+      tree attr_name = get_identifier ("nocodecov");
+
+      type_attr_list = tree_cons (attr_name, NULL_TREE, type_attr_list);
+      TYPE_ATTRIBUTES (type) = type_attr_list;
+    }
+}
+
 rtx
 avr_eval_addr_attrib (rtx x)
 {
@@ -9661,6 +9700,8 @@ avr_attribute_table[] =
     false },
   { "OS_main",   0, 0, false, true,  true,   avr_handle_fntype_attribute,
     false },
+  { "nopa",   0, 0, false, true,  true,  avr_handle_fntype_attribute,
+    false },
   { "io",        0, 1, false, false, false,  avr_handle_addr_attribute,
     false },
   { "io_low",    0, 1, false, false, false,  avr_handle_addr_attribute,
@@ -9677,6 +9718,7 @@ avr_attribute_table[] =
     false },
   { "unsupported",1, 1, false, false, false, avr_report_unsupported_attribute,
     false },
+  { "nocodecov", 0, 0, false, true,  true,  NULL, false },
   { NULL,        0, 0, false, false, false, NULL, false }
 };
 
@@ -9951,6 +9993,9 @@ avr_asm_output_function_label (FILE *stream,
 							   const char *name,
 							   tree decl)
 {
+  if (avr_nopa_function_p(decl))
+    fprintf(stream, "\t.%s\t%s\n", "nopafunc", name);
+
   tree attr = lookup_attribute ("handler", DECL_ATTRIBUTES (decl));
   if (attr)
     {
@@ -9961,6 +10006,10 @@ avr_asm_output_function_label (FILE *stream,
       sprintf(vector_label, "__vector_%d", vector_num);
       TARGET_ASM_GLOBALIZE_LABEL (stream, vector_label);
       ASM_OUTPUT_TYPE_DIRECTIVE (stream, vector_label, "function");
+
+      if (avr_nopa_function_p(decl))
+        fprintf(stream, "\t.%s\t%s\n", "nopafunc", vector_label);
+
       ASM_OUTPUT_LABEL (stream, vector_label);
     }
 
@@ -10253,7 +10302,7 @@ avr_get_named_section_flags (const char* pSectionName, uint64_t flags,
   if (flags & SECTION_CODE)
     f += sprintf(f, "," SECTION_ATTR_CODE);
 
-  if (flags & SECTION_DEBUG)
+  if ((flags & SECTION_DEBUG) || (flags & AVR_SECTION_INFO))
     f += sprintf(f, "," SECTION_ATTR_INFO);
 
   /* FIXME: Ignored SECTION_MERGE flag for now.
@@ -10283,6 +10332,11 @@ avr_get_named_section_flags (const char* pSectionName, uint64_t flags,
   if (flags & AVR_SECTION_PERSISTENT)
     {
       f += sprintf (f, "," SECTION_ATTR_PERSISTENT);
+    }
+
+  if (flags & AVR_SECTION_KEEP)
+    {
+      f += sprintf (f, "," SECTION_ATTR_KEEP);
     }
 
   /* constants with fmerge-[all-]constants options may lead named section
@@ -10742,7 +10796,13 @@ avr_output_configurations (void)
       if (false == itSpace->isReferenced)
         continue;
 
-      fprintf (asm_out_file, "\t.section\t.fuse, data\n");
+      /* un-handled config spaces if no assembly sections */
+      if (itSpace->AsmSectionName.empty())
+        continue;
+
+      /* Output section directive with corresponding section name.  */
+      fprintf (asm_out_file, "\t.section\t%s, data\n",
+               itSpace->AsmSectionName.c_str());
 
       uint32_t RegIndex = 0;
       for (RegIterator itR = itSpace->registers.begin();
@@ -10755,11 +10815,14 @@ avr_output_configurations (void)
                      RegWidthBits, itR->rname.c_str());
               return;
             }
-          fprintf (asm_out_file, "\t.type\t__config_REG_%02X, @object\n",
-                   RegIndex);
-          fprintf (asm_out_file, "\t.size\t__config_REG_%02X, %d\n", RegIndex,
-                   RegWidthBits / 8);
-          fprintf (asm_out_file, "__config_REG_%02X:\n", RegIndex);
+          const char * ConfigSpaceName = itSpace->sname.c_str();
+
+          fprintf (asm_out_file, "\t.type\t__config_%s_REG_%02X, @object\n",
+                   ConfigSpaceName, RegIndex);
+          fprintf (asm_out_file, "\t.size\t__config_%s_REG_%02X, %d\n",
+                   ConfigSpaceName, RegIndex, RegWidthBits / 8);
+          fprintf (asm_out_file, "__config_%s_REG_%02X:\n",
+                   ConfigSpaceName, RegIndex);
 
           uint32_t RegValue = itR->GetValue();
           int8_t index = 0;
@@ -10795,6 +10858,81 @@ avr_file_end (void)
   if (avr_need_clear_bss_p)
     fputs (".global __do_clear_bss\n", asm_out_file);
 }
+
+
+/* Code Coverage Implementation routines */
+
+/* Implement `TARGET_ASM_CODE_END'.  */
+
+static void
+avr_asm_code_end (void)
+{
+  xccov_code_end();
+}
+
+void avr_set_cc_bit(unsigned int b)
+{
+  unsigned byte_no = b / 8 ;
+  const unsigned bit_no = b & 7;
+
+  /* LDS temp_reg, cc_bits + byte_offset  */
+  rtx cc_bits_ref = gen_rtx_SYMBOL_REF (HImode, xccov_cc_bits_name());
+  cc_bits_ref = plus_constant (HImode, cc_bits_ref, byte_no);
+  cc_bits_ref = gen_const_mem (QImode, cc_bits_ref);
+  emit_insn (gen_movqi (zero_reg_rtx, cc_bits_ref));
+
+  /* sbrc zero_reg, bit_offset
+     rjmp covered  */
+  rtx covered_label_rtx = gen_label_rtx();
+  rtx bit_no_rtx = gen_int_mode (bit_no, QImode);
+  emit_insn(gen_sbrx_branchqi (gen_rtx_NE (QImode, const0_rtx, const0_rtx),
+        zero_reg_rtx, bit_no_rtx, covered_label_rtx));
+
+  /* bset 6 */
+  emit_insn (gen_bit_set_sreg (XEXP (sreg_rtx, 0),
+        gen_int_mode (1 << 6, QImode)));
+
+  /* bld zero_reg, bit_position
+     ; load T flag from status register to zero_register in bit_position  */
+  emit_insn (gen_bit_load_sreg (zero_reg_rtx,
+        XEXP (sreg_rtx, 0),
+        gen_int_mode (bit_no, QImode)));
+
+  /* STS cc_bits + byte_offset, temp_reg */
+  emit_insn (gen_movqi (cc_bits_ref, zero_reg_rtx));
+
+  /* covered:
+     clear zero_reg  */
+  rtx_insn* clear_zero_reg_insn = emit_insn (gen_xorqi3 (zero_reg_rtx,
+                                                  zero_reg_rtx, zero_reg_rtx));
+  emit_label_before (covered_label_rtx, clear_zero_reg_insn);
+}
+
+
+void
+avr_emit_cc_section (const char *name)
+{
+  gcc_assert (name);
+
+  uint64_t flags = 0;
+
+  if (!strcmp (name, CODECOV_SECTION))
+    {
+      flags = SECTION_BSS;
+    }
+  else if (!strcmp (name, CODECOV_INFO_HDR) || !strcmp (name, CODECOV_INFO))
+    {
+      flags = AVR_SECTION_INFO | AVR_SECTION_KEEP;
+    }
+  else
+    {
+      gcc_unreachable ();
+    }
+
+  switch_to_section (get_section (name, flags, NULL));
+}
+
+/* Code Coverage Implementation routines End */
 
 
 /* Worker function for `ADJUST_REG_ALLOC_ORDER'.  */

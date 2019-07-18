@@ -68,6 +68,12 @@ along with GCC; see the file COPYING3.  If not see
   "%(link_text_start) "                         \
   "%(link_relax) "                              \
   "%(link_pmem_wrap) "                          \
+  "%{mpa:%{mshort-calls | \
+           mmcu=avr1 | \
+           mmcu=avr2 | \
+           mmcu=avr25 | \
+           mmcu=avr4 | \
+           mmcu=avrtiny : -mpa-short-call}} "     \
   "%{shared:%eshared is not supported} "
 
 #undef  LIB_SPEC
