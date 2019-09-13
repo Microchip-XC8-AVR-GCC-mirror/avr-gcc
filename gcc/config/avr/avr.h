@@ -542,7 +542,7 @@ extern const char *avr_language_extension (int, const char**);
   %:device-specs-file(device-specs%s %{mmcu=*:%*}) \
   %:lang-extn(%{mext=*:%*}) \
   %{mcodecov=*:%{mpa:%e-mpa and -mcodecov options are incompatible}} \
-  %{O3|Os:%{!mno-pa:%{!mcodecov=*:-mpa}}}  \
+  %{!mskip-license-check:%{O3|Os:%{!mno-pa:%{!mcodecov=*:-mpa}}}}  \
   "
 
 /* No libstdc++ for now.  Empty string doesn't work.  */
