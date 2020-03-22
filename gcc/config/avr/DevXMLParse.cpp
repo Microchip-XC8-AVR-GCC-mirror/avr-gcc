@@ -139,7 +139,8 @@ DXMLParser::GetFieldsConfig (xmlNodePtr RegNode, ConfigReg &Register)
      E.g. atmega4809 APPEND, BOOTEND fuse registers  */
   if (!RegNode->children)
     {
-      ConfigSpec config(Register.rname, Register.width, 0, true);
+      ConfigSpec config(Register.rname, (uint32_t)((1 << Register.width) - 1),
+                        0, true);
       config.SetDefaultValue(Register.factorydefault);
       Register.configs.push_back(config);
       return true;
@@ -163,7 +164,7 @@ DXMLParser::GetFieldsConfig (xmlNodePtr RegNode, ConfigReg &Register)
         {
           std::string Str = GetAttribute(FieldNode, "offset");
           FieldSizeInBits = strtol (Str.c_str(), NULL, 0);
-          ConfigSpec config(FieldSizeInBits, BitPos, false);
+          ConfigSpec config((uint8_t)FieldSizeInBits, BitPos, false);
           BitPos += FieldSizeInBits;
           config.SetDefaultValue(Register.factorydefault);
           Register.configs.push_back(config);
@@ -173,7 +174,9 @@ DXMLParser::GetFieldsConfig (xmlNodePtr RegNode, ConfigReg &Register)
           std::string FieldName = GetAttribute(FieldNode, "cname");
           std::string Str = GetAttribute(FieldNode, "nzwidth");
           uint32_t FieldSizeInBits = strtol(Str.c_str(), NULL, 0);
-          ConfigSpec config(FieldName, FieldSizeInBits, BitPos, true);
+          ConfigSpec config(FieldName,
+                            (uint32_t)(((1 << FieldSizeInBits) - 1) << BitPos),
+                            BitPos, true);
           BitPos += FieldSizeInBits;
           config.SetDefaultValue(Register.factorydefault);
           if (!GetConfigReferenceValues(FieldNode, FieldName, config))
@@ -313,7 +316,7 @@ int main(int argc, char*argv[])
   }
 
   char ErrorMsg[255] = "";
-  ConfigSpace FusesSpace;
+  ConfigSpace FusesSpace(".fuse");
   status = xmlParser.GetSectorConfig("FusesSpace", "FUSES", FusesSpace, ErrorMsg);
 
   if (!status)
@@ -324,7 +327,7 @@ int main(int argc, char*argv[])
 
   FusesSpace.Print(std::cout);
 
-  ConfigSpace LockbitsSpace;
+  ConfigSpace LockbitsSpace(".lock");
   status = xmlParser.GetSectorConfig("LockbitsSpace", "LOCKBITS", LockbitsSpace, ErrorMsg);
 
   if (!status)
@@ -339,11 +342,18 @@ int main(int argc, char*argv[])
        C != FusesSpace.registers[0].configs.end(); C++)
     {
       if (C->cname == std::string("SUT_CKSEL"))
-        C->SetValue ("3");
+        status = C->SetValue ("0x17");
       else if (C->cname == std::string("CKOUT"))
-        C->SetValue("CLEAR");
+        status = C->SetValue("0");
       else if (C->cname == std::string("CKDIV8"))
-        C->SetValue("SET");
+        status = C->SetValue("1");
+
+      if (status)
+      std::cout << " reg value after setting " << C->cname.c_str() << " 0x" <<
+        std::hex << FusesSpace.registers[0].GetValue() << std::endl;
+      else
+        std::cout << "could not set value for config " << C->cname
+                  << " " << std::endl;
     }
 
   std::cout << "LOW: def 0x" << std::hex << FusesSpace.registers[0].factorydefault

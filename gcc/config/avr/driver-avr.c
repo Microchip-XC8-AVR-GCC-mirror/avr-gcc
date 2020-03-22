@@ -170,14 +170,25 @@ avr_devicespecs_file (int argc, const char **argv)
       }
 
   /* If DFPack prefix available then add prefix and include directory from DFP
-     directory.  */
+     directory.
+     PackPrefix (-mdfp=) to compile will be "<DFP>/xc8/"
+     Device specs path: <PackPrefix>/avr/device-specs
+     So, device specs search path should be "<PackPrefix>/avr"
+
+     Include path: <PackPrefix>/avr/include/
+     Add it to include search path.
+
+     Libraries with multilib-dir layout in: <PackPrefix>/avr/lib
+     Add it to system search path.  */
   const char * PackOptions = " ";
   if (!PackPrefix.empty())
     {
-      PackOptions = concat (" -B", PackPrefix.c_str(), dir_separator_str, "gcc",
-                            dir_separator_str, "dev", dir_separator_str, mmcu,
-                            " -I", PackPrefix.c_str(), dir_separator_str,
-                            "include", NULL);
+      PackOptions =
+        concat (" -B", PackPrefix.c_str(), dir_separator_str, "avr",
+                dir_separator_str, " -I", PackPrefix.c_str(),
+                dir_separator_str, "avr", dir_separator_str, "include",
+                " -B", PackPrefix.c_str(), dir_separator_str, "avr",
+                dir_separator_str, "lib", NULL);
     }
 
   return concat (PackOptions, " -specs=device-specs", dir_separator_str, "specs-",
@@ -206,8 +217,16 @@ avr_language_extension (int argc, const char **argv)
   switch (argc)
     {
       default:
-        error ("multiple language extensions specified (%qs)", "-mext");
-        return "";
+        {
+          for (int i = 0; i < (argc - 1); ++i)
+            {
+              if (strcmp (argv[i], extn) != 0)
+                {
+                  error ("multiple language extensions specified (%qs)", "-mext");
+                  return "";
+                }
+            }
+        }
       case 1:
         break;
     }

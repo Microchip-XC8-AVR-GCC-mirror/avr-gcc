@@ -158,6 +158,22 @@ lto_varpool_replace_node (varpool_node *vnode,
   if (DECL_VIRTUAL_P (vnode->decl) || DECL_VIRTUAL_P (prevailing_node->decl))
     compare_virtual_tables (prevailing_node, vnode);
 
+  if (TREE_CODE (prevailing_node->decl) == VAR_DECL)
+    {
+      addr_space_t as1 = TYPE_ADDR_SPACE (TREE_TYPE (prevailing_node->decl));
+      addr_space_t as2 = TYPE_ADDR_SPACE (TREE_TYPE (vnode->decl));
+
+      if (as1 != as2)
+        {
+          error_at (DECL_SOURCE_LOCATION (vnode->decl),
+                    "conflicting address spaces "
+                    "for %qD", vnode->decl);
+          inform (DECL_SOURCE_LOCATION (prevailing_node->decl),
+                  "previously declared here as %qD",
+                  prevailing_node->decl);
+        }
+    }
+
   if (vnode->tls_model != prevailing_node->tls_model)
     {
       bool error = false;

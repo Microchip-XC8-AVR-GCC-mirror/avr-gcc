@@ -31,11 +31,11 @@ avr-c.o: $(srcdir)/config/avr/avr-c.c \
   $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) $(TREE_H) $(C_COMMON_H)
 	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) $<
 
-DevXMLParse.o: $(srcdir)/config/avr/DevXMLParse.cpp
+CFGDataParse.o: $(srcdir)/config/avr/CFGDataParse.cpp
 	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) -fexceptions $(INCLUDES) $<
 
 avr-device-config.o: $(srcdir)/config/avr/avr-device-config.cpp \
-  $(srcdir)/config/avr/DevXMLParse.cpp
+  $(srcdir)/config/avr/CFGDataParse.cpp
 	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) -fexceptions $(INCLUDES) $<
 
 avr-log.o: $(srcdir)/config/avr/avr-log.c \

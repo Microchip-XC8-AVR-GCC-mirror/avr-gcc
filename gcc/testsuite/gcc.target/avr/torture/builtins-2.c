@@ -1,4 +1,4 @@
-/* { dg-options "-std=gnu99 -Tavr51-flash1.x" } */
+/* { dg-options "-std=gnu99 " } */
 /* { dg-do run } */
 
 #include <stdlib.h>
@@ -6,12 +6,12 @@
 
 int volatile a;
 
-void f1 (void) 
+void f1 (void)
 {
-  __builtin_avr_sei (); 
-  __builtin_avr_cli (); 
-  __builtin_avr_wdr (); 
-  __builtin_avr_sleep (); 
+  __builtin_avr_sei ();
+  __builtin_avr_cli ();
+  __builtin_avr_wdr ();
+  __builtin_avr_sleep ();
   __builtin_avr_nop ();
   a = __builtin_avr_swap (a);
   a = __builtin_avr_fmul (1,a);
@@ -23,7 +23,7 @@ void f1 (void)
 const __flash char c0 = 1;
 const __flash1 char c1 = 1;
 
-int main (void) 
+int main (void)
 {
   const __memx void *p;
 
@@ -42,5 +42,5 @@ int main (void)
     abort();
 
   exit (0);
-  return 0; 
+  return 0;
 }

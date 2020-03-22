@@ -1675,7 +1675,7 @@ symtab_node::get_partitioning_class (void)
 
   /* Weakref aliases are always duplicated.  */
   if (weakref)
-    return SYMBOL_DUPLICATE;
+    return definition ? SYMBOL_DUPLICATE : SYMBOL_EXTERNAL;
 
   /* External declarations are external.  */
   if (DECL_EXTERNAL (decl))

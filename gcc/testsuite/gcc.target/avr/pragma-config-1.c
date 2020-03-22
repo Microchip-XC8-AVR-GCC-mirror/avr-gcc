@@ -30,8 +30,7 @@ int main ()
   return 0;
 }
 
-/* { dg-final { scan-assembler ".section\t.fuse, data" } } */
-/* { dg-final { scan-assembler "__config_FUSES_REG_00:\[\n\r\]+\t.byte\t0x43" } } */
-/* { dg-final { scan-assembler "__config_FUSES_REG_01:\[\n\r\]+\t.byte\t0x52" } } */
-/* { dg-final { scan-assembler "__config_FUSES_REG_02:\[\n\r\]+\t.byte\t0xFD" } } */
-
+/* { dg-final { scan-assembler ".section\t.fuse,data" } } */
+/* { dg-final { scan-assembler ".byte\t67" } } */
+/* { dg-final { scan-assembler ".byte\t82" } } */
+/* { dg-final { scan-assembler ".byte\t-3" } } */

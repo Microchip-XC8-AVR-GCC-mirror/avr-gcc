@@ -8,12 +8,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3, or (at your option)
    any later version.
-   
+
    GCC is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with GCC; see the file COPYING3.  If not see
    <http://www.gnu.org/licenses/>.  */
@@ -89,6 +89,11 @@
 #include "vec.h"
 #include "opts.h"
 #include <dirent.h>
+#include "tree-iterator.h"
+#include "hash-map.h"
+#include "plugin-api.h"
+#include "ipa-ref.h"
+#include "cgraph.h"
 
 #include "xc-coverage.h"
 #include "avr-device-config.h"
@@ -143,7 +148,7 @@
 const avr_addrspace_t avr_addrspace[ADDR_SPACE_COUNT] =
 {
   { ADDR_SPACE_RAM,  0, 2, "", 0, NULL, NULL },
-  { ADDR_SPACE_FLASH,  1, 2, "__flash",   0, ".progmem.data",  "progmem" },
+  { ADDR_SPACE_FLASH,  1, 2, "__flash",   0, ".progmem0.data", "progmem0" },
   { ADDR_SPACE_FLASH1, 1, 2, "__flash1",  1, ".progmem1.data", "progmem1" },
   { ADDR_SPACE_FLASH2, 1, 2, "__flash2",  2, ".progmem2.data", "progmem2" },
   { ADDR_SPACE_FLASH3, 1, 2, "__flash3",  3, ".progmem3.data", "progmem3" },
@@ -431,7 +436,7 @@ avr_set_core_architecture (void)
           break;
         }
       else if (0 == strcmp (mcu->name, avr_mmcu)
-               // Is this a proper architecture ? 
+               // Is this a proper architecture ?
                && NULL == mcu->macro)
         {
           avr_arch = &avr_arch_types[mcu->arch_id];
@@ -524,7 +529,7 @@ void avr_find_device_config_file(const char* config_dir, const char* mcu_name, c
   DIR* dir = opendir(config_dir);
   if (dir == NULL) return;
   char tname[128] = {0};
-  sprintf (tname, "%s.pic", mcu_name);
+  sprintf (tname, "%s.cfgdata", mcu_name);
 
   struct dirent* dentry;
   while (dentry = readdir(dir))
@@ -655,7 +660,9 @@ avr_option_override (void)
   if (avr_dfp_path && avr_device)
     {
       char config_file[255] = {0};
-      avr_find_device_config_file(concat(avr_dfp_path, dir_separator_str, "edc", dir_separator_str, NULL),
+      avr_find_device_config_file(concat(avr_dfp_path, dir_separator_str,
+                                         "avr", dir_separator_str, "cfgdata",
+                                         dir_separator_str, NULL),
                                   avr_device, config_file);
       if (config_file[0] != 0)
         DeviceConfigurations.LoadConfigurations(config_file);
@@ -929,7 +936,7 @@ avr_set_current_function (tree decl)
   /* Too much attributes make no sense as they request conflicting features. */
 
   if (cfun->machine->is_OS_task + cfun->machine->is_OS_main
-      + (cfun->machine->is_signal || cfun->machine->is_interrupt 
+      + (cfun->machine->is_signal || cfun->machine->is_interrupt
           || cfun->machine->is_nmi) > 1)
     error_at (loc, "function attributes %qs, %qs and %qs are mutually"
                " exclusive", "OS_task", "OS_main", isr);
@@ -941,7 +948,7 @@ avr_set_current_function (tree decl)
     warning_at (loc, OPT_Wattributes, "function attributes %qs and %qs have"
                 " no effect on %qs function", "OS_task", "OS_main", "naked");
 
-  if (cfun->machine->is_interrupt || cfun->machine->is_signal 
+  if (cfun->machine->is_interrupt || cfun->machine->is_signal
           || cfun->machine->is_nmi)
     {
       tree args = TYPE_ARG_TYPES (TREE_TYPE (decl));
@@ -8225,9 +8232,9 @@ avr_out_sign_extend (rtx_insn *insn, rtx *xop, int *plen)
       avr_asm_len ("mov __tmp_reg__,%0", &r_msb, plen, 1);
       r_msb = tmp_reg_rtx;
     }
-  
+
   avr_asm_len ("lsl %0", &r_msb, plen, 1);
-                   
+
   // ...and propagate it to all the new sign bits
 
   for (unsigned n = n_src; n < n_dest; n++)
@@ -10267,7 +10274,14 @@ avr_get_named_section_flags (const char* pSectionName, uint64_t flags,
 
       gcc_assert (as != 0);
 
-      f += sprintf (f, ",%s", avr_addrspace[as].section_flag);
+//      f += sprintf (f, ",%s", avr_addrspace[as].section_flag);
+      /* __attribute__((progmem))   =  progmem   */
+      /* __flash                    = progmem0   */
+      /* All other Address Spaces.  = progmem<N> */
+      if (-1 == avr_progmem_p(decl, DECL_ATTRIBUTES(decl)))
+        f += sprintf (f, ",%s", "progmem");
+      else
+        f += sprintf (f, ",%s", avr_addrspace[as].section_flag);
 
       if (flags & AVR_SECTION_AT)
         {
@@ -10344,7 +10358,7 @@ avr_get_named_section_flags (const char* pSectionName, uint64_t flags,
   gcc_assert(SectionFlags[0] != '#');
   return xstrdup(SectionFlags);
 }
- 
+
 /* Implement `TARGET_ASM_NAMED_SECTION'.  */
 /* Track need of __do_clear_bss, __do_copy_data for named sections.  */
 
@@ -10368,7 +10382,12 @@ avr_asm_named_section (const char *name, uint64_t flags, tree decl)
     {
       addr_space_t as = (flags & AVR_SECTION_PROGMEM_MASK) / SECTION_MACH_DEP;
       const char *old_prefix = ".rodata";
-      const char *new_prefix = avr_addrspace[as].section_name;
+      const char *new_prefix ;
+
+      if (-1 == avr_progmem_p(decl, DECL_ATTRIBUTES(decl)))
+        new_prefix = "progmem.data" ;
+      else
+        new_prefix = avr_addrspace[as].section_name;
 
       if (STR_PREFIX_P (name, old_prefix))
         {
@@ -10378,9 +10397,16 @@ avr_asm_named_section (const char *name, uint64_t flags, tree decl)
                    avr_get_named_section_flags (new_section_name, flags, decl));
           return;
         }
+      /* If there is a user defined section name, use that. */
 
-      fprintf (asm_out_file, "\t.section\t%s%s\n", new_prefix,
-               avr_get_named_section_flags (new_prefix, flags, decl));
+      if (TREE_CODE (decl) == VAR_DECL &&
+          lookup_attribute ("section", DECL_ATTRIBUTES (decl)))
+        fprintf (asm_out_file, "\t.section\t%s%s\n", name,
+                  avr_get_named_section_flags (name, flags, decl));
+      else
+        fprintf (asm_out_file, "\t.section\t%s%s\n", new_prefix,
+                  avr_get_named_section_flags (new_prefix, flags, decl));
+
       return;
     }
 
@@ -10425,14 +10451,14 @@ avr_section_type_flags (tree decl, const char *name, int reloc)
       if (avr_progmem_p (decl, DECL_ATTRIBUTES (decl)))
       {
         addr_space_t as = TYPE_ADDR_SPACE (TREE_TYPE (decl));
-  
+
         /* Attribute progmem puts data in generic address space.
            Set section flags as if it was in __flash to get the right
            section prefix in the remainder.  */
-  
+
         if (ADDR_SPACE_GENERIC_P (as))
           as = ADDR_SPACE_FLASH;
-  
+
         flags |= as * SECTION_MACH_DEP;
         flags &= ~SECTION_WRITE;
         flags &= ~SECTION_BSS;
@@ -10697,14 +10723,17 @@ avr_get_section_name (tree decl)
     {
       /* address space may not be set if __attribute__((__progmem__)) is given.  */
       addr_space_t as = TYPE_ADDR_SPACE (TREE_TYPE (decl));
-      if (as == 0)
+
+      if (-1 == avr_progmem_p(decl, DECL_ATTRIBUTES(decl)))
+        sprintf (defaultSectionName, "%s", "progmem.data");
+      else if (as == 0)
         sprintf (defaultSectionName, "%s", avr_addrspace[ADDR_SPACE_FLASH].section_name);
       else
         sprintf (defaultSectionName, "%s", avr_addrspace[as].section_name);
     }
   else
     {
-      sprintf (defaultSectionName, "*_%8.8lx%lx", (unsigned long)decl, ltime);
+      sprintf (defaultSectionName, "*_%8.8" PRIxPTR "%lx", (uintptr_t)decl, ltime);
     }
 
   ptr = sname;
@@ -10721,7 +10750,7 @@ avr_get_section_name (tree decl)
 
   return sname;
 }
- 
+
 /* Implement `TARGET_ASM_SELECT_SECTION' */
 
 static section *
@@ -10788,8 +10817,6 @@ avr_output_configurations (void)
 	/* Return if no configurations changed.  */
 	if (!DeviceConfigurations.AreConfigsChanged) return;
 
-  fprintf (asm_out_file, "# Microchip Technology AVR MCU configurations\n");
-
   for (SpaceIterator itSpace = DeviceConfigurations.Spaces.begin();
        itSpace != DeviceConfigurations.Spaces.end(); itSpace++)
     {
@@ -10800,11 +10827,7 @@ avr_output_configurations (void)
       if (itSpace->AsmSectionName.empty())
         continue;
 
-      /* Output section directive with corresponding section name.  */
-      fprintf (asm_out_file, "\t.section\t%s, data\n",
-               itSpace->AsmSectionName.c_str());
-
-      uint32_t RegIndex = 0;
+      int totalBytes = 0;
       for (RegIterator itR = itSpace->registers.begin();
            itR != itSpace->registers.end(); itR++)
         {
@@ -10815,24 +10838,49 @@ avr_output_configurations (void)
                      RegWidthBits, itR->rname.c_str());
               return;
             }
-          const char * ConfigSpaceName = itSpace->sname.c_str();
+          totalBytes += (RegWidthBits/8);
+        }
 
-          fprintf (asm_out_file, "\t.type\t__config_%s_REG_%02X, @object\n",
-                   ConfigSpaceName, RegIndex);
-          fprintf (asm_out_file, "\t.size\t__config_%s_REG_%02X, %d\n",
-                   ConfigSpaceName, RegIndex, RegWidthBits / 8);
-          fprintf (asm_out_file, "__config_%s_REG_%02X:\n",
-                   ConfigSpaceName, RegIndex);
+      tree type = build_array_type_nelts (unsigned_char_type_node, totalBytes);
+      tree decl = (tree)itSpace->decl;
+      if (!decl)
+        {
+          const std::string declname = "__config__" + itSpace->sname;
+          tree var = build_decl (UNKNOWN_LOCATION, VAR_DECL,
+                                 get_identifier (declname.c_str()),
+                                 type);
+          TREE_PUBLIC (var) = 1; TREE_USED (var) = 1; TREE_STATIC (var) = 1;
+          DECL_IGNORED_P (var) = 1; DECL_ARTIFICIAL (var) = 1;
+          DECL_PRESERVE_P (var) = 1;
 
+          set_decl_section_name (var, itSpace->AsmSectionName.c_str());
+          itSpace->decl = var; decl = var;
+        }
+
+      vec<constructor_elt, va_gc> *v;
+      vec_alloc (v, totalBytes);
+
+      uint32_t RegIndex = 0;
+      for (RegIterator itR = itSpace->registers.begin();
+           itR != itSpace->registers.end(); itR++)
+        {
+          uint8_t RegWidthBits = itR->width;
           uint32_t RegValue = itR->GetValue();
           int8_t index = 0;
           while (index < RegWidthBits)
           {
-            fprintf (asm_out_file, "\t.byte\t0x%02X\n", (0x000000ff & (RegValue >> index)));
+            CONSTRUCTOR_APPEND_ELT (v, NULL_TREE,
+                                    build_int_cst (unsigned_char_type_node,
+                                                   (0x000000ff & (RegValue >> index))));
             index += 8;
           }
           RegIndex += RegWidthBits / 8;
         }
+      tree ctor = build_constructor (type, v);
+      TREE_CONSTANT (ctor) = 1;
+      TREE_STATIC (ctor) = 1;
+      DECL_INITIAL (decl) = ctor;
+      varpool_node::finalize_decl (decl);
     }
 }
 
@@ -10843,9 +10891,6 @@ avr_output_configurations (void)
 static void
 avr_file_end (void)
 {
-  /* Output the configuration values.  */
-  avr_output_configurations();
-
   /* Output these only if there is anything in the
      .data* / .rodata* / .gnu.linkonce.* resp. .bss* or COMMON
      input section(s) - some code size can be saved by not

@@ -2,12 +2,15 @@
 #include <fstream>
 
 #include "avr-device-config.h"
-#include "DevXMLParse.h"
+#include "CFGDataParse.h"
 
 #include <assert.h>
 #include <cstdio>
+#include <cerrno>
+#include <cstdlib>
 
-ConfigSpace::ConfigSpace() : isReferenced(false) {}
+ConfigSpace::ConfigSpace(std::string sectionName) :
+  AsmSectionName (sectionName), isReferenced(false), decl(NULL) {}
 
 void
 ConfigSpace::SetValues(std::string name, uint32_t addr, uint32_t nbytes)
@@ -30,22 +33,11 @@ ConfigSpace::Print(std::ostream &Stream)
     R->Print(Stream);
 }
 
-ConfigReg::ConfigReg(std::string name, uint8_t offset_index,
-                     uint8_t bits, uint32_t defval)
+ConfigReg::ConfigReg(std::string name, uint32_t addr, uint8_t bits,
+                     uint32_t defval)
+  : rname (name), address (addr), width (bits), factorydefault (defval)
 {
-  rname = name;
-  offset = offset_index;
-  width = bits;
-  factorydefault = defval;
-}
-
-ConfigReg::ConfigReg(uint8_t offset_index, uint8_t bits, uint32_t defval)
-{
-  // Create a register with name reserved for edc:AdjustPoint
-  rname = std::string("reserved");
-  offset = offset_index,
-  width = bits;
-  factorydefault = defval;
+  offset = 0x0000FFFF & addr;
 }
 
 uint32_t
@@ -56,11 +48,19 @@ ConfigReg::GetValue()
   for (ConfigIterator C = configs.begin(); C != configs.end(); C++)
     {
       // clear config bits in a byte and set config bits
-      RegValue = RegValue & (~(C->mask << C->bitPos));
-      RegValue |= (C->GetValue() << C->bitPos);
+      RegValue = RegValue & (~(C->mask));
+      RegValue |= C->GetValue();
     }
 
   return RegValue & ((1 << width) - 1);
+}
+
+void ConfigReg::SetDefaultValues ()
+{
+  for (ConfigIterator C = configs.begin(); C != configs.end(); C++)
+    {
+      C->SetDefaultValue (factorydefault);
+    }
 }
 
 void
@@ -78,31 +78,24 @@ ConfigReg::Print(std::ostream &Stream)
     }
 }
 
-ConfigSpec::ConfigSpec(std::string name, uint8_t nbits,
-                       uint8_t bpos, bool canEdit=true)
-  :isModified(false)
-{
-  cname = name;
-  width = nbits;
-  mask = (1 << width) - 1;
-  bitPos = bpos;
-  isEditable = canEdit;
-}
+/*
+  CSETTING:<mask>:<name>[,<alias list>]:<description>
 
-ConfigSpec::ConfigSpec(uint8_t nbits, uint8_t bpos, bool canEdit=true)
-  :isModified(false)
+  mask: value for the representing bits
+  e.g. for 2-3 bits, mask will be 0xC
+*/
+ConfigSpec::ConfigSpec (std::string name, uint32_t cmask, uint8_t bpos,
+                        bool canEdit=true)
+  : cname(name), mask(cmask), bitPos(bpos), isModified (false)
 {
-  cname = std::string("reserved");
-  width = nbits;
-  mask = (1 << width) - 1;
-  bitPos = bpos;
+  width = __builtin_popcount (cmask);
   isEditable = canEdit;
 }
 
 void ConfigSpec::SetDefaultValue(uint32_t RegDefaultVal)
 {
-  //default_value = ((regFactoryValue & (mask << bpos)) >> bpos);
-  default_value = (RegDefaultVal & (mask << bitPos)) >> bitPos;
+  /* default value as in the respective bit position.  */
+  default_value = RegDefaultVal & mask;
 }
 
 void ConfigSpec::AddRefValue(std::string id, uint8_t val)
@@ -113,8 +106,10 @@ void ConfigSpec::AddRefValue(std::string id, uint8_t val)
 // Set value for config. Returns false if not valid value
 bool ConfigSpec::SetValue(std::string value)
 {
-  bool isNumber = value.find_first_not_of("0123456789") == std::string::npos;
-  uint32_t int_val = strtol(value.c_str(), NULL, 0);
+  char *endptr = NULL;
+  errno = 0;
+  uint32_t int_val = strtoul (value.c_str(), &endptr, 0);
+  bool isNumber = *endptr == '\0';
 
   /* If no reference values found, allow any NUMERIC value
      but check the limits. Ref: XC8-1741  */
@@ -132,8 +127,7 @@ bool ConfigSpec::SetValue(std::string value)
   for (RefValIterator R = reference_values.begin();
        R != reference_values.end(); R++)
     {
-      if (isNumber ? R->second != int_val :
-                     R->first.compare(value) != 0)
+      if (isNumber ? R->second != int_val : R->first.compare(value) != 0)
         continue;
       IsRefFound = true;
       user_value = R->second;
@@ -147,7 +141,7 @@ uint8_t ConfigSpec::GetValue()
   if (isModified == false)
     return default_value;
 
-  return user_value;
+  return user_value << bitPos;
 }
 
 void
@@ -170,6 +164,7 @@ ConfigSpec::Print(std::ostream &Stream)
 
 AvrDeviceConfig::AvrDeviceConfig()
 {
+  AreConfigsLoaded = false;
   AreConfigsChanged = false;
 }
 
@@ -180,51 +175,17 @@ bool AvrDeviceConfig::LoadConfigurations(std::string File)
   std::ifstream cfgfile(File.c_str(), std::ifstream::in);
   if (!cfgfile.good()) return false;
 
-  ConfigFile = File;
-
-  DXMLParser xmlParser (ConfigFile);
-  bool status = xmlParser.Initialize();
-
+  CFGDataParser cfgParser (File);
+  std::string errorMsg;
+  bool status = cfgParser.GetConfigurations (Spaces, errorMsg);
   if (!status)
     {
-      //cout << "XML parser initialization failed.\n";
+      fprintf (stderr, "Warning: Could not load configurations (%s)\n",
+               errorMsg.c_str());
       return false;
     }
 
-  char ErrorMsg[255] = "";
-  ConfigSpace FusesSpace;
-  status = xmlParser.GetSectorConfig("FusesSpace", "FUSES", FusesSpace, ErrorMsg);
-
-  if (!status)
-    {
-      fprintf(stderr, "Warning: FUSES configurations are not loaded (%s)\n",
-              ErrorMsg);
-
-      //cout << "Error: " << ErrorMsg << endl;
-      //return false;
-    }
-  else
-    {
-      FusesSpace.AsmSectionName = std::string(".fuse");
-      Spaces.push_back(FusesSpace);
-    }
-
-  ConfigSpace LockbitsSpace;
-  status = xmlParser.GetSectorConfig("LockbitsSpace", "LOCKBITS", LockbitsSpace, ErrorMsg);
-  if (!status)
-    {
-	  fprintf(stderr, "Warning: LOCKBITS configurations are not loaded (%s)\n",
-              ErrorMsg);
-
-	  //cout << "Error: " << ErrorMsg << endl;
-	  //return false;
-    }
-  else
-    {
-	  LockbitsSpace.AsmSectionName = std::string(".lock");
-	  Spaces.push_back(LockbitsSpace);
-    }
-
+  AreConfigsLoaded = true;
   return true;
 }
 
@@ -263,7 +224,7 @@ bool AvrDeviceConfig::SetConfig(std::string config_name, std::string value,
               if (false == itC->SetValue(value))
                 {
                   sprintf (Error, "unknown value for configuration '%s': '%s'",
-                         config_name.c_str(), value.c_str());
+                           config_name.c_str(), value.c_str());
                   return false;
                 }
 

@@ -5,7 +5,7 @@ int
 negzero_check (double d)
 {
   if (d == 0)
-    return !!memcmp ((void *)&zero, (void *)&d, sizeof (double));
+    return !!memcmp ((const void *)&zero, (const void *)&d, sizeof (double));
   return 0;
 }
 

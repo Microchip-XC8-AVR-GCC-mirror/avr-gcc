@@ -870,6 +870,84 @@ find_and_merge_options (int fd, off_t file_offset, const char *prefix,
   return true;
 }
 
+static bool
+ends_with(const char *haystack, const char *needle)
+{
+  int haystack_len = strlen (haystack);
+  int needle_len = strlen (needle);
+  if (haystack_len < needle_len)
+    return false;
+
+  return strcmp(haystack + (haystack_len - needle_len), needle) == 0;
+}
+
+static void
+emit_lto_pa_ignore_warning (const char *lto_file,
+                            const char *ignore_pattern)
+{
+  warning(0, "-mno-pa-on-file=%qs may not exclude file %qs from procedural"
+          " abstraction in LTO mode", ignore_pattern, lto_file);
+  inform(0, "source file must be compiled without -flto");
+  fflush (stderr);
+}
+
+static void
+warn_if_lto_file_in_pa_ignore (const char* lto_file,
+                               const char *ignore_pattern)
+{
+  static int i = 0;
+  const char *at_ptr = strchr (lto_file, '@');
+  bool lto_file_in_archive_p = (at_ptr != NULL);
+
+  // About to be LTO'ed file is not a file inside an archive. Warn
+  // if its suffix matches the ignore pattern.
+  if (!lto_file_in_archive_p)
+    {
+      if (ends_with (lto_file, ignore_pattern))
+        emit_lto_pa_ignore_warning (lto_file, ignore_pattern);
+      return;
+    }
+
+  // Otherwise, warn if an ignore pattern references this archive.
+  // LTO for object files in archives can be done only with
+  // -fuse-linker-plugin, and in that case, the cref output does not
+  // indicate where the object file came from. Therefore, it does not
+  // matter if the ignore pattern specifies an object file in the
+  // archive (like libc.a(foo.o)), or the whole archive (like libc.a)
+  // - in either case, warn.
+
+  int ignore_len = strlen(ignore_pattern);
+  const char *paren_ptr = strchr (ignore_pattern, '(');
+
+  bool ignore_pattern_has_archive_p
+    = (paren_ptr != NULL
+       || (ignore_len > 2
+           && ignore_pattern[ignore_len - 2] == '.'
+           && ignore_pattern[ignore_len - 1] == 'a'));
+
+  if (!ignore_pattern_has_archive_p)
+    return;
+
+  char *lto_archive_name = XNEWVEC (char, at_ptr - lto_file + 1);
+  memcpy (lto_archive_name, lto_file, at_ptr - lto_file);
+  lto_archive_name[at_ptr - lto_file] = '\0';
+
+  char *ignore_archive_name = NULL;
+  if (paren_ptr != NULL)
+    {
+      ignore_archive_name = XNEWVEC (char, paren_ptr - ignore_pattern + 1);
+      memcpy (ignore_archive_name, ignore_pattern, paren_ptr - ignore_pattern);
+      ignore_archive_name[paren_ptr - ignore_pattern] = '\0';
+    }
+  else
+    {
+      ignore_archive_name = (char *)ignore_pattern;
+    }
+
+  if (ends_with (lto_archive_name, ignore_archive_name))
+    emit_lto_pa_ignore_warning (lto_file, ignore_pattern);
+}
+
 /* Execute gcc. ARGC is the number of arguments. ARGV contains the arguments. */
 
 static void
@@ -949,7 +1027,11 @@ run_gcc (unsigned argc, char *argv[])
 	{
 	  have_lto = true;
 	  lto_argv[lto_argc++] = argv[i];
-	}
+      for (unsigned int j = 0; j<decoded_options_count; ++j)
+        if (decoded_options[j].opt_index == OPT_mno_pa_on_file_
+            && decoded_options[j].arg != NULL)
+          warn_if_lto_file_in_pa_ignore (argv[i], decoded_options[j].arg);
+    }
 
       if (find_and_merge_options (fd, file_offset, OFFLOAD_SECTION_NAME_PREFIX,
 				  &offload_fdecoded_options,

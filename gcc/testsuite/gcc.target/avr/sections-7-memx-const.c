@@ -21,7 +21,7 @@ const int * const volatile ptr4;
 const int * const ptr5 = (const int*)0x1234;
 const int * const volatile ptr6 = (const int*const volatile)0xabcd;
 
-const volatile char __section("ignored_section_name") cvArr[] = "hello";
+const volatile char __section("user_section_name") cvArr[] = "hello";
 
 int main ()
 {
@@ -38,5 +38,4 @@ int main ()
 /* { dg-final { scan-assembler ".global\tptr4\n\t.section\t.progmemx.data,progmemx\n\t.type\tptr4" } } */
 /* { dg-final { scan-assembler ".global\tptr5\n\t.section\t.progmemx.data,progmemx\n\t.type\tptr5" } } */
 /* { dg-final { scan-assembler ".global\tptr6\n\t.section\t.progmemx.data,progmemx\n\t.type\tptr6" } } */
-/* { dg-final { scan-assembler ".global\tcvArr\n\t.section\t.progmemx.data,progmemx\n\t.type\tcvArr" } } */
-
+/* { dg-final { scan-assembler ".global\tcvArr\n\t.section\tuser_section_name,progmemx\n\t.type\tcvArr" } } */

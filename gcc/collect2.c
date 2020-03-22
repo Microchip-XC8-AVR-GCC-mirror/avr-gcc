@@ -990,10 +990,10 @@ main (int argc, char **argv)
 		  avr_pa_enabled = true;
 		}
       else if (strncmp(q, avr_ignore_file_option,
-                       strlen(avr_ignore_file_option) == 0))
+                       strlen(avr_ignore_file_option)) == 0)
         avr_pa_ignored_objects_count += 1;
       else if (strncmp(q, avr_ignore_function_option,
-                       strlen(avr_ignore_function_option) == 0))
+                       strlen(avr_ignore_function_option)) == 0)
         avr_pa_ignored_functions_count += 1;
     }
   obstack_free (&temporary_obstack, temporary_firstobj);
@@ -1008,11 +1008,8 @@ main (int argc, char **argv)
         if (strcmp(argv[i], avr_pa_shortcall_option) == 0)
           {
             avr_pa_shortcall = true;
+            break;
           }
-				else if (strncmp (argv[i], "-flto", 5) == 0)
-					{
-						avr_pa_enabled = false;
-					}
       }
   }
 

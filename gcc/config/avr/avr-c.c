@@ -489,24 +489,19 @@ extern enum cpp_ttype pragma_lex (tree *value);
       } while(0);
 #endif
 
+extern void avr_output_configurations(void);
 /* handler function for pragma config.  */
 void
-avr_handle_config_pragma (struct cpp_reader *pfile)
+avr_handle_config_pragma (struct cpp_reader *pfile ATTRIBUTE_UNUSED)
 {
   enum cpp_ttype tok;
   tree tok_value;
   static int shown_no_config_warning = 0;
   
-  if (flag_generate_lto)
+  if (DeviceConfigurations.AreConfigsLoaded == false)
     {
-      warning (0, "#pragma config not supported with -flto option, this file will not participate in LTO");
-      flag_generate_lto = 0;
-    }
-
-  if (DeviceConfigurations.ConfigFile.empty())
-    {
-      error ("#pragma config directive not available as device config file "
-             "not found.");
+      error ("#pragma config directive not available as device configurations "
+             "are not loaded.");
       CLEAR_REST_OF_INPUT_LINE();
       return;
     }
@@ -530,7 +525,6 @@ avr_handle_config_pragma (struct cpp_reader *pfile)
   tok = pragma_lex (&tok_value);
   while (1)
     {
-      const cpp_token *raw_token;
       const char *setting_name = NULL;
       unsigned char *value_name = NULL;
 
@@ -612,6 +606,8 @@ avr_handle_config_pragma (struct cpp_reader *pfile)
      clear the rest of the data on the line. */
   if (tok != CPP_EOF)
     CLEAR_REST_OF_INPUT_LINE();
+
+  avr_output_configurations();
 }
 
 

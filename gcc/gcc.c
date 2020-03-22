@@ -7334,6 +7334,7 @@ void
 driver::maybe_putenv_COLLECT_LTO_WRAPPER () const
 {
   char *lto_wrapper_file;
+  char *lto_wrapper_escaped_file;
 
   if (have_c)
     lto_wrapper_file = NULL;
@@ -7342,13 +7343,24 @@ driver::maybe_putenv_COLLECT_LTO_WRAPPER () const
 				    X_OK, false);
   if (lto_wrapper_file)
     {
-      lto_wrapper_file = convert_white_space (lto_wrapper_file);
-      lto_wrapper_spec = lto_wrapper_file;
+      // Take a copy of lto_wrapper_file, in case convert_white_space
+      // frees it.
+      int len = strlen (lto_wrapper_file);
+      char *orig_lto_wrapper_file = (char *) xmalloc (len + 1);
+      strcpy (orig_lto_wrapper_file, lto_wrapper_file);
+
+      lto_wrapper_escaped_file = convert_white_space (lto_wrapper_file);
+      lto_wrapper_spec = lto_wrapper_escaped_file;
+#if !defined(__MINGW32__)
+      lto_wrapper_file = lto_wrapper_escaped_file;
+#else
+      lto_wrapper_file = orig_lto_wrapper_file;
+#endif
       obstack_init (&collect_obstack);
       obstack_grow (&collect_obstack, "COLLECT_LTO_WRAPPER=",
 		    sizeof ("COLLECT_LTO_WRAPPER=") - 1);
-      obstack_grow (&collect_obstack, lto_wrapper_spec,
-		    strlen (lto_wrapper_spec) + 1);
+      obstack_grow (&collect_obstack, lto_wrapper_file,
+		    strlen (lto_wrapper_file) + 1);
       xputenv (XOBFINISH (&collect_obstack, char *));
     }
 
