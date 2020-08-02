@@ -407,7 +407,7 @@ get_block_for_section (section *sect)
 
 static rtx
 create_block_symbol (const char *label, struct object_block *block,
-		     HOST_WIDE_INT offset)
+		     HOST_WIDE_INT offset, machine_mode mode)
 {
   rtx symbol;
   unsigned int size;
@@ -419,7 +419,7 @@ create_block_symbol (const char *label, struct object_block *block,
   /* Initialize the normal SYMBOL_REF fields.  */
   memset (symbol, 0, size);
   PUT_CODE (symbol, SYMBOL_REF);
-  PUT_MODE (symbol, Pmode);
+  PUT_MODE (symbol, mode);
   XSTR (symbol, 0) = label;
   SYMBOL_REF_FLAGS (symbol) = SYMBOL_FLAG_HAS_BLOCK_INFO;
 
@@ -1477,18 +1477,16 @@ make_decl_rtl (tree decl)
   if (TREE_CODE (decl) == VAR_DECL && DECL_WEAK (decl))
     DECL_COMMON (decl) = 0;
 
+  machine_mode address_mode = Pmode;
+  if (TREE_TYPE (decl) != error_mark_node)
+  {
+    addr_space_t as = TYPE_ADDR_SPACE (TREE_TYPE (decl));
+    address_mode = targetm.addr_space.address_mode (as);
+  }
   if (use_object_blocks_p () && use_blocks_for_decl_p (decl))
-    x = create_block_symbol (name, get_block_for_decl (decl), -1);
+    x = create_block_symbol (name, get_block_for_decl (decl), -1, address_mode);
   else
-    {
-      machine_mode address_mode = Pmode;
-      if (TREE_TYPE (decl) != error_mark_node)
-	{
-	  addr_space_t as = TYPE_ADDR_SPACE (TREE_TYPE (decl));
-	  address_mode = targetm.addr_space.address_mode (as);
-	}
       x = gen_rtx_SYMBOL_REF (address_mode, name);
-    }
   SYMBOL_REF_WEAK (x) = DECL_WEAK (decl);
   SET_SYMBOL_REF_DECL (x, decl);
 
@@ -3301,6 +3299,13 @@ build_constant_desc (tree exp)
   else
     align_variable (decl, 0);
 
+  machine_mode address_mode = Pmode;
+  if (TREE_TYPE (decl) != error_mark_node)
+  {
+    addr_space_t as = TYPE_ADDR_SPACE (TREE_TYPE (decl));
+    address_mode = targetm.addr_space.address_mode (as);
+  }
+
   /* Now construct the SYMBOL_REF and the MEM.  */
   if (use_object_blocks_p ())
     {
@@ -3311,7 +3316,7 @@ build_constant_desc (tree exp)
 		   : symtab_node::get (decl)->definition_alignment ());
       section *sect = get_constant_section (exp, align);
       symbol = create_block_symbol (ggc_strdup (label),
-				    get_block_for_section (sect), -1);
+				    get_block_for_section (sect), -1, address_mode);
     }
   else
     {
@@ -3800,10 +3805,10 @@ force_const_mem (machine_mode mode, rtx x)
     {
       section *sect = targetm.asm_out.select_rtx_section (mode, x, align);
       symbol = create_block_symbol (ggc_strdup (label),
-				    get_block_for_section (sect), -1);
+				    get_block_for_section (sect), -1, mode);
     }
   else
-    symbol = gen_rtx_SYMBOL_REF (Pmode, ggc_strdup (label));
+    symbol = gen_rtx_SYMBOL_REF (mode, ggc_strdup (label));
   desc->sym = symbol;
   SYMBOL_REF_FLAGS (symbol) |= SYMBOL_FLAG_LOCAL;
   CONSTANT_POOL_ADDRESS_P (symbol) = 1;
@@ -7342,7 +7347,7 @@ get_section_anchor (struct object_block *block, HOST_WIDE_INT offset,
 
   /* Create a new anchor with a unique label.  */
   ASM_GENERATE_INTERNAL_LABEL (label, "LANCHOR", anchor_labelno++);
-  anchor = create_block_symbol (ggc_strdup (label), block, offset);
+  anchor = create_block_symbol (ggc_strdup (label), block, offset, Pmode);
   SYMBOL_REF_FLAGS (anchor) |= SYMBOL_FLAG_LOCAL | SYMBOL_FLAG_ANCHOR;
   SYMBOL_REF_FLAGS (anchor) |= model << SYMBOL_FLAG_TLS_SHIFT;
 

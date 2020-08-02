@@ -249,6 +249,8 @@
 (define_mode_iterator ALL2 [HI HQ UHQ HA UHA])
 (define_mode_iterator ALL4 [SI SQ USQ SA USA])
 
+(define_mode_iterator ALL4SFDF [SI SQ USQ SA USA SF DF])
+
 ;; All supported move-modes
 (define_mode_iterator MOVMODE [QI QQ UQQ
                                HI HQ UHQ HA UHA
@@ -4879,6 +4881,37 @@
                            (label_ref (match_dup 1))
                            (pc)))]
   "operands[2] = gen_int_mode (-2147483647 - 1, SImode);")
+
+;; Split load of 4-byte wide modes with symref address into
+;; base reg load of symref address + indexed load
+(define_peephole2
+  [(match_scratch:HI 2 "e")
+   (set (match_operand:ALL4SFDF 0 "register_operand" "")
+        (match_operand:ALL4SFDF 1 "memory_operand" ""))]
+  "!optimize_insn_for_speed_p()
+   && MEM_P (operands[1])
+   && ADDR_SPACE_GENERIC_P (MEM_ADDR_SPACE (operands[1]))
+   && CONSTANT_ADDRESS_P (XEXP (operands[1], 0))"
+  [(set (match_dup 2)
+        (match_dup 3))
+   (set (match_dup 0) (mem:ALL4SFDF (match_dup 2)))]
+  "operands[3] = XEXP (operands[1], 0);")
+
+;; Split store of 4-byte wide modes with symref address into
+;; base reg load of symref address + indexed store
+(define_peephole2
+  [(match_scratch:HI 2 "e")
+   (set (match_operand:ALL4SFDF 0 "memory_operand" "")
+        (match_operand:ALL4SFDF 1 "register_operand" ""))]
+  "!optimize_insn_for_speed_p()
+   && MEM_P (operands[0])
+   && ADDR_SPACE_GENERIC_P (MEM_ADDR_SPACE (operands[0]))
+   && CONSTANT_ADDRESS_P (XEXP (operands[0], 0))"
+  [(set (match_dup 2)
+        (match_dup 3))
+   (set (mem:ALL4SFDF (match_dup 2)) (match_dup 1))]
+  "operands[3] = XEXP (operands[0], 0);")
+
 
 ;; ************************************************************************
 ;; Implementation of conditional jumps here.

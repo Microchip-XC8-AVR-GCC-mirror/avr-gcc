@@ -68,6 +68,7 @@ along with GCC; see the file COPYING3.  If not see
   "%(link_text_start) "                         \
   "%(link_relax) "                              \
   "%(link_pmem_wrap) "                          \
+  "%{mno-data-init:--no-data-init} "            \
   "%{mpa:%{mshort-calls | \
            mmcu=avr1 | \
            mmcu=avr2 | \

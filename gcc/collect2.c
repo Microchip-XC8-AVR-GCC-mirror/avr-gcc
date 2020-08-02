@@ -844,11 +844,15 @@ main (int argc, char **argv)
   bool avr_pa_enabled = false;
   int8_t avr_pa_ignored_objects_count = 0;
   int8_t avr_pa_ignored_functions_count = 0;
+  int8_t avr_pa_iterations_count = 0;
   bool avr_pa_shortcall = false;
+  bool avr_pa_callcost_shortcall = false;
   const char* avr_pa_file_name = NULL;
   const char * avr_ignore_file_option = "-mno-pa-on-file=";
   const char * avr_ignore_function_option = "-mno-pa-on-function=";
   const char * avr_pa_shortcall_option = "-mpa-short-call";
+  const char * avr_pa_callcost_shortcall_option = "-mpa-callcost-shortcall";
+  const char * avr_pa_iterations_option = "-mpa-iterations=";
   static const char *const real_ld_suffix = "real-ld";
   static const char *const collect_ld_suffix = "collect-ld";
   static const char *const nm_suffix	= "nm";
@@ -982,6 +986,8 @@ main (int argc, char **argv)
   avr_pa_ignored_objects_count = 0;
   avr_pa_ignored_functions_count = 0;
   avr_pa_shortcall = false;
+  avr_pa_callcost_shortcall = false;
+  avr_pa_iterations_count = 0;
   while (p && *p)
     {
       const char *q = extract_string (&p);
@@ -995,6 +1001,12 @@ main (int argc, char **argv)
       else if (strncmp(q, avr_ignore_function_option,
                        strlen(avr_ignore_function_option)) == 0)
         avr_pa_ignored_functions_count += 1;
+      else if (strcmp (q, avr_pa_callcost_shortcall_option) == 0)
+        avr_pa_callcost_shortcall = true;
+      else if (strncmp(q, avr_pa_iterations_option,
+                       strlen(avr_pa_iterations_option)) == 0)
+        avr_pa_iterations_count += 1;
+
     }
   obstack_free (&temporary_obstack, temporary_firstobj);
 
@@ -1023,7 +1035,9 @@ main (int argc, char **argv)
     ld1_argv = XCNEWVEC (char *, argc + 4 +
 		    avr_pa_ignored_objects_count +
 		    avr_pa_ignored_functions_count +
-		    (avr_pa_shortcall ? 1 : 0)
+		    (avr_pa_shortcall ? 1 : 0) +
+		    (avr_pa_callcost_shortcall ? 1 : 0) +
+		    avr_pa_iterations_count +
 		    + 1 + 2); /* 2 for -x <xclmpath> */
   else
     ld1_argv = XCNEWVEC (char *, argc + 4);
@@ -1333,13 +1347,20 @@ main (int argc, char **argv)
     {
       obstack_begin (&temporary_obstack, 0);
       temporary_firstobj = (char *) obstack_alloc (&temporary_obstack, 0);
-			if (avr_pa_shortcall)
-				{
+      if (avr_pa_shortcall)
+        {
           const char *arch_option = "shortcall";
           char *a_option = XNEWVEC (char, 4 + strlen(arch_option));
           sprintf (a_option, "%s %s", "-a", arch_option);
           *ld1++ = a_option;
-				}
+        }
+      if (avr_pa_callcost_shortcall)
+        {
+          const char *arch_option = "callcost-shortcall";
+          char *a_option = XNEWVEC (char, 4 + strlen(arch_option));
+          sprintf (a_option, "%s %s", "-a", arch_option);
+          *ld1++ = a_option;
+        }
       p = getenv ("COLLECT_GCC_OPTIONS");
       while (p && *p)
         {
@@ -1359,6 +1380,14 @@ main (int argc, char **argv)
               char *f_option = XNEWVEC (char, 4 + strlen(obj));
               sprintf (f_option, "%s %s", "-f", obj);
               *ld1++ = f_option;
+            }
+          if (!strncmp(q, avr_pa_iterations_option,
+                       strlen(avr_pa_iterations_option)))
+            {
+              const char *obj = q + strlen(avr_pa_iterations_option);
+              char *n_option = XNEWVEC (char, 4 + strlen(obj));
+              sprintf (n_option, "%s %s", "-n", obj);
+              *ld1++ = n_option;
             }
         }
 

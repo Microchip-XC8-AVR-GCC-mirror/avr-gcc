@@ -49,6 +49,14 @@ mpa
 Target Mask(AVR_PROCEDURAL_ABSTRACTION) Undocumented
 Enable procedural abstraction optimization.
 
+mpa-callcost-shortcall
+Target RejectNegative Report
+Make PA assume calls to outlined code will get relaxed to short calls. Disabled by default.
+
+mpa-iterations=
+Target RejectNegative Joined Var(avr_pa_iterations) UInteger Init(-1)
+Specify the number of procedural abstraction iterations to run
+
 mno-pa-on-file=
 Target RejectNegative Joined MissingArgError(missing object or archive filename to be ignored for PA) Undocumented
 Ignore procedural abstraction optimization on specified object or archive file
@@ -56,6 +64,10 @@ Ignore procedural abstraction optimization on specified object or archive file
 mno-pa-on-function=
 Target RejectNegative Joined MissingArgError(missing function name to be ignored for PA) Undocumented
 Ignore procedural abstraction optimization on specified function
+
+mno-data-init
+Target Report Var(avr_no_data_init) Init(0)
+Ignore data initialization routines. Disabled by default
 
 mnon-bit-addressable-registers-mask=
 Target Report Joined Var(avr_deferred_options) Defer

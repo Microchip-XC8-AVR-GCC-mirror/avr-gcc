@@ -3,6 +3,7 @@
 
 /* { dg-do compile } */
 /* { dg-options "-mext=cci" } */
+/* { dg-skip-if "Skip if global option is to enable const data in progmem" { *-*-* } { "-mconst-data-in-progmem" } { "" } } */
 
 #include<xc.h>
 #include <avr/pgmspace.h>

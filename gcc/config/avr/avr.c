@@ -118,13 +118,13 @@
    Set address-space AS in SYMBOL_REF_FLAGS of SYM  */
 #define AVR_SYMBOL_SET_ADDR_SPACE(SYM,AS)                       \
   do {                                                          \
-    SYMBOL_REF_FLAGS (sym) &= ~AVR_SYMBOL_FLAG_PROGMEM;         \
-    SYMBOL_REF_FLAGS (sym) |= (AS) * SYMBOL_FLAG_MACH_DEP;      \
+    SYMBOL_REF_FLAGS (SYM) &= ~AVR_SYMBOL_FLAG_PROGMEM;         \
+    SYMBOL_REF_FLAGS (SYM) |= (AS) * SYMBOL_FLAG_MACH_DEP;      \
   } while (0)
 
 /* Read address-space from SYMBOL_REF_FLAGS of SYM  */
 #define AVR_SYMBOL_GET_ADDR_SPACE(SYM)                          \
-  ((SYMBOL_REF_FLAGS (sym) & AVR_SYMBOL_FLAG_PROGMEM)           \
+  ((SYMBOL_REF_FLAGS (SYM) & AVR_SYMBOL_FLAG_PROGMEM)           \
    / SYMBOL_FLAG_MACH_DEP)
 
 /* (AVR_TINY only): Symbol has attribute progmem */
@@ -10297,21 +10297,24 @@ avr_get_named_section_flags (const char* pSectionName, uint64_t flags,
       return xstrdup(SectionFlags);
     }
 
-  if ((flags & SECTION_BSS) && !(flags & AVR_SECTION_PERSISTENT))
-    {
-      f += sprintf(f, "," SECTION_ATTR_BSS);
-      avr_need_clear_bss_p = true;
-    }
-  else if (flags & SECTION_WRITE)
-    {
-      f += sprintf(f, "," SECTION_ATTR_DATA);
-      avr_need_copy_data_p = true;
-    }
-  else if (flags & AVR_SECTION_READONLY)
-    {
-      f += sprintf(f, "," SECTION_ATTR_RODATA);
-      avr_need_copy_data_p = true;
-    }
+  if (!(flags & AVR_SECTION_PERSISTENT))
+	{
+	  if (flags & SECTION_BSS)
+		{
+		  f += sprintf(f, "," SECTION_ATTR_BSS);
+		  avr_need_clear_bss_p = true;
+		}
+	  else if (flags & SECTION_WRITE)
+		{
+		  f += sprintf(f, "," SECTION_ATTR_DATA);
+		  avr_need_copy_data_p = true;
+		}
+	  else if (flags & AVR_SECTION_READONLY)
+		{
+		  f += sprintf(f, "," SECTION_ATTR_RODATA);
+		  avr_need_copy_data_p = true;
+		}
+	}
 
   if (flags & SECTION_CODE)
     f += sprintf(f, "," SECTION_ATTR_CODE);
@@ -10365,16 +10368,6 @@ avr_get_named_section_flags (const char* pSectionName, uint64_t flags,
 static void
 avr_asm_named_section (const char *name, uint64_t flags, tree decl)
 {
-  if (decl)
-    {
-      if ((flags & SECTION_WRITE) &&
-          ((!DECL_INITIAL (decl)) || (bss_initializer_p (decl))))
-        {
-          flags &= ~(uint64_t)SECTION_WRITE;
-          flags |= SECTION_BSS;
-        }
-    }
-
   const char *new_section_name = NULL;
 
   if ((flags & AVR_SECTION_PROGMEM_MASK) &&
@@ -10556,14 +10549,14 @@ avr_encode_section_info (tree decl, rtx rtl, int new_decl_p)
 
   default_encode_section_info (decl, rtl, new_decl_p);
 
-  if (decl && DECL_P (decl)
+  if (decl && (DECL_P (decl) || TREE_CODE (decl) == STRING_CST)
       && TREE_CODE (decl) != FUNCTION_DECL
       && MEM_P (rtl)
       && SYMBOL_REF == GET_CODE (XEXP (rtl, 0)))
    {
       rtx sym = XEXP (rtl, 0);
       tree type = TREE_TYPE (decl);
-      tree attr = DECL_ATTRIBUTES (decl);
+      tree attr = DECL_P (decl) ? DECL_ATTRIBUTES (decl) : NULL_TREE;
       if (type == error_mark_node)
 	return;
 
@@ -10897,10 +10890,10 @@ avr_file_end (void)
      linking in the initialization code from libgcc if resp.
      sections are empty, see PR18145.  */
 
-  if (avr_need_copy_data_p)
+  if (avr_need_copy_data_p && !avr_no_data_init)
     fputs (".global __do_copy_data\n", asm_out_file);
 
-  if (avr_need_clear_bss_p)
+  if (avr_need_clear_bss_p && !avr_no_data_init)
     fputs (".global __do_clear_bss\n", asm_out_file);
 }
 
@@ -11146,8 +11139,18 @@ avr_rtx_costs_1 (rtx x, int codearg, int outer_code ATTRIBUTE_UNUSED,
       /* MEM rtx with non-default address space is more
          expensive. Not expressing that results in reg
          clobber during expand (PR 65657). */
-      *total = COSTS_N_INSNS (GET_MODE_SIZE (mode)
-                  + (MEM_ADDR_SPACE(x) == ADDR_SPACE_RAM ? 0 : 5));
+      if (speed
+          || !ADDR_SPACE_GENERIC_P (MEM_ADDR_SPACE (x))
+          || !CONSTANT_ADDRESS_P (XEXP (x, 0)))
+        *total = COSTS_N_INSNS (GET_MODE_SIZE (mode)
+                    + (MEM_ADDR_SPACE(x) == ADDR_SPACE_RAM ? 0 : 5));
+      else
+        /* Optimizing for size, and this MEM is dereferencing a symref.
+           LDS/STS is 4 bytes whereas LD/ST is only 2, so double the
+           COSTS_N_INSNS of the usual case. */
+        *total = GET_MODE_SIZE (mode) > GET_MODE_SIZE (QImode)
+                 ? 2 * COSTS_N_INSNS (GET_MODE_SIZE (mode))
+                 : COSTS_N_INSNS (GET_MODE_SIZE (mode));
       return true;
 
     case NEG:
@@ -11998,6 +12001,9 @@ avr_address_cost (rtx x, machine_mode mode ATTRIBUTE_UNUSED,
     }
   else if (CONSTANT_ADDRESS_P (x))
     {
+      /* LDS/STS are twice as long as LD/ST */
+      if (!speed && GET_MODE_SIZE (mode) > GET_MODE_SIZE (QImode))
+        cost = 2 * cost;
       if (optimize > 0
           && io_address_operand (x, QImode))
         cost = 2;
@@ -14880,6 +14886,33 @@ avr_fold_builtin (tree fndecl, int n_args ATTRIBUTE_UNUSED, tree *arg,
 
 
 
+/* Implement TARGET_ASM_OUTPUT_ANCHOR target hook. Necessary to enable
+   section anchoring, as ASM_OUTPUT_DEF is not defined for the AVR target.
+   Same implementation as the default hook, with a .set directive as
+   the expansion of ASM_OUTPUT_DEF.. */
+
+static void
+avr_asm_output_anchor (rtx symbol)
+{
+  fprintf (asm_out_file, "\t.set\t");
+  assemble_name (asm_out_file, XSTR (symbol, 0));
+  fprintf (asm_out_file, ", . + " HOST_WIDE_INT_PRINT_DEC "\n",
+           SYMBOL_REF_BLOCK_OFFSET (symbol));
+}
+
+/* Implement TARGET_USE_ANCHORS_FOR_SYMBOL_P. Don't use anchor
+   based addressing for symbols that are not in the generic address
+   space (string literals with const-data-in-progmem, for e.g.) */
+
+static bool
+avr_use_anchors_for_symbol_p (const_rtx x)
+{
+  if (!ADDR_SPACE_GENERIC_P (AVR_SYMBOL_GET_ADDR_SPACE (x)))
+    return false;
+
+  return default_use_anchors_for_symbol_p (x);
+}
+
 /* Initialize the GCC target structure.  */
 
 #undef  TARGET_ASM_ALIGNED_HI_OP
@@ -15046,6 +15079,16 @@ avr_fold_builtin (tree fndecl, int n_args ATTRIBUTE_UNUSED, tree *arg,
 #undef TARGET_USE_BY_PIECES_INFRASTRUCTURE_P
 #define TARGET_USE_BY_PIECES_INFRASTRUCTURE_P \
   avr_use_by_pieces_infrastructure_p
+
+/* Valid range for offset (q) in LDD/STD is 0 <= q <= 63
+   Minimum valid offset is 0 */
+#define TARGET_MIN_ANCHOR_OFFSET 0
+/* Maximum (inclusive) offset is 63 */
+#define TARGET_MAX_ANCHOR_OFFSET 63
+
+#define TARGET_ASM_OUTPUT_ANCHOR avr_asm_output_anchor
+
+#define TARGET_USE_ANCHORS_FOR_SYMBOL_P avr_use_anchors_for_symbol_p
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
