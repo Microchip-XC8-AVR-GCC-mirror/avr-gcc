@@ -169,6 +169,33 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 .endfunc
 .endm
 
+/* Generate stack descriptor header and data sections for function with
+   name \name, with \bytes stack usage, and \usagekind (defaults
+   to statically allocated (0)). */
+.macro STACKUSAGE name:req, bytes:req, usagekind=0
+  .ifndef  .L__stackdescriptorhdr
+    .L__stackdescriptorhdr = 1
+    .section .stack.descriptors.hdr, info
+      .byte 0x0E  ; size
+      .4byte 0x1  ; version
+      .byte 0     ; reserved
+      .4byte 0    ; reserved
+      .4byte 0    ; reserved
+  .endif
+
+  .section .stack.descriptors, info
+    .4byte  \name      ; function address, to be resolved in linker
+    .asciz "\name"     ; function name
+    .4byte  \bytes     ; stack usage size
+    .4byte  0x08       ; flags - assembler generated
+    .byte   \usagekind ; statically allocated
+.endm
+
+/* Invoke STACKUSAGE with usagekind SU_DYNAMIC_UNBOUNDED_T (1) */
+.macro STACKUSAGE_DYNUNBOUNDED name:req, bytes:req
+STACKUSAGE \name, \bytes, 1
+.endm
+
 ;; Skip next instruction, typically a jump target
 #if defined(__AVR_TINY__)
 #define skip cpse 0,0
@@ -239,6 +266,7 @@ ENDF __mulqi3
 #undef r_arg1
 #undef r_res
 
+STACKUSAGE __mulqi3, 0
 #endif 	/* defined (L_mulqi3) */
 
 
@@ -267,6 +295,7 @@ DEFUN __umulqihi3
     clr     B1
     XJMP    __mulhi3
 ENDF __umulqihi3
+STACKUSAGE __umulqihi3, 0
 #endif /* L_umulqihi3 */
 
 #if defined (L_mulqihi3)
@@ -301,6 +330,8 @@ DEFUN __mulqihi3
     sub     C1, BB0
     ret
 ENDF __mulqihi3
+
+STACKUSAGE __mulqihi3, 0
 #endif /* L_mulqihi3 */
 
 #if defined (L_mulhi3)
@@ -342,6 +373,8 @@ DEFUN __mulhi3
     mov     C1, CC1
     ret
 ENDF  __mulhi3
+
+STACKUSAGE __mulhi3, 0
 #endif /* L_mulhi3 */
 
 #undef A0
@@ -389,6 +422,8 @@ DEFUN __umulhisi3
     wmov    A2, B2
     XJMP    __mulsi3
 ENDF __umulhisi3
+
+STACKUSAGE __umulhisi3, 0
 #endif /* L_umulhisi3 */
 
 #if defined (L_mulhisi3)
@@ -421,6 +456,8 @@ DEFUN __mulhisi3
     XJMP __mulsi3_helper
 #endif /*  __AVR_ERRATA_SKIP_JMP_CALL__ */
 ENDF __mulhisi3
+
+STACKUSAGE __mulhisi3, 0
 #endif /* L_mulhisi3 */
 
 
@@ -480,6 +517,15 @@ DEFUN __mulsi3_helper
 
     ret
 ENDF __mulsi3_helper
+
+#if defined (__AVR_TINY__)
+STACKUSAGE  __mulsi3, 2
+STACKUSAGE  __mulsi3_helper, 0 /* -2, but only fallthrough from __mulsi3 */
+#else
+STACKUSAGE  __mulsi3, 0
+STACKUSAGE  __mulsi3_helper, 0
+#endif
+
 #endif /* L_mulsi3 */
 
 #undef A0
@@ -536,6 +582,8 @@ DEFUN __mulhisi3
 1:  ;; Sign-extend A
     XJMP __usmulhisi3_tail
 ENDF __mulhisi3
+
+STACKUSAGE __mulhisi3, 0
 #endif /* L_mulhisi3 */
 
 #if defined (L_usmulhisi3)
@@ -555,6 +603,9 @@ DEFUN __usmulhisi3_tail
     sbc     C3, B1
     ret
 ENDF __usmulhisi3_tail
+
+STACKUSAGE __usmulhisi3, 0
+STACKUSAGE __usmulhisi3_tail, 0
 #endif /* L_usmulhisi3 */
 
 #if defined (L_umulhisi3)
@@ -585,6 +636,8 @@ DEFUN __umulhisi3
     adc     C3, __zero_reg__
     ret
 ENDF __umulhisi3
+
+STACKUSAGE __umulhisi3, 0
 #endif /* L_umulhisi3 */
 
 /*******************************************************
@@ -617,6 +670,9 @@ DEFUN __mulohisi3
     sbc     C3, B1
     ret
 ENDF __mulohisi3
+
+STACKUSAGE __mulshisi3, 0
+STACKUSAGE __mulohisi3, 0
 #endif /* L_mulshisi3 */
 
 #if defined (L_muluhisi3)
@@ -635,6 +691,8 @@ DEFUN __muluhisi3
     clr     __zero_reg__
     ret
 ENDF __muluhisi3
+
+STACKUSAGE __muluhisi3, 0
 #endif /* L_muluhisi3 */
 
 /*******************************************************
@@ -663,6 +721,8 @@ DEFUN __mulsi3
     clr     __zero_reg__
     ret
 ENDF __mulsi3
+
+STACKUSAGE __mulsi3, 2
 #endif /* L_mulsi3 */
 
 #undef A0
@@ -798,6 +858,12 @@ ENDF __mulpsi3
 #undef A1
 #undef A0
 
+#if defined (__AVR_TINY__)
+STACKUSAGE __mulpsi3, 2
+#else
+STACKUSAGE __mulpsi3, 0
+#endif
+
 #endif /* L_mulpsi3 */
 
 #if defined (L_mulsqipsi3) && defined (__AVR_HAVE_MUL__)
@@ -843,6 +909,7 @@ ENDF __mulsqipsi3
 #undef A1
 #undef A0
 
+STACKUSAGE __mulsqipsi3, 0
 #endif /* L_mulsqipsi3  &&  HAVE_MUL */
 
 /*******************************************************
@@ -966,6 +1033,8 @@ DEFUN __muldi3
     pop     r29
     ret
 ENDF __muldi3
+
+STACKUSAGE __muldi3, 10
 #endif /* L_muldi3 */
 
 #if defined (L_muldi3_6)
@@ -981,6 +1050,8 @@ __muldi3_6:
     adiw    C6, 1
 0:  ret
 ENDF __muldi3_6
+
+STACKUSAGE __muldi3_6, 0
 #endif /* L_muldi3_6 */
 
 #undef C7
@@ -1073,6 +1144,7 @@ ENDF __muldi3
 #undef C1
 #undef C0
 
+STACKUSAGE __muldi3, 3
 #endif /* L_muldi3 */
 #endif /* HAVE_MUL */
 #endif /* if not __AVR_TINY__ */
@@ -1183,6 +1255,9 @@ DEFUN __umulsidi3_helper
     pop     28  $   pop 29  ;; Y
     ret
 ENDF __umulsidi3_helper
+
+STACKUSAGE  __umulsidi3, 8 /* Actual 0 + fallthrough 8 */
+STACKUSAGE __umulsidi3_helper, 8
 #endif /* L_umulsidi3 */
 
 
@@ -1210,6 +1285,8 @@ DEFUN __mulsidi3
     sbc     r25, r27
     ret
 ENDF __mulsidi3
+
+STACKUSAGE __mulsidi3, 2
 #endif /* L_mulsidi3 */
 
 #undef A0
@@ -1328,6 +1405,9 @@ ENDF __umulsidi3
 #undef BB2
 #undef BB3
 #undef Mask
+
+STACKUSAGE  __mulsidi3, 10 /* Actual 0, fallthrough 10 */
+STACKUSAGE __umulsidi3, 10
 #endif /* L_mulsidi3 && !HAVE_MUL */
 #endif /* if not __AVR_TINY__ */
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1361,6 +1441,8 @@ __udivmodqi4_ep:
 				; because C flag was complemented in loop
 	ret
 ENDF __udivmodqi4
+
+STACKUSAGE __udivmodqi4, 0
 #endif /* defined (L_udivmodqi4) */
 
 #if defined (L_divmodqi4)
@@ -1381,6 +1463,8 @@ __divmodqi4_1:
 __divmodqi4_exit:
 	ret
 ENDF __divmodqi4
+
+STACKUSAGE __divmodqi4, 0
 #endif /* defined (L_divmodqi4) */
 
 #undef r_rem
@@ -1433,6 +1517,8 @@ __udivmodhi4_ep:
 	mov_h	r_arg1H, r_remH
 	ret
 ENDF __udivmodhi4
+
+STACKUSAGE __udivmodhi4, 0
 #endif /* defined (L_udivmodhi4) */
 
 #if defined (L_divmodhi4)
@@ -1465,6 +1551,8 @@ __divmodhi4_neg2:
 __divmodhi4_exit:
     ret
 ENDF __divmodhi4
+
+STACKUSAGE __divmodhi4, 0
 #endif /* defined (L_divmodhi4) */
 
 #undef r_remH
@@ -1545,6 +1633,8 @@ __udivmodpsi4_start:
     clr     __zero_reg__ ; C0
     ret
 ENDF __udivmodpsi4
+
+STACKUSAGE __udivmodpsi4, 0
 #endif /* defined (L_udivmodpsi4) */
 
 #if defined (L_divmodpsi4)
@@ -1597,6 +1687,8 @@ __divmodpsi4_end:
     ret
 
 ENDF __divmodpsi4
+
+STACKUSAGE __divmodpsi4, 0
 #endif /* defined (L_divmodpsi4) */
 
 #undef A0
@@ -1681,6 +1773,8 @@ __udivmodsi4_ep:
 	mov_h	r_arg1HH, r_remHH
 	ret
 ENDF __udivmodsi4
+
+STACKUSAGE __udivmodsi4, 0
 #endif /* defined (L_udivmodsi4) */
 
 #if defined (L_divmodsi4)
@@ -1710,6 +1804,8 @@ __divmodsi4_neg2:
 __divmodsi4_exit:
     ret
 ENDF __divmodsi4
+
+STACKUSAGE __divmodsi4, 0
 #endif /* defined (L_divmodsi4) */
 
 #if defined (L_negsi2)
@@ -1720,6 +1816,8 @@ DEFUN __negsi2
     NEG4    22
     ret
 ENDF __negsi2
+
+STACKUSAGE __negsi2, 0
 #endif /* L_negsi2 */
 
 #undef r_remHH
@@ -1828,6 +1926,11 @@ DEFUN __udivdi3_umoddi3
     pop     C0
     ret
 ENDF __udivdi3_umoddi3
+
+
+STACKUSAGE __umoddi3, 0
+STACKUSAGE __udivdi3, 4 /* Actual 0, fallthrough 4 */
+STACKUSAGE __udivdi3_umoddi3, 4
 #endif /* L_udivdi3 */
 
 #if defined (L_udivmod64)
@@ -1954,6 +2057,12 @@ DEFUN __udivmod64
 6:  ret
 
 ENDF __udivmod64
+
+#if SPEED_DIV == 8
+STACKUSAGE __udivmod64, 1
+#else
+STACKUSAGE __udivmod64, 0
+#endif
 #endif /* L_udivmod64 */
 
 
@@ -2033,6 +2142,10 @@ DEFUN  __divdi3_moddi3
 
 ENDF __divdi3_moddi3
 
+
+STACKUSAGE __moddi3, 0
+STACKUSAGE __divdi3, 12 /* Actual 0, fallthrough 12 */
+STACKUSAGE __divdi3_moddi3, 12
 #endif /* L_divdi3 */
 
 #undef R_cnt
@@ -2054,6 +2167,8 @@ DEFUN __adddi3
     adc A4,B4  $  adc A5,B5  $  adc A6,B6  $  adc A7,B7
     ret
 ENDF __adddi3
+
+STACKUSAGE __adddi3, 0
 #endif /* L_adddi3 */
 
 #if defined (L_adddi3_s8)
@@ -2070,6 +2185,8 @@ DEFUN __adddi3_s8
     adc A4,TT  $  adc A5,TT  $  adc A6,TT  $  adc A7,TT
     ret
 ENDF __adddi3_s8
+
+STACKUSAGE __adddi3_s8, 0
 #endif /* L_adddi3_s8 */
 
 #if defined (L_subdi3)
@@ -2083,6 +2200,8 @@ DEFUN __subdi3
     sbc A4,B4  $  sbc A5,B5  $  sbc A6,B6  $  sbc A7,B7
     ret
 ENDF __subdi3
+
+STACKUSAGE __subdi3, 0
 #endif /* L_subdi3 */
 
 #if defined (L_cmpdi2)
@@ -2094,6 +2213,8 @@ DEFUN __cmpdi2
     cpc A4,B4  $  cpc A5,B5  $  cpc A6,B6  $  cpc A7,B7
     ret
 ENDF __cmpdi2
+
+STACKUSAGE __cmpdi2, 0
 #endif /* L_cmpdi2 */
 
 #if defined (L_cmpdi2_s8)
@@ -2108,6 +2229,8 @@ DEFUN __cmpdi2_s8
     cpc A4,TT  $  cpc A5,TT  $  cpc A6,TT  $  cpc A7,TT
     ret
 ENDF __cmpdi2_s8
+
+STACKUSAGE __cmpdi2_s8, 0
 #endif /* L_cmpdi2_s8 */
 
 #if defined (L_negdi2)
@@ -2124,6 +2247,8 @@ DEFUN __negdi2
     ret
 
 ENDF __negdi2
+
+STACKUSAGE __negdi2, 0
 #endif /* L_negdi2 */
 
 #undef TT
@@ -2280,6 +2405,8 @@ ENDF _exit
 	cli
 __stop_program:
 	rjmp	__stop_program
+
+STACKUSAGE _exit, 0
 #endif /* defined (L_exit) */
 
 #ifdef L_cleanup
@@ -2288,6 +2415,7 @@ __stop_program:
 _cleanup:
 	ret
 .endfunc
+STACKUSAGE _cleanup, 0
 #endif /* defined (L_cleanup) */
 
 
@@ -2346,6 +2474,14 @@ DEFUN __tablejump2__
     ret
 #endif
 ENDF __tablejump2__
+
+#if defined (__AVR_HAVE_ELPMX__) \
+    || defined (__AVR_HAVE_LPMX__) \
+    || defined (__AVR_TINY__)
+STACKUSAGE __tablejump2__, 0
+#else
+STACKUSAGE __tablejump2__, 2
+#endif
 #endif /* L_tablejump2 */
 
 #ifdef L_copy_data
@@ -2523,6 +2659,8 @@ DEFUN __do_global_ctors
 #endif /* HAVE_EIJMP */
     brne    .L__do_global_ctors_loop
 ENDF __do_global_ctors
+
+STACKUSAGE __do_global_ctors, 0
 #endif /* L_ctors */
 
 #ifdef L_dtors
@@ -2555,6 +2693,8 @@ DEFUN __do_global_dtors
 #endif /* HAVE_EIJMP */
     brne    .L__do_global_dtors_loop
 ENDF __do_global_dtors
+
+STACKUSAGE __do_global_dtors, 0
 #endif /* L_dtors */
 
 #undef cdtors_tst_reg
@@ -2594,6 +2734,8 @@ DEFUN __load_3
     pop   D3
     ret
 ENDF __load_3
+
+STACKUSAGE __load_3, 1
 #endif /* L_load_3 */
 
 #if defined (L_load_4)
@@ -2604,6 +2746,8 @@ DEFUN __load_4
     .load D3, 4
     ret
 ENDF __load_4
+
+STACKUSAGE __load_4, 0
 #endif /* L_load_4 */
 
 #endif /* L_load_3 || L_load_3 */
@@ -2690,6 +2834,8 @@ DEFUN __xload_1
     ret
 #endif /* LPMx && ! ELPM */
 ENDF __xload_1
+
+STACKUSAGE __xload_1, 0
 #endif /* L_xload_1 */
 
 #if defined (L_xload_2)
@@ -2706,6 +2852,8 @@ DEFUN __xload_2
     ld      D1, Z+
     ret
 ENDF __xload_2
+
+STACKUSAGE __xload_2, 0
 #endif /* L_xload_2 */
 
 #if defined (L_xload_3)
@@ -2724,6 +2872,8 @@ DEFUN __xload_3
     ld      D2, Z+
     ret
 ENDF __xload_3
+
+STACKUSAGE __xload_3, 0
 #endif /* L_xload_3 */
 
 #if defined (L_xload_4)
@@ -2744,6 +2894,8 @@ DEFUN __xload_4
     ld      D3, Z+
     ret
 ENDF __xload_4
+
+STACKUSAGE __xload_4, 0
 #endif /* L_xload_4 */
 
 #if defined (L_xload_8)
@@ -2772,6 +2924,8 @@ DEFUN __xload_8
     ld      D7, Z+
     ret
 ENDF __xload_8
+
+STACKUSAGE __xload_8, 0
 #endif /* L_xload_8 */
 
 #endif /* L_xload_{1|2|3|4|8} */
@@ -2848,6 +3002,8 @@ ENDF __movmemx_hi
 #undef HHI8
 #undef LOOP
 
+STACKUSAGE __movmemx_qi, 0
+STACKUSAGE __movmemx_hi, 0
 #endif /* L_movmemx */
 #endif /* !defined (__AVR_TINY__) */
 
@@ -2879,6 +3035,8 @@ DEFUN __ffssi2
 1:  mov  r24, r22
     XJMP __loop_ffsqi2
 ENDF __ffssi2
+
+STACKUSAGE __ffssi2, 0
 #endif /* defined (L_ffssi2) */
 
 #if defined (L_ffshi2)
@@ -2900,6 +3058,8 @@ DEFUN __ffshi2
     brne 1b
     ret
 ENDF __ffshi2
+
+STACKUSAGE __ffshi2, 0
 #endif /* defined (L_ffshi2) */
 
 #if defined (L_loop_ffsqi2)
@@ -2915,6 +3075,8 @@ DEFUN __loop_ffsqi2
     clr  r25
     ret
 ENDF __loop_ffsqi2
+
+STACKUSAGE __loop_ffsqi2, 0
 #endif /* defined (L_loop_ffsqi2) */
 
 
@@ -2933,6 +3095,8 @@ DEFUN __ctzsi2
     dec  r24
     ret
 ENDF __ctzsi2
+
+STACKUSAGE __ctzsi2, 0
 #endif /* defined (L_ctzsi2) */
 
 #if defined (L_ctzhi2)
@@ -2946,6 +3110,8 @@ DEFUN __ctzhi2
     dec  r24
     ret
 ENDF __ctzhi2
+
+STACKUSAGE __ctzhi2, 0
 #endif /* defined (L_ctzhi2) */
 
 
@@ -2969,6 +3135,8 @@ DEFUN __clzdi2
     subi r24, -32
     ret
 ENDF __clzdi2
+
+STACKUSAGE __clzdi2, 0
 #endif /* defined (L_clzdi2) */
 
 #if defined (L_clzsi2)
@@ -2985,6 +3153,8 @@ DEFUN __clzsi2
     subi r24, -16
     ret
 ENDF __clzsi2
+
+STACKUSAGE __clzsi2, 0
 #endif /* defined (L_clzsi2) */
 
 #if defined (L_clzhi2)
@@ -3011,6 +3181,8 @@ DEFUN __clzhi2
     clr  r25
     ret
 ENDF __clzhi2
+
+STACKUSAGE __clzhi2, 0
 #endif /* defined (L_clzhi2) */
 
 
@@ -3028,6 +3200,8 @@ DEFUN __paritydi2
     eor  r24, r21
     XJMP __paritysi2
 ENDF __paritydi2
+
+STACKUSAGE __paritydi2, 0
 #endif /* defined (L_paritydi2) */
 
 #if defined (L_paritysi2)
@@ -3038,6 +3212,8 @@ DEFUN __paritysi2
     eor  r24, r23
     XJMP __parityhi2
 ENDF __paritysi2
+
+STACKUSAGE __paritysi2, 0
 #endif /* defined (L_paritysi2) */
 
 #if defined (L_parityhi2)
@@ -3067,6 +3243,9 @@ DEFUN __parityqi2
     clr  r25
     ret
 ENDF __parityqi2
+
+STACKUSAGE __parityqi2, 0
+STACKUSAGE __parityhi2, 0
 #endif /* defined (L_parityhi2) */
 
 
@@ -3092,6 +3271,10 @@ DEFUN __popcounthi2_tail
     add   r24, __tmp_reg__
     ret
 ENDF __popcounthi2_tail
+
+STACKUSAGE __popcounthi2, 1
+/* -1, but only fallthru jump from other funcs that pushed a byte. */
+STACKUSAGE __popcounthi2_tail, 0 
 #endif /* defined (L_popcounthi2) */
 
 #if defined (L_popcountsi2)
@@ -3106,6 +3289,8 @@ DEFUN __popcountsi2
     XCALL __popcounthi2
     XJMP  __popcounthi2_tail
 ENDF __popcountsi2
+
+STACKUSAGE __popcountsi2, 1
 #endif /* defined (L_popcountsi2) */
 
 #if defined (L_popcountdi2)
@@ -3122,6 +3307,8 @@ DEFUN __popcountdi2
     XCALL __popcountsi2
     XJMP  __popcounthi2_tail
 ENDF __popcountdi2
+
+STACKUSAGE __popcountdi2, 1
 #endif /* defined (L_popcountdi2) */
 
 #if defined (L_popcountqi2)
@@ -3146,6 +3333,8 @@ DEFUN __popcountqi2
     adc  r24, __tmp_reg__
     ret
 ENDF __popcountqi2
+
+STACKUSAGE __popcountqi2, 0
 #endif /* defined (L_popcountqi2) */
 
 
@@ -3168,6 +3357,8 @@ DEFUN __bswapsi2
     bswap r23, r24
     ret
 ENDF __bswapsi2
+
+STACKUSAGE __bswapsi2, 0
 #endif /* defined (L_bswapsi2) */
 
 #if defined (L_bswapdi2)
@@ -3180,6 +3371,8 @@ DEFUN __bswapdi2
     bswap r21, r22
     ret
 ENDF __bswapdi2
+
+STACKUSAGE __bswapdi2, 0
 #endif /* defined (L_bswapdi2) */
 
 
@@ -3228,6 +3421,9 @@ DEFUN __lshrdi3
     pop     r16
     ret
 ENDF __lshrdi3
+
+STACKUSAGE  __ashrdi3, 1 /* 0 + fallthrough 1 */
+STACKUSAGE __lshrdi3, 1
 #endif /* defined (L_ashrdi3) */
 
 #if defined (L_ashldi3)
@@ -3260,6 +3456,8 @@ DEFUN __ashldi3
     pop     r16
     ret
 ENDF __ashldi3
+
+STACKUSAGE __ashldi3, 1
 #endif /* defined (L_ashldi3) */
 
 #if defined (L_rotldi3)
@@ -3294,6 +3492,8 @@ DEFUN __rotldi3
     pop     r16
     ret
 ENDF __rotldi3
+
+STACKUSAGE __rotldi3, 1
 #endif /* defined (L_rotldi3) */
 
 
@@ -3322,6 +3522,8 @@ DEFUN __fmuls
     neg  B1
     XJMP __fmulsu_exit
 ENDF __fmuls
+
+STACKUSAGE __fmuls, 0
 #endif /* L_fmuls */
 
 #ifdef L_fmulsu
@@ -3351,6 +3553,9 @@ DEFUN __fmulsu_exit
     NEG2 C0
     ret
 ENDF __fmulsu_exit
+
+STACKUSAGE __fmulsu, 0
+STACKUSAGE __fmulsu_exit, 0
 #endif /* L_fmulsu */
 
 
@@ -3376,6 +3581,8 @@ DEFUN __fmul
     brne  2b
     ret
 ENDF __fmul
+
+STACKUSAGE __fmul, 0
 #endif /* L_fmul */
 
 #undef A0

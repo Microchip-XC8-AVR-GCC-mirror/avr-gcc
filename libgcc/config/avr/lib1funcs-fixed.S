@@ -58,6 +58,8 @@ DEFUN __fractqqsf
     mov     r25, r24
     XJMP    __fractsasf
 ENDF __fractqqsf
+
+STACKUSAGE __fractqqsf, 0
 #endif  /* L_fractqqsf */
 
 #if defined (L_fractuqqsf)
@@ -70,6 +72,8 @@ DEFUN __fractuqqsf
     clr     r25
     XJMP    __fractusasf
 ENDF __fractuqqsf
+
+STACKUSAGE __fractuqqsf, 0
 #endif  /* L_fractuqqsf */
 
 #if defined (L_fracthqsf)
@@ -82,6 +86,8 @@ DEFUN __fracthqsf
     mov     r25, r24
     XJMP    __fractsasf
 ENDF __fracthqsf
+
+STACKUSAGE __fracthqsf, 0
 #endif  /* L_fracthqsf */
 
 #if defined (L_fractuhqsf)
@@ -93,6 +99,8 @@ DEFUN __fractuhqsf
     clr     r25
     XJMP    __fractusasf
 ENDF __fractuhqsf
+
+STACKUSAGE __fractuhqsf, 0
 #endif  /* L_fractuhqsf */
 
 #if defined (L_fracthasf)
@@ -106,6 +114,8 @@ DEFUN __fracthasf
     sbc     r25, r25
     XJMP    __fractsasf
 ENDF __fracthasf
+
+STACKUSAGE __fracthasf, 0
 #endif  /* L_fracthasf */
 
 #if defined (L_fractuhasf)
@@ -118,6 +128,8 @@ DEFUN __fractuhasf
     clr     r25
     XJMP    __fractusasf
 ENDF __fractuhasf
+
+STACKUSAGE __fractuhasf, 0
 #endif  /* L_fractuhasf */
 
 
@@ -132,6 +144,8 @@ DEFUN __fractsqsf
     sbci    r25, exp_hi (31)
 0:  ret
 ENDF __fractsqsf
+
+STACKUSAGE __fractsqsf, 0
 #endif  /* L_fractsqsf */
 
 #if defined (L_fractusqsf)
@@ -143,6 +157,8 @@ DEFUN __fractusqsf
     subi    r25, exp_hi (32)
     ret
 ENDF __fractusqsf
+
+STACKUSAGE __fractusqsf, 0
 #endif  /* L_fractusqsf */
 
 #if defined (L_fractsasf)
@@ -156,6 +172,8 @@ DEFUN __fractsasf
     sbci    r25, exp_hi (15)
 0:  ret
 ENDF __fractsasf
+
+STACKUSAGE __fractsasf, 0
 #endif  /* L_fractsasf */
 
 #if defined (L_fractusasf)
@@ -167,6 +185,8 @@ DEFUN __fractusasf
     subi    r25, exp_hi (16)
     ret
 ENDF __fractusasf
+
+STACKUSAGE __fractusasf, 0
 #endif  /* L_fractusasf */
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -182,6 +202,8 @@ DEFUN __fractsfqq
     mov     r24, r25
     ret
 ENDF __fractsfqq
+
+STACKUSAGE __fractsfqq, 0
 #endif  /* L_fractsfqq */
 
 #if defined (L_fractsfuqq)
@@ -192,6 +214,8 @@ DEFUN __fractsfuqq
     mov     r24, r25
     ret
 ENDF __fractsfuqq
+
+STACKUSAGE __fractsfuqq, 0
 #endif  /* L_fractsfuqq */
 
 #if defined (L_fractsfha)
@@ -201,6 +225,8 @@ DEFUN __fractsfha
     sbci    r25, exp_hi (-23)
     XJMP    __fixsfsi
 ENDF __fractsfha
+
+STACKUSAGE __fractsfha, 0
 #endif  /* L_fractsfha */
 
 #if defined (L_fractsfuha)
@@ -209,6 +235,8 @@ DEFUN __fractsfuha
     subi    r25, exp_hi (-24)
     XJMP    __fixunssfsi
 ENDF __fractsfuha
+
+STACKUSAGE __fractsfuha, 0
 #endif  /* L_fractsfuha */
 
 #if defined (L_fractsfhq)
@@ -221,6 +249,9 @@ DEFUN __fractsfhq
     sbci    r25, exp_hi (-31)
     XJMP    __fixsfsi
 ENDF __fractsfhq
+
+STACKUSAGE __fractsfsq, 0
+STACKUSAGE __fractsfhq, 0
 #endif  /* L_fractsfhq */
 
 #if defined (L_fractsfuhq)
@@ -232,6 +263,9 @@ DEFUN __fractsfuhq
     subi    r25, exp_hi (-32)
     XJMP    __fixunssfsi
 ENDF __fractsfuhq
+
+STACKUSAGE __fractsfusq, 0
+STACKUSAGE __fractsfuhq, 0
 #endif  /* L_fractsfuhq */
 
 #if defined (L_fractsfsa)
@@ -241,6 +275,8 @@ DEFUN __fractsfsa
     sbci    r25, exp_hi (-15)
     XJMP    __fixsfsi
 ENDF __fractsfsa
+
+STACKUSAGE __fractsfsa, 0
 #endif  /* L_fractsfsa */
 
 #if defined (L_fractsfusa)
@@ -249,6 +285,8 @@ DEFUN __fractsfusa
     subi    r25, exp_hi (-16)
     XJMP    __fixunssfsi
 ENDF __fractsfusa
+
+STACKUSAGE __fractsfusa, 0
 #endif  /* L_fractsfusa */
 
 
@@ -274,6 +312,8 @@ DEFUN __mulqq3
     inc     r23
 0:  ret
 ENDF  __mulqq3
+
+STACKUSAGE  __mulqq3, 0
 #endif /* L_mulqq3 && ! HAVE_MUL */
 
 /*******************************************************
@@ -303,6 +343,8 @@ DEFUN   __mulhq3
     ldi     r25, hi8 (0x7fff)
     ret
 ENDF __mulhq3
+
+STACKUSAGE __mulhq3, 0
 #endif  /* defined (L_mulhq3) */
 
 #if defined (L_muluhq3)
@@ -319,6 +361,8 @@ DEFUN   __muluhq3
     adiw    r24, 1
     ret
 ENDF __muluhq3
+
+STACKUSAGE __muluhq3, 0
 #endif  /* L_muluhq3 */
 
 
@@ -340,6 +384,8 @@ DEFUN   __mulha3
     rol     r24
     XJMP    __muluha3_round
 ENDF __mulha3
+
+STACKUSAGE __mulha3, 0
 #endif  /* L_mulha3 */
 
 #if defined (L_muluha3)
@@ -353,6 +399,8 @@ DEFUN   __muluha3
     XCALL   __umulhisi3
     XJMP    __muluha3_round
 ENDF __muluha3
+
+STACKUSAGE __muluha3, 0
 #endif  /* L_muluha3 */
 
 #if defined (L_muluha3_round)
@@ -365,6 +413,8 @@ DEFUN   __muluha3_round
     adiw    r24, 1
     ret
 ENDF __muluha3_round
+
+STACKUSAGE __muluha3_round, 0
 #endif  /* L_muluha3_round */
 
 
@@ -451,6 +501,9 @@ DEFUN __mulusa3_round
     clr  __zero_reg__
     ret
 ENDF __mulusa3_round
+
+STACKUSAGE  __mulusa3, 1 /* 0 + 1 fallthrough */
+STACKUSAGE __mulusa3_round, 1
 #endif /* L_mulusa3 */
 
 #if defined (L_mulsa3)
@@ -484,6 +537,8 @@ DEFUN __mulsa3
     adc     C3, __zero_reg__
     ret
 ENDF __mulsa3
+
+STACKUSAGE __mulsa3, 0
 #endif /* L_mulsa3 */
 
 #undef A0
@@ -569,6 +624,8 @@ DEFUN   __mulsa3
     adc     C3, __zero_reg__
     ret
 ENDF __mulsa3
+
+STACKUSAGE __mulsa3, 3
 #endif  /* L_mulsa3 */
 
 #if defined (L_mulusa3)
@@ -652,6 +709,9 @@ DEFUN __mulusa3_round
     pop     CC2
     ret
 ENDF __mulusa3_round
+
+STACKUSAGE  __mulusa3, 3 /* 0 + fallthrough 3 */
+STACKUSAGE __mulusa3_round, 3
 #endif  /* L_mulusa3 */
 
 #undef A0
@@ -715,6 +775,8 @@ DEFUN __usmuluha3
     ldi     C3, 0xff
     ret
 ENDF  __usmuluha3
+
+STACKUSAGE  __usmuluha3, 0
 #endif /* L_usmuluha3 */
 
 /***********************************************************
@@ -766,6 +828,8 @@ DEFUN __ssmulha3
     adiw    C2, 1
     ret
 ENDF  __ssmulha3
+
+STACKUSAGE  __ssmulha3, 0
 #endif /* L_ssmulha3 */
 
 #undef C0
@@ -814,6 +878,8 @@ DEFUN __usmulusa3
     wmov    C4, C6
     ret
 ENDF  __usmulusa3
+
+STACKUSAGE  __usmulusa3, 0
 #endif /* L_usmulusa3 */
 
 /***********************************************************
@@ -871,6 +937,8 @@ DEFUN __ssmulsa3
     subi    C7, 0x80
     ret
 ENDF  __ssmulsa3
+
+STACKUSAGE  __ssmulsa3, 0
 #endif /* L_ssmulsa3 */
 
 #undef C0
@@ -906,6 +974,8 @@ DEFUN   __divqq3
     neg     r_quo
     ret
 ENDF __divqq3
+
+STACKUSAGE __divqq3, 0
 #endif  /* L_divqq3 */
 
 #if defined (L_udivuqq3)
@@ -917,6 +987,8 @@ DEFUN   __udivuqq3
 0:  ldi     r_quo, 0xff
     ret
 ENDF __udivuqq3
+
+STACKUSAGE __udivuqq3, 0
 #endif  /* L_udivuqq3 */
 
 
@@ -941,6 +1013,8 @@ __udivuqq3_cont:
                             ; because C flag was complemented in loop
     ret
 ENDF __divqq_helper
+
+STACKUSAGE __divqq_helper, 0
 #endif  /* L_divqq_helper */
 
 #undef  r_divd
@@ -988,6 +1062,8 @@ __divhq3_minus1:
     clr     r_quoL
     ret
 ENDF __divhq3
+
+STACKUSAGE __divhq3, 0
 #endif  /* defined (L_divhq3) */
 
 #if defined (L_udivuhq3)
@@ -1020,6 +1096,9 @@ __udivuhq3_cont:
     com     r_quoH          ; because C flag was complemented in loop
     ret
 ENDF __udivuha3_common
+
+STACKUSAGE __udivuhq3, 0
+STACKUSAGE __udivuha3_common, 0
 #endif  /* defined (L_udivuhq3) */
 
 /*******************************************************
@@ -1045,6 +1124,8 @@ DEFUN   __divha3
     NEG2    r_quoL
     ret
 ENDF __divha3
+
+STACKUSAGE __divha3, 0
 #endif  /* defined (L_divha3) */
 
 #if defined (L_udivuha3)
@@ -1055,6 +1136,8 @@ DEFUN   __udivuha3
     lsl     r_quoH     ; shift quotient into carry
     XJMP    __udivuha3_common ; same as fractional after rearrange
 ENDF __udivuha3
+
+STACKUSAGE __udivuha3, 0
 #endif  /* defined (L_udivuha3) */
 
 #undef  r_divdL
@@ -1109,6 +1192,8 @@ DEFUN   __divsa3
     ;; negate r_quoL
     XJMP    __negsi2
 ENDF __divsa3
+
+STACKUSAGE __divsa3, 0
 #endif  /* defined (L_divsa3) */
 
 #if defined (L_udivusa3)
@@ -1151,6 +1236,8 @@ __udivusa3_cont:
     com     r_quoHH
     ret
 ENDF __udivusa3
+
+STACKUSAGE __udivusa3, 0
 #endif  /* defined (L_udivusa3) */
 
 #undef  r_arg1L
@@ -1188,6 +1275,8 @@ DEFUN __ssabs_1
     dec     A0
     ret
 ENDF __ssabs_1
+
+STACKUSAGE __ssabs_1, 0
 #endif /* L_ssabs_1 */
 
 #undef A0
@@ -1209,6 +1298,8 @@ DEFUN __ssneg_2
     sbiw    A0, 1
 0:  ret
 ENDF __ssneg_2
+
+STACKUSAGE __ssneg_2, 0
 #endif /* L_ssneg_2 */
 
 #if defined (L_ssabs_2)
@@ -1217,6 +1308,8 @@ DEFUN __ssabs_2
     ret
     XJMP    __ssneg_2
 ENDF __ssabs_2
+
+STACKUSAGE __ssabs_2, 0
 #endif /* L_ssabs_2 */
 
 #undef A0
@@ -1244,6 +1337,8 @@ DEFUN __ssneg_4
     ldi     A0, 0xff
 0:  ret
 ENDF __ssneg_4
+
+STACKUSAGE __ssneg_4, 0
 #endif /* L_ssneg_4 */
 
 #if defined (L_ssabs_4)
@@ -1252,6 +1347,8 @@ DEFUN __ssabs_4
     ret
     XJMP    __ssneg_4
 ENDF __ssabs_4
+
+STACKUSAGE __ssabs_4, 0
 #endif /* L_ssabs_4 */
 
 #undef A0
@@ -1295,6 +1392,12 @@ DEFUN __sbc_8
     wmov    A0, A6
     ret
 ENDF __sbc_8
+
+STACKUSAGE __usneguta2, 0
+STACKUSAGE __usneguda2, 0
+STACKUSAGE __usnegudq2, 0
+STACKUSAGE  __clr_8, 0
+STACKUSAGE __sbc_8, 0
 #endif /* L_clr_8 */
 
 #if defined (L_ssneg_8)
@@ -1311,6 +1414,11 @@ DEFUN __ssneg_8
     ldi     A7, 0x7f
 0:  ret
 ENDF __ssneg_8
+
+STACKUSAGE __ssnegta2, 0
+STACKUSAGE __ssnegda2, 0
+STACKUSAGE __ssnegdq2, 0
+STACKUSAGE __ssneg_8, 0
 #endif /* L_ssneg_8 */
 
 #if defined (L_ssabs_8)
@@ -1323,6 +1431,11 @@ DEFUN __ssabs_8
     ret
     XJMP    __ssneg_8
 ENDF __ssabs_8
+
+STACKUSAGE __ssabsta2, 0
+STACKUSAGE __ssabsda2, 0
+STACKUSAGE __ssabsdq2, 0
+STACKUSAGE __ssabs_8, 0
 #endif /* L_ssabs_8 */
 
 ;; Second Argument
@@ -1347,6 +1460,12 @@ DEFUN __usadd_8
 0:  ;; A[] = 0xffffffff
     XJMP    __sbc_8
 ENDF __usadd_8
+
+
+STACKUSAGE __usadduta3, 0
+STACKUSAGE __usadduda3, 0
+STACKUSAGE __usaddudq3, 0
+STACKUSAGE __usadd_8, 0
 #endif /* L_usadd_8 */
 
 #if defined (L_ussub_8)
@@ -1361,6 +1480,12 @@ DEFUN __ussub_8
 0:  ;; A[] = 0
     XJMP    __clr_8
 ENDF __ussub_8
+
+
+STACKUSAGE __ussubuta3, 0
+STACKUSAGE __ussubuda3, 0
+STACKUSAGE __ussubudq3, 0
+STACKUSAGE __ussub_8, 0
 #endif /* L_ussub_8 */
 
 #if defined (L_ssadd_8)
@@ -1377,6 +1502,11 @@ DEFUN __ssadd_8
     subi    A7, 0x80
 0:  ret
 ENDF __ssadd_8
+
+STACKUSAGE __ssaddta3, 0
+STACKUSAGE __ssaddda3, 0
+STACKUSAGE __ssadddq3, 0
+STACKUSAGE __ssadd_8, 0
 #endif /* L_ssadd_8 */
 
 #if defined (L_sssub_8)
@@ -1394,6 +1524,11 @@ DEFUN __sssub_8
     subi    A7, 0x80
 0:  ret
 ENDF __sssub_8
+
+STACKUSAGE __sssubta3, 0
+STACKUSAGE __sssubda3, 0
+STACKUSAGE __sssubdq3, 0
+STACKUSAGE __sssub_8, 0
 #endif /* L_sssub_8 */
 
 #undef A0
@@ -1442,6 +1577,8 @@ ENDF __mask1
 
 #undef AA
 #undef CC
+
+STACKUSAGE __mask1, 0
 #endif /* L_mask1 */
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1483,6 +1620,8 @@ DEFUN  __roundqq3
 9:  mov     C1, __tmp_reg__
     ret
 ENDF  __roundqq3
+
+STACKUSAGE  __roundqq3, 0
 #endif /* L_roundqq3 */
 
 #ifdef L_rounduqq3
@@ -1508,6 +1647,8 @@ DEFUN  __rounduqq3
 9:  mov     C1, __tmp_reg__
     ret
 ENDF  __rounduqq3
+
+STACKUSAGE  __rounduqq3, 0
 #endif /* L_rounduqq3 */
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1532,6 +1673,8 @@ DEFUN __addmask_2
     adc     A1, C1
     ret
 ENDF  __addmask_2
+
+STACKUSAGE  __addmask_2, 0
 #endif /* L_addmask_2 */
 
 #ifdef L_round_s2
@@ -1550,6 +1693,8 @@ DEFUN  __roundha3
     XJMP    __round_s2_const
 ENDF  __roundha3
 
+STACKUSAGE   __roundhq3, 0
+STACKUSAGE  __roundha3, 0
 #endif /* L_round_s2 */
 
 #ifdef L_round_u2
@@ -1568,6 +1713,8 @@ DEFUN  __rounduha3
     XJMP    __round_u2_const 
 ENDF  __rounduha3
 
+STACKUSAGE   __rounduhq3, 0
+STACKUSAGE  __rounduha3, 0
 #endif /* L_round_u2 */
 
 
@@ -1602,6 +1749,8 @@ DEFUN __round_u2_const
 9:  ret
 ENDF  __round_u2_const
 
+STACKUSAGE  __round_s2_const, 0
+STACKUSAGE  __round_u2_const, 0
 #endif /* L_round_2_const */
 
 #undef A0
@@ -1649,6 +1798,8 @@ DEFUN __addmask_4
     adc     A3, C3
     ret
 ENDF  __addmask_4
+
+STACKUSAGE  __addmask_4, 0
 #endif /* L_addmask_4 */
 
 #ifdef L_round_s4
@@ -1667,6 +1818,8 @@ DEFUN  __roundsa3
     XJMP    __round_s4_const
 ENDF  __roundsa3
 
+STACKUSAGE   __roundsq3, 0
+STACKUSAGE  __roundsa3, 0
 #endif /* L_round_s4 */
 
 #ifdef L_round_u4
@@ -1685,6 +1838,8 @@ DEFUN  __roundusa3
     XJMP    __round_u4_const 
 ENDF  __roundusa3
 
+STACKUSAGE   __roundusq3, 0
+STACKUSAGE  __roundusa3, 0
 #endif /* L_round_u4 */
 
 
@@ -1724,6 +1879,8 @@ DEFUN __round_u4_const
 9:  ret
 ENDF  __round_u4_const
 
+STACKUSAGE  __round_s4_const, 0
+STACKUSAGE  __round_u4_const, 0
 #endif /* L_round_4_const */
 
 #undef A0
@@ -1771,6 +1928,8 @@ DEFUN  __rounddq3
     clt
     XJMP    __round_x8
 ENDF  __rounddq3
+
+STACKUSAGE  __rounddq3, 0
 #endif /* L_rounddq3 */
 
 #ifdef L_roundudq3
@@ -1781,6 +1940,8 @@ DEFUN  __roundudq3
     set
     XJMP    __round_x8
 ENDF  __roundudq3
+
+STACKUSAGE  __roundudq3, 0
 #endif /* L_roundudq3 */
 
 #ifdef L_roundda3
@@ -1791,6 +1952,8 @@ DEFUN  __roundda3
     clt
     XJMP    __round_x8
 ENDF  __roundda3
+
+STACKUSAGE  __roundda3, 0
 #endif /* L_roundda3 */
 
 #ifdef L_rounduda3
@@ -1801,6 +1964,8 @@ DEFUN  __rounduda3
     set
     XJMP    __round_x8
 ENDF  __rounduda3
+
+STACKUSAGE  __rounduda3, 0
 #endif /* L_rounduda3 */
 
 #ifdef L_roundta3
@@ -1811,6 +1976,8 @@ DEFUN  __roundta3
     clt
     XJMP    __round_x8
 ENDF  __roundta3
+
+STACKUSAGE  __roundta3, 0
 #endif /* L_roundta3 */
 
 #ifdef L_rounduta3
@@ -1821,6 +1988,8 @@ DEFUN  __rounduta3
     set
     XJMP    __round_x8
 ENDF  __rounduta3
+
+STACKUSAGE  __rounduta3, 0
 #endif /* L_rounduta3 */
 
 
@@ -1892,6 +2061,7 @@ DEFUN __round_x8
     ret
 ENDF  __round_x8
 
+STACKUSAGE  __round_x8, 5
 #endif /* L_round_x8 */
 
 #undef A0
@@ -1922,6 +2092,8 @@ ENDF  __round_x8
 DEFUN __ret
     ret
 ENDF  __ret
+
+STACKUSAGE  __ret, 0
 #endif /* L_ret */
 
 #endif /* if not __AVR_TINY__ */

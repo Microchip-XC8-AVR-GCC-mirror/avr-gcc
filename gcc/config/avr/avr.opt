@@ -179,3 +179,7 @@ Target Report RejectNegative Var Var(TARGET_NO_FALLBACKLICENSE)
 mskip-license-check
 Target Var(TARGET_SKIP_LICENSE_CHECK) Init(0) Undocumented
 For MPLAB X IDE use only - Forces a free license
+
+mchp-stack-usage
+Target RejectNegative Var(avr_mchp_stack_guidance) Init(0)
+Enable (Microchip) static stack usage guidance reporting

@@ -1094,6 +1094,12 @@ output_stack_usage (void)
       stack_usage += current_function_dynamic_stack_size;
     }
 
+  if (avr_mchp_stack_guidance)
+    {
+      void xc_output_stack_guidance (HOST_WIDE_INT, int);
+      xc_output_stack_guidance (stack_usage, stack_usage_kind);
+    }
+
   if (flag_stack_usage)
     {
       expanded_location loc

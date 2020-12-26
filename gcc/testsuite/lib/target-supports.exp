@@ -130,11 +130,37 @@ proc check_cached_effective_target { prop args } {
     return $value
 }
 
+# Check if -mchp-stack-usage is set in board_info cflags or with
+# --tool_opts, and isn't set in dg-options. Don't know of an easy way
+# to get dg-options, so instead check for single occurrence of
+# -mchp-stack-usage in  $compiler_flags (which includes everything,
+# dg-options, board_info cflags etc.).
+proc check_implicit_mchp_stack_usage_option { } {
+    global TOOL_OPTIONS
+    return { (([board_info target exists cflags]
+                  && [regexp -all " -mchp-stack-usage " " [board_info target cflags] "] == 1)
+               || ([info exists TOOL_OPTIONS]
+                  && [regexp -all " -mchp-stack-usage " " ${TOOL_OPTIONS} "] == 1))
+             && [regexp -all " -mchp-stack-usage " " $compiler_flags "] == 1 };
+}
+
 # Like check_compile, but delete the output file and return true if the
 # compiler printed no messages.
 proc check_no_compiler_messages_nocache {args} {
     set result [eval check_compile $args]
     set lines [lindex $result 0]
+
+	# Strip out mchp-stack-usage output if -mchp-stack-usage is set in
+	# board_info cflags or with --tool_opts, and isn't set in
+	# dg-options. Without this, checking for LTO linker plugin fails, and
+    # torture tests use fno-use-linker-plugin (and no explicit
+    # -ffat-lto-objects), resulting in unrelated test status changes.
+    global compiler_flags
+	global TOOL_OPTIONS
+    if [check_implicit_mchp_stack_usage_option] {
+	  regsub -all "(^|\n)\=+ STACK USAGE GUIDANCE .*\n\=+\n+" $lines "" lines
+	}
+
     set output [lindex $result 1]
     remote_file build delete $output
     return [string match "" $lines]

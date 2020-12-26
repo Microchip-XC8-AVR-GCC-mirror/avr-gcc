@@ -245,6 +245,18 @@ proc gcc-dg-prune { system text } {
 	return "::unsupported::memory full"
     }
 
+	# Strip out mchp-stack-usage output if -mchp-stack-usage is set in
+	# board_info cflags or with --tool_opts, and isn't set in
+	# dg-options, so that all execute tests don't end up FAILing with
+	# excess errors.
+    global compiler_flags
+	global TOOL_OPTIONS
+    if [check_implicit_mchp_stack_usage_option] {
+	  global mchp_stack_usage_output
+	  regexp "(^|\n)\=+ STACK USAGE GUIDANCE .*\n\=+\n+" $text mchp_stack_usage_output
+	  regsub -all "(^|\n)\=+ STACK USAGE GUIDANCE .*\n\=+\n+" $text "" text
+	}
+
     return $text
 }
 

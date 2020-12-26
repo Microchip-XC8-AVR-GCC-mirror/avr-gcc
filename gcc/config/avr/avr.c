@@ -1655,6 +1655,11 @@ avr_expand_prologue (void)
   /* Prologue: naked.  */
   if (cfun->machine->is_naked)
     {
+      /* Default stack size is -1, and if not set explicitly to 0 here,
+         output_stack_usage sees negative value for naked functions and
+         reports that the target does not support stack usage computation. */
+      if (flag_stack_usage_info)
+        current_function_static_stack_size = 0;
       return;
     }
 
@@ -1714,7 +1719,11 @@ avr_expand_prologue (void)
   avr_prologue_setup_frame (size, set);
 
   if (flag_stack_usage_info)
-    current_function_static_stack_size = cfun->machine->stack_usage + INCOMING_FRAME_SP_OFFSET;
+    {
+	  current_function_static_stack_size = cfun->machine->stack_usage;
+	  if (!avr_mchp_stack_guidance)
+        current_function_static_stack_size += INCOMING_FRAME_SP_OFFSET;
+	}
 }
 
 
@@ -10895,6 +10904,13 @@ avr_file_end (void)
 
   if (avr_need_clear_bss_p && !avr_no_data_init)
     fputs (".global __do_clear_bss\n", asm_out_file);
+
+  /*  Output Stack Description Headers section */
+  if (avr_mchp_stack_guidance)
+    {
+      extern void xc_output_stack_guidance_header (void);
+      xc_output_stack_guidance_header();
+    }
 }
 
 
@@ -10972,6 +10988,13 @@ avr_emit_cc_section (const char *name)
 
 /* Code Coverage Implementation routines End */
 
+
+/* MCHP stack guidance */
+void
+avr_emit_su_section (const char *name)
+{
+  switch_to_section (get_section (name, AVR_SECTION_INFO, NULL));
+}
 
 /* Worker function for `ADJUST_REG_ALLOC_ORDER'.  */
 /* Choose the order in which to allocate hard registers for

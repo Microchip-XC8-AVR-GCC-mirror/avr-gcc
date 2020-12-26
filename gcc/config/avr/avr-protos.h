@@ -202,3 +202,6 @@ extern void avr_set_cc_bit(unsigned bitno);
 extern int  avr_licensed_xccov_p (void);
 extern void avr_emit_cc_section (const char *name);
 
+/* MCHP stack usage */
+extern void avr_emit_su_section (const char *name);
+

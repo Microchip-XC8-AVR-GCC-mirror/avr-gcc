@@ -704,3 +704,6 @@ extern int avr_accumulate_outgoing_args (void);
 #define TARGET_XCCOV_LICENSED       avr_licensed_xccov_p
 #define TARGET_XCCOV_EMIT_SECTION   avr_emit_cc_section
 
+/* MCHP stack-guidance */
+#define TARGET_STACK_GUIDANCE_SECTION avr_emit_su_section
+

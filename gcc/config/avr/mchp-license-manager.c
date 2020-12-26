@@ -605,7 +605,15 @@ void avr_override_licensed_options (void)
   {
     nullify_lto = nullify_O3 = nullify_Os = 0;
   }
-  
+
+  if (mchp_avr_license_valid != AVR_VALID_PRO_LICENSE)
+	{
+      NULLIFY(avr_mchp_stack_guidance, "Report stack usage guidance") = 0;
+	}
+
+  if (avr_mchp_stack_guidance)
+	flag_stack_usage_info = 1;
+
   /*
    *  On systems where we have a licence manager, call it
    */

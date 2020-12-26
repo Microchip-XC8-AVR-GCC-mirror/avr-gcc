@@ -862,6 +862,8 @@ main (int argc, char **argv)
 #endif
   static const char *const strip_suffix = "strip";
   static const char *const gstrip_suffix = "gstrip";
+  bool stackusage_option_enabled = false;
+  const char* stackusage_option = "--mchp-stack-usage";
 
   const char *full_ld_suffixes[USE_LD_MAX];
 #ifdef CROSS_DIRECTORY_STRUCTURE
@@ -1613,7 +1615,21 @@ main (int argc, char **argv)
 		verbose = true;
 	      else if (strcmp (arg, "--help") == 0)
 		helpflag = true;
-	      break;
+		  else if (strcmp(arg, stackusage_option) == 0)
+			{
+			  stackusage_option_enabled = true;
+			  /* When use of plugin is not enabled, linker is called twice.
+				 Do not pass --mchp-stack-usage in the first pass if LTO
+				 is enabled. Keep it only in second pass.
+				 FIXME: When there is no lto objects, linker will not be
+				 called second. It is not predictable.
+			  */
+			  if ((use_plugin == false) && (lto_mode != LTO_MODE_NONE))
+				{
+				  ld1--;
+				}
+			}
+		  break;
 	    }
 	}
       else if ((p = strrchr (arg, '.')) != (char *) 0
@@ -1796,7 +1812,11 @@ main (int argc, char **argv)
 	  maybe_unlink (export_file);
 #endif
 	if (lto_mode != LTO_MODE_NONE)
-	  maybe_run_lto_and_relink (ld1_argv, object_lst, object, false);
+	  {
+		if (stackusage_option_enabled == true)
+		  *ld1++ = stackusage_option;
+		maybe_run_lto_and_relink (ld1_argv, object_lst, object, false);
+	  }
 	else
 	  post_ld_pass (false);
 

@@ -75,6 +75,9 @@ along with GCC; see the file COPYING3.  If not see
            mmcu=avr25 | \
            mmcu=avr4 | \
            mmcu=avrtiny : -mpa-short-call}} "     \
+  "%{mchp-stack-usage:--mchp-stack-usage        \
+       %{mmcu=avr6 | mmcu=avrxmega6 |           \
+         mmcu=avrxmega7 : --pc-size=3; :--pc-size=2}}"        \
   "%{shared:%eshared is not supported} "
 
 #undef  LIB_SPEC
