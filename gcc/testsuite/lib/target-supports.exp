@@ -6226,10 +6226,28 @@ proc check_effective_target_avr_tiny { } {
     }
 }
 
+# Return 1 if this arch has RAMPZ.
+
+proc check_effective_target_avr_rampz { } {
+    if { [istarget avr*-*-*] } {
+        return [check_no_compiler_messages avr_rampz object {
+            #ifdef __AVR_HAVE_RAMPZ__
+            int dummy;
+            #else
+            #error target does not have RAMPZ
+            #endif
+        }]
+    } else {
+        return 0
+    }
+}
+
 # Return 1 if this an AVR core that requires program memory specific
 # instructions (lpm etc.) to read from program memory. Return 0 if
 # the usual data address space insns (ld/lds etc..) can be used - for
-# archs with memory mapped flash.
+# archs with memory mapped flash. Some devices has configurable flash
+# mapping that is enabled only if mconst-data-in-progmem is enabled,
+# therefore enable that option.
 
 proc check_effective_target_avr_progmem_insn_for_progmem { } {
     if { [istarget avr*-*-*] } {
@@ -6239,7 +6257,7 @@ proc check_effective_target_avr_progmem_insn_for_progmem { } {
             #else
             #error target does not have program memory mapped into data
             #endif
-        }]
+        } "-mconst-data-in-progmem"]
     } else {
         return 0
     }

@@ -34,7 +34,9 @@ LIB1ASMFUNCS = \
 	_popcountsi2 \
 	_popcountqi2 \
 	_bswapsi2 \
-	_fmul _fmuls _fmulsu
+	_fmul _fmuls _fmulsu \
+	_isr_prologue \
+	_isr_epilogue
 
 # The below functions either use registers that are not present
 # in tiny core, or use a different register conventions (don't save

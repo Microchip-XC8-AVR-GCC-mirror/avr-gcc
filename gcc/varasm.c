@@ -308,6 +308,12 @@ get_section (const char *name, uint64_t flags, tree decl)
     {
       sect = *slot;
       if ((sect->common.flags & ~SECTION_DECLARED) != flags
+      /* Do section conflict checking only if any flag other than
+         avr specific flags is different. Leave avr section flag
+         validation/merging to the assembler, and just return a new
+         section everytime. */
+	  && (((sect->common.flags ^ flags) &
+		   ~(SECTION_DECLARED | AVR_SECTION_FLAGS_MASK)) != 0)
 	  && ((sect->common.flags | flags) & SECTION_OVERRIDE) == 0)
 	{
 	  /* It is fine if one of the section flags is

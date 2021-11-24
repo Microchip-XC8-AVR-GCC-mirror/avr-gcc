@@ -2392,11 +2392,95 @@ ENDF __epilogue_restores__
 #endif /* defined (L_epilogue) */
 #endif /* !defined (__AVR_TINY__) */
 
+#if defined (L_isr_prologue)
+;; Assembly equivalent of avr_expand_prologue with
+;; cfun->machine->is_interrupt || cfun->machine->is_signal set to true
+;; for ISRs that have to save all call-used registers.
+;; As REG_X and REG_Z are call-used, the corresponding RAMP regs
+;; can be unconditionally saved.
+;; This is not used if gasisr is yes, so there is no need to worry
+;; about treg not being __tmp_reg__.
+DEFUN __isr_prologue_saves__
+	push __tmp_reg__
+	push __zero_reg__
+	in	__tmp_reg__,__SREG__
+	push __tmp_reg__
+	clr  __zero_reg__
+#if defined (__AVR_HAVE_RAMPD__)
+	in __tmp_reg__, __RAMPD__
+	push __tmp_reg__
+	out __RAMPD__, __zero_reg__
+#endif /* defined (__AVR_HAVE_RAMPD__) */
+#if defined (__AVR_HAVE_RAMPX__)
+	in __tmp_reg__, __RAMPX__
+	push __tmp_reg__
+	out __RAMPX__, __zero_reg__
+#endif /* defined (__AVR_HAVE_RAMPX__) */
+#if defined (__AVR_HAVE_RAMPZ__)
+	in __tmp_reg__, __RAMPZ__
+	push __tmp_reg__
+#if defined (__AVR_HAVE_RAMPD__)
+	out __RAMPZ__, __zero_reg__
+#endif /* defined (__AVR_HAVE_RAMPD__) */
+#endif /* defined (__AVR_HAVE_RAMPZ__) */
+;; LAST_CALLEE_SAVED_REG is 19 for AVRTINY
+#if !defined (__AVR_TINY__)
+	push r18
+	push r19
+#endif /* !defined (__AVR_TINY__) */
+	push r20
+	push r21
+	push r22
+	push r23
+	push r24
+	push r25
+	push r26
+	push r27
+
+	XIJMP
+ENDF __isr_prologue_saves__
+#endif /* defined (L_isr_prologue) */
+
+#if defined (L_isr_epilogue)
+DEFUN __isr_epilogue_restores__
+	pop r27
+	pop r26
+	pop r25
+	pop r24
+	pop r23
+	pop r22
+	pop r21
+	pop r20
+#if !defined (__AVR_TINY__)
+	pop r19
+	pop r18
+#endif /* !defined (__AVR_TINY__) */
+#if defined (__AVR_HAVE_RAMPZ__)
+	pop __tmp_reg__
+	out __RAMPZ__, __tmp_reg__
+#endif /* defined (__AVR_HAVE_RAMPZ__) */
+#if defined (__AVR_HAVE_RAMPX__)
+	pop __tmp_reg__
+	out __RAMPX__, __zero_reg__
+#endif /* defined (__AVR_HAVE_RAMPX__) */
+#if defined (__AVR_HAVE_RAMPD__)
+	pop __tmp_reg__
+	out __RAMPD__, __tmp_reg__
+#endif /* defined (__AVR_HAVE_RAMPD__) */
+	pop __tmp_reg__
+	out __SREG__, __tmp_reg__
+	pop __zero_reg__
+	pop __tmp_reg__
+	pop r31
+	pop r30
+
+	reti
+ENDF __isr_epilogue_restores__
+#endif /* defined (L_isr_epilogue) */
+
 #ifdef L_exit
 	.section .fini9, code
 DEFUN _exit
-	.weak	exit
-exit:
 ENDF _exit
 
 	/* Code from .fini8 ... .fini1 sections inserted by ld script.  */

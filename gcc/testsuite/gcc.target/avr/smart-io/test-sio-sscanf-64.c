@@ -1,0 +1,142 @@
+/* Test smart-io 64 variants of sscanf for compilation or link errors. */
+
+/* { dg-do link } */
+/* { dg-options "-msmart-io" } */
+
+#include "sio_test.h"
+
+int _sscanf_aAcdeEfFgGnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdeEfFgGnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdeEfFnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdeEfFnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdeEgGnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdeEgGnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdeEnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdeEnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdfFgGnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdfFgGnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdfFnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdfFnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdgGnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdgGnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAcdnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAeEfFgGs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAeEfFgG (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAeEfFs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAeEfF (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAeEgGs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAeEgG (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAeEs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAeE (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAfFgGs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAfFgG (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAfFs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAfF (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAgGs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAgG (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aAs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_aA (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdeEfFgGnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdeEfFgGnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdeEfFnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdeEfFnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdeEgGnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdeEgGnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdeEnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdeEnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdfFgGnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdfFgGnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdfFnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdfFnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdgGnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdgGnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdnopsuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_cdnopuxX (const char *__restrict, const char *__restrict, ...);
+int _sscanf_eEfFgGs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_eEfFgG (const char *__restrict, const char *__restrict, ...);
+int _sscanf_eEfFs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_eEfF (const char *__restrict, const char *__restrict, ...);
+int _sscanf_eEgGs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_eEgG (const char *__restrict, const char *__restrict, ...);
+int _sscanf_eEs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_eE (const char *__restrict, const char *__restrict, ...);
+int _sscanf_fFgGs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_fFgG (const char *__restrict, const char *__restrict, ...);
+int _sscanf_fFs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_fF (const char *__restrict, const char *__restrict, ...);
+int _sscanf_gGs (const char *__restrict, const char *__restrict, ...);
+int _sscanf_gG (const char *__restrict, const char *__restrict, ...);
+int _sscanf_s (const char *__restrict, const char *__restrict, ...);
+int _sscanf_0 (const char *__restrict, const char *__restrict, ...);
+
+int main()
+{
+  _sscanf_aAcdeEfFgGnopsuxX (buf, "%a,%d,%e,%f,%g,%s", &a,&d,&e,&f,&g,&s);
+  _sscanf_aAcdeEfFgGnopuxX (buf, "%a,%d,%e,%f,%g", &a,&d,&e,&f,&g);
+  _sscanf_aAcdeEfFnopsuxX (buf, "%a,%d,%e,%f,%s", &a,&d,&e,&f,&s);
+  _sscanf_aAcdeEfFnopuxX (buf, "%a,%d,%e,%f", &a,&d,&e,&f);
+  _sscanf_aAcdeEgGnopsuxX (buf, "%a,%d,%e,%g,%s", &a,&d,&e,&g,&s);
+  _sscanf_aAcdeEgGnopuxX (buf, "%a,%d,%e,%g", &a,&d,&e,&g);
+  _sscanf_aAcdeEnopsuxX (buf, "%a,%d,%e,%s", &a,&d,&e,&s);
+  _sscanf_aAcdeEnopuxX (buf, "%a,%d,%e", &a,&d,&e);
+  _sscanf_aAcdfFgGnopsuxX (buf, "%a,%d,%f,%g,%s", &a,&d,&f,&g,&s);
+  _sscanf_aAcdfFgGnopuxX (buf, "%a,%d,%f,%g", &a,&d,&f,&g);
+  _sscanf_aAcdfFnopsuxX (buf, "%a,%d,%f,%s", &a,&d,&f,&s);
+  _sscanf_aAcdfFnopuxX (buf, "%a,%d,%f", &a,&d,&f);
+  _sscanf_aAcdgGnopsuxX (buf, "%a,%d,%g,%s", &a,&d,&g,&s);
+  _sscanf_aAcdgGnopuxX (buf, "%a,%d,%g", &a,&d,&g);
+  _sscanf_aAcdnopsuxX (buf, "%a,%d,%s", &a,&d,&s);
+  _sscanf_aAcdnopuxX (buf, "%a,%d", &a,&d);
+  _sscanf_aAeEfFgGs (buf, "%a,%e,%f,%g,%s", &a,&e,&f,&g,&s);
+  _sscanf_aAeEfFgG (buf, "%a,%e,%f,%g", &a,&e,&f,&g);
+  _sscanf_aAeEfFs (buf, "%a,%e,%f,%s", &a,&e,&f,&s);
+  _sscanf_aAeEfF (buf, "%a,%e,%f", &a,&e,&f);
+  _sscanf_aAeEgGs (buf, "%a,%e,%g,%s", &a,&e,&g,&s);
+  _sscanf_aAeEgG (buf, "%a,%e,%g", &a,&e,&g);
+  _sscanf_aAeEs (buf, "%a,%e,%s", &a,&e,&s);
+  _sscanf_aAeE (buf, "%a,%e", &a,&e);
+  _sscanf_aAfFgGs (buf, "%a,%f,%g,%s", &a,&f,&g,&s);
+  _sscanf_aAfFgG (buf, "%a,%f,%g", &a,&f,&g);
+  _sscanf_aAfFs (buf, "%a,%f,%s", &a,&f,&s);
+  _sscanf_aAfF (buf, "%a,%f", &a,&f);
+  _sscanf_aAgGs (buf, "%a,%g,%s", &a,&g,&s);
+  _sscanf_aAgG (buf, "%a,%g", &a,&g);
+  _sscanf_aAs (buf, "%a,%s", &a,&s);
+  _sscanf_aA (buf, "%a", a);
+  _sscanf_cdeEfFgGnopsuxX (buf, "%d,%e,%f,%g,%s", &d,&e,&f,&g,&s);
+  _sscanf_cdeEfFgGnopuxX (buf, "%d,%e,%f,%g", &d,&e,&f,&g);
+  _sscanf_cdeEfFnopsuxX (buf, "%d,%e,%f,%s", &d,&e,&f,&s);
+  _sscanf_cdeEfFnopuxX (buf, "%d,%e,%f", &d,&e,&f);
+  _sscanf_cdeEgGnopsuxX (buf, "%d,%e,%g,%s", &d,&e,&g,&s);
+  _sscanf_cdeEgGnopuxX (buf, "%d,%e,%g", &d,&e,&g);
+  _sscanf_cdeEnopsuxX (buf, "%d,%e,%s", &d,&e,&s);
+  _sscanf_cdeEnopuxX (buf, "%d,%e", &d,&e);
+  _sscanf_cdfFgGnopsuxX (buf, "%d,%f,%g,%s", &d,&f,&g,&s);
+  _sscanf_cdfFgGnopuxX (buf, "%d,%f,%g", &d,&f,&g);
+  _sscanf_cdfFnopsuxX (buf, "%d,%f,%s", &d,&f,&s);
+  _sscanf_cdfFnopuxX (buf, "%d,%f", &d,&f);
+  _sscanf_cdgGnopsuxX (buf, "%d,%g,%s", &d,&g,&s);
+  _sscanf_cdgGnopuxX (buf, "%d,%g", &d,&g);
+  _sscanf_cdnopsuxX (buf, "%d,%s", &d,&s);
+  _sscanf_cdnopuxX (buf, "%d", &d);
+  _sscanf_eEfFgGs (buf, "%e,%f,%g,%s", &e,&f,&g,&s);
+  _sscanf_eEfFgG (buf, "%e,%f,%g", &e,&f,&g);
+  _sscanf_eEfFs (buf, "%e,%f,%s", &e,&f,&s);
+  _sscanf_eEfF (buf, "%e,%f", &e,&f);
+  _sscanf_eEgGs (buf, "%e,%g,%s", &e,&g,&s);
+  _sscanf_eEgG (buf, "%e,%g", &e,&g);
+  _sscanf_eEs (buf, "%e,%s", &e,&s);
+  _sscanf_eE (buf, "%e", &e);
+  _sscanf_fFgGs (buf, "%f,%g,%s", &f,&g,&s);
+  _sscanf_fFgG (buf, "%f,%g", &f,&g);
+  _sscanf_fFs (buf, "%f,%s", &f,&s);
+  _sscanf_fF (buf, "%f", &f);
+  _sscanf_gGs (buf, "%g,%s", &g,&s);
+  _sscanf_gG (buf, "%g", &g);
+  _sscanf_s (buf, "%s", &s);
+  _sscanf_0 (buf, "%X", &X);
+
+  return 0;
+}
+

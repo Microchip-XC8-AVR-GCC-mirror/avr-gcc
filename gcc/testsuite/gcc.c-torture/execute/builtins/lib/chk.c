@@ -484,8 +484,9 @@ snprintf (char *str, __SIZE_TYPE__ len, const char *fmt, ...)
   return ret;
 }
 
-/* uClibc's vsprintf calls vsnprintf.  */
-#ifndef __UCLIBC__
+/* uClibc's vsprintf calls vsnprintf.
+   So is MUSL.  */
+#if !(defined(__UCLIBC__) || defined(__WITH_MUSL__))
 int
 vsnprintf (char *str, __SIZE_TYPE__ len, const char *fmt, va_list ap)
 {

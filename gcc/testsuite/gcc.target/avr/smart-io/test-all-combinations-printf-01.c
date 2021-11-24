@@ -1,0 +1,88 @@
+/* Test smart-io printf variant for various formats */
+
+/* { dg-do compile } */
+/* { dg-options "-msmart-io" } */
+
+#include "sio_test.h"
+#include "all-printf-comb.h"
+
+void test_01() { printf (QUOTE(FMT_01), ARG_01); }
+void test_02() { printf (QUOTE(FMT_02), ARG_02); }
+void test_03() { printf (QUOTE(FMT_03), ARG_03); }
+void test_04() { printf (QUOTE(FMT_04), ARG_04); }
+void test_05() { printf (QUOTE(FMT_05), ARG_05); }
+void test_06() { printf (QUOTE(FMT_06), ARG_06); }
+void test_07() { printf (QUOTE(FMT_07), ARG_07); }
+void test_08() { printf (QUOTE(FMT_08), ARG_08); }
+void test_09() { printf (QUOTE(FMT_09), ARG_09); }
+void test_10() { printf (QUOTE(FMT_10), ARG_10); }
+void test_11() { printf (QUOTE(FMT_11), ARG_11); }
+void test_12() { printf (QUOTE(FMT_12), ARG_12); }
+void test_13() { printf (QUOTE(FMT_13), ARG_13); }
+void test_14() { printf (QUOTE(FMT_14), ARG_14); }
+void test_15() { printf (QUOTE(FMT_15), ARG_15); }
+void test_16() { printf (QUOTE(FMT_16), ARG_16); }
+void test_17() { printf (QUOTE(FMT_17), ARG_17); }
+void test_18() { printf (QUOTE(FMT_18), ARG_18); }
+void test_19() { printf (QUOTE(FMT_19), ARG_19); }
+void test_20() { printf (QUOTE(FMT_20), ARG_20); }
+void test_21() { printf (QUOTE(FMT_21), ARG_21); }
+void test_22() { printf (QUOTE(FMT_22), ARG_22); }
+void test_23() { printf (QUOTE(FMT_23), ARG_23); }
+void test_24() { printf (QUOTE(FMT_24), ARG_24); }
+void test_25() { printf (QUOTE(FMT_25), ARG_25); }
+void test_26() { printf (QUOTE(FMT_26), ARG_26); }
+void test_27() { printf (QUOTE(FMT_27), ARG_27); }
+void test_28() { printf (QUOTE(FMT_28), ARG_28); }
+void test_29() { printf (QUOTE(FMT_29), ARG_29); }
+void test_30() { printf (QUOTE(FMT_30), ARG_30); }
+void test_31() { printf (QUOTE(FMT_31), ARG_31); }
+void test_32() { printf (QUOTE(FMT_32), ARG_32); }
+void test_33() { printf (QUOTE(FMT_33), ARG_33); }
+void test_34() { printf (QUOTE(FMT_34), ARG_34); }
+void test_35() { printf (QUOTE(FMT_35), ARG_35); }
+void test_36() { printf (QUOTE(FMT_36), ARG_36); }
+void test_37() { printf (QUOTE(FMT_37), ARG_37); }
+void test_38() { printf (QUOTE(FMT_38), ARG_38); }
+void test_39() { printf (QUOTE(FMT_39), ARG_39); }
+void test_40() { printf (QUOTE(FMT_40), ARG_40); }
+void test_41() { printf (QUOTE(FMT_41), ARG_41); }
+void test_42() { printf (QUOTE(FMT_42), ARG_42); }
+void test_43() { printf (QUOTE(FMT_43), ARG_43); }
+void test_44() { printf (QUOTE(FMT_44), ARG_44); }
+void test_45() { printf (QUOTE(FMT_45), ARG_45); }
+void test_46() { printf (QUOTE(FMT_46), ARG_46); }
+void test_47() { printf (QUOTE(FMT_47), ARG_47); }
+void test_48() { printf (QUOTE(FMT_48), ARG_48); }
+void test_49() { printf (QUOTE(FMT_49), ARG_49); }
+void test_50() { printf (QUOTE(FMT_50), ARG_50); }
+void test_51() { printf (QUOTE(FMT_51), ARG_51); }
+void test_52() { printf (QUOTE(FMT_52), ARG_52); }
+void test_53() { printf (QUOTE(FMT_53), ARG_53); }
+void test_54() { printf (QUOTE(FMT_54), ARG_54); }
+void test_55() { printf (QUOTE(FMT_55), ARG_55); }
+void test_56() { printf (QUOTE(FMT_56), ARG_56); }
+void test_57() { printf (QUOTE(FMT_57), ARG_57); }
+void test_58() { printf (QUOTE(FMT_58), ARG_58); }
+void test_59() { printf (QUOTE(FMT_59), ARG_59); }
+void test_60() { printf (QUOTE(FMT_60), ARG_60); }
+void test_61() { printf (QUOTE(FMT_61), ARG_61); }
+void test_62() { printf (QUOTE(FMT_62), ARG_62); }
+void test_63() { printf (QUOTE(FMT_63), ARG_63); }
+
+int main()
+{
+  test_01(); test_02(); test_03(); test_04(); test_05(); test_06(); test_07();
+  test_08(); test_09(); test_10(); test_11(); test_12(); test_13(); test_14();
+  test_15(); test_16(); test_17(); test_18(); test_19(); test_20(); test_21();
+  test_22(); test_23(); test_24(); test_25(); test_26(); test_27(); test_28();
+  test_29(); test_30(); test_31(); test_32(); test_33(); test_34(); test_35();
+  test_36(); test_37(); test_38(); test_39(); test_40(); test_41(); test_42();
+  test_43(); test_44(); test_45(); test_46(); test_47(); test_48(); test_49();
+  test_50(); test_51(); test_52(); test_53(); test_54(); test_55(); test_56(); 
+  test_57(); test_58(); test_59(); test_60(); test_61(); test_62(); test_63();
+  return 0;
+}
+
+/* { dg-final { scan-assembler-times "call _printf_aAcdeEfFgGnopsuxX"  63 } } */
+  

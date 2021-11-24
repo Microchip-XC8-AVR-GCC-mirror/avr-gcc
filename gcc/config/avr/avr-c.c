@@ -407,6 +407,10 @@ avr_cpu_cpp_builtins (struct cpp_reader *pfile)
   cpp_define_formatted (pfile, "__AVR_SFR_OFFSET__=0x%x",
                         avr_arch->sfr_offset);
 
+#ifdef WITH_MUSL
+  cpp_define (pfile, "__WITH_MUSL__");
+#endif /* WITH_MUSL */
+
 #ifdef WITH_AVRLIBC
   cpp_define (pfile, "__WITH_AVRLIBC__");
 #endif /* WITH_AVRLIBC */
@@ -452,7 +456,14 @@ avr_cpu_cpp_builtins (struct cpp_reader *pfile)
     {
       cpp_define (pfile, "__AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE__");
     }
-	
+
+  /* Define macro to denote const data allocation in mapped program memory.
+     Set only on devices with an SFR to map a 32KB chunk of progmem into
+     data memory.  */
+  if (avr_const_data_in_config_mapped_progmem)
+    {
+      cpp_define (pfile, "__AVR_CONST_DATA_IN_CONFIG_MAPPED_PROGMEM__");
+    }
 
   /* Define builtin macros so that the user can easily query whether or
      not a specific builtin is available. */

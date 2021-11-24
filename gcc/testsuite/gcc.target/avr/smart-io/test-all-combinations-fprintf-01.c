@@ -1,0 +1,90 @@
+/* Test smart-io fprintf variant for various formats */
+
+/* { dg-do compile } */
+/* { dg-options "-msmart-io" } */
+
+#include "sio_test.h"
+#include "all-printf-comb.h"
+
+void test_01() { fprintf (fp, QUOTE(FMT_01), ARG_01); }
+void test_02() { fprintf (fp, QUOTE(FMT_02), ARG_02); }
+void test_03() { fprintf (fp, QUOTE(FMT_03), ARG_03); }
+void test_04() { fprintf (fp, QUOTE(FMT_04), ARG_04); }
+void test_05() { fprintf (fp, QUOTE(FMT_05), ARG_05); }
+void test_06() { fprintf (fp, QUOTE(FMT_06), ARG_06); }
+void test_07() { fprintf (fp, QUOTE(FMT_07), ARG_07); }
+void test_08() { fprintf (fp, QUOTE(FMT_08), ARG_08); }
+void test_09() { fprintf (fp, QUOTE(FMT_09), ARG_09); }
+void test_10() { fprintf (fp, QUOTE(FMT_10), ARG_10); }
+void test_11() { fprintf (fp, QUOTE(FMT_11), ARG_11); }
+void test_12() { fprintf (fp, QUOTE(FMT_12), ARG_12); }
+void test_13() { fprintf (fp, QUOTE(FMT_13), ARG_13); }
+void test_14() { fprintf (fp, QUOTE(FMT_14), ARG_14); }
+void test_15() { fprintf (fp, QUOTE(FMT_15), ARG_15); }
+void test_16() { fprintf (fp, QUOTE(FMT_16), ARG_16); }
+void test_17() { fprintf (fp, QUOTE(FMT_17), ARG_17); }
+void test_18() { fprintf (fp, QUOTE(FMT_18), ARG_18); }
+void test_19() { fprintf (fp, QUOTE(FMT_19), ARG_19); }
+void test_20() { fprintf (fp, QUOTE(FMT_20), ARG_20); }
+void test_21() { fprintf (fp, QUOTE(FMT_21), ARG_21); }
+void test_22() { fprintf (fp, QUOTE(FMT_22), ARG_22); }
+void test_23() { fprintf (fp, QUOTE(FMT_23), ARG_23); }
+void test_24() { fprintf (fp, QUOTE(FMT_24), ARG_24); }
+void test_25() { fprintf (fp, QUOTE(FMT_25), ARG_25); }
+void test_26() { fprintf (fp, QUOTE(FMT_26), ARG_26); }
+void test_27() { fprintf (fp, QUOTE(FMT_27), ARG_27); }
+void test_28() { fprintf (fp, QUOTE(FMT_28), ARG_28); }
+void test_29() { fprintf (fp, QUOTE(FMT_29), ARG_29); }
+void test_30() { fprintf (fp, QUOTE(FMT_30), ARG_30); }
+void test_31() { fprintf (fp, QUOTE(FMT_31), ARG_31); }
+void test_32() { fprintf (fp, QUOTE(FMT_32), ARG_32); }
+void test_33() { fprintf (fp, QUOTE(FMT_33), ARG_33); }
+void test_34() { fprintf (fp, QUOTE(FMT_34), ARG_34); }
+void test_35() { fprintf (fp, QUOTE(FMT_35), ARG_35); }
+void test_36() { fprintf (fp, QUOTE(FMT_36), ARG_36); }
+void test_37() { fprintf (fp, QUOTE(FMT_37), ARG_37); }
+void test_38() { fprintf (fp, QUOTE(FMT_38), ARG_38); }
+void test_39() { fprintf (fp, QUOTE(FMT_39), ARG_39); }
+void test_40() { fprintf (fp, QUOTE(FMT_40), ARG_40); }
+void test_41() { fprintf (fp, QUOTE(FMT_41), ARG_41); }
+void test_42() { fprintf (fp, QUOTE(FMT_42), ARG_42); }
+void test_43() { fprintf (fp, QUOTE(FMT_43), ARG_43); }
+void test_44() { fprintf (fp, QUOTE(FMT_44), ARG_44); }
+void test_45() { fprintf (fp, QUOTE(FMT_45), ARG_45); }
+void test_46() { fprintf (fp, QUOTE(FMT_46), ARG_46); }
+void test_47() { fprintf (fp, QUOTE(FMT_47), ARG_47); }
+void test_48() { fprintf (fp, QUOTE(FMT_48), ARG_48); }
+void test_49() { fprintf (fp, QUOTE(FMT_49), ARG_49); }
+void test_50() { fprintf (fp, QUOTE(FMT_50), ARG_50); }
+void test_51() { fprintf (fp, QUOTE(FMT_51), ARG_51); }
+void test_52() { fprintf (fp, QUOTE(FMT_52), ARG_52); }
+void test_53() { fprintf (fp, QUOTE(FMT_53), ARG_53); }
+void test_54() { fprintf (fp, QUOTE(FMT_54), ARG_54); }
+void test_55() { fprintf (fp, QUOTE(FMT_55), ARG_55); }
+void test_56() { fprintf (fp, QUOTE(FMT_56), ARG_56); }
+void test_57() { fprintf (fp, QUOTE(FMT_57), ARG_57); }
+void test_58() { fprintf (fp, QUOTE(FMT_58), ARG_58); }
+void test_59() { fprintf (fp, QUOTE(FMT_59), ARG_59); }
+void test_60() { fprintf (fp, QUOTE(FMT_60), ARG_60); }
+void test_61() { fprintf (fp, QUOTE(FMT_61), ARG_61); }
+void test_62() { fprintf (fp, QUOTE(FMT_62), ARG_62); }
+void test_63() { fprintf (fp, QUOTE(FMT_63), ARG_63); }
+
+int main()
+{
+  test_01(); test_02(); test_03(); test_04(); test_05(); test_06(); test_07();
+  test_08(); test_09(); test_10(); test_11(); test_12(); test_13(); test_14();
+  test_15(); test_16(); test_17(); test_18(); test_19(); test_20(); test_21();
+  test_22(); test_23(); test_24(); test_25(); test_26(); test_27(); test_28();
+  test_29(); test_30(); test_31(); test_32(); test_33(); test_34(); test_35();
+  test_36(); test_37(); test_38(); test_39(); test_40(); test_41(); test_42();
+  test_43(); test_44(); test_45(); test_46(); test_47(); test_48(); test_49();
+  test_50(); test_51(); test_52(); test_53(); test_54(); test_55(); test_56(); 
+  test_57(); test_58(); test_59(); test_60(); test_61(); test_62(); test_63();
+  return 0;
+}
+
+/* { dg-final { scan-assembler-times "call fputs"  1 } } */
+/* { dg-final { scan-assembler-times "call _fprintf_aAcdeEfFgGnopsuxX"  62 } } */
+
+  

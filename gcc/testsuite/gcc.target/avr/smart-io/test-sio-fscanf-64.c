@@ -1,0 +1,142 @@
+/* Test smart-io 64 variants of fscanf for compilation or link errors. */
+
+/* { dg-do link } */
+/* { dg-options "-msmart-io" } */
+
+#include "sio_test.h"
+
+int _fscanf_aAcdeEfFgGnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdeEfFgGnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdeEfFnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdeEfFnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdeEgGnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdeEgGnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdeEnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdeEnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdfFgGnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdfFgGnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdfFnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdfFnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdgGnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdgGnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAcdnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAeEfFgGs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAeEfFgG (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAeEfFs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAeEfF (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAeEgGs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAeEgG (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAeEs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAeE (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAfFgGs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAfFgG (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAfFs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAfF (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAgGs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAgG (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aAs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_aA (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdeEfFgGnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdeEfFgGnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdeEfFnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdeEfFnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdeEgGnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdeEgGnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdeEnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdeEnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdfFgGnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdfFgGnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdfFnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdfFnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdgGnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdgGnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdnopsuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_cdnopuxX (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_eEfFgGs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_eEfFgG (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_eEfFs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_eEfF (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_eEgGs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_eEgG (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_eEs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_eE (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_fFgGs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_fFgG (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_fFs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_fF (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_gGs (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_gG (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_s (FILE *__restrict, const char *__restrict, ...);
+int _fscanf_0 (FILE *__restrict, const char *__restrict, ...);
+
+int main()
+{
+  _fscanf_aAcdeEfFgGnopsuxX (fp, "%a,%d,%e,%f,%g,%s", &a,&d,&e,&f,&g,&s);
+  _fscanf_aAcdeEfFgGnopuxX (fp, "%a,%d,%e,%f,%g", &a,&d,&e,&f,&g);
+  _fscanf_aAcdeEfFnopsuxX (fp, "%a,%d,%e,%f,%s", &a,&d,&e,&f,&s);
+  _fscanf_aAcdeEfFnopuxX (fp, "%a,%d,%e,%f", &a,&d,&e,&f);
+  _fscanf_aAcdeEgGnopsuxX (fp, "%a,%d,%e,%g,%s", &a,&d,&e,&g,&s);
+  _fscanf_aAcdeEgGnopuxX (fp, "%a,%d,%e,%g", &a,&d,&e,&g);
+  _fscanf_aAcdeEnopsuxX (fp, "%a,%d,%e,%s", &a,&d,&e,&s);
+  _fscanf_aAcdeEnopuxX (fp, "%a,%d,%e", &a,&d,&e);
+  _fscanf_aAcdfFgGnopsuxX (fp, "%a,%d,%f,%g,%s", &a,&d,&f,&g,&s);
+  _fscanf_aAcdfFgGnopuxX (fp, "%a,%d,%f,%g", &a,&d,&f,&g);
+  _fscanf_aAcdfFnopsuxX (fp, "%a,%d,%f,%s", &a,&d,&f,&s);
+  _fscanf_aAcdfFnopuxX (fp, "%a,%d,%f", &a,&d,&f);
+  _fscanf_aAcdgGnopsuxX (fp, "%a,%d,%g,%s", &a,&d,&g,&s);
+  _fscanf_aAcdgGnopuxX (fp, "%a,%d,%g", &a,&d,&g);
+  _fscanf_aAcdnopsuxX (fp, "%a,%d,%s", &a,&d,&s);
+  _fscanf_aAcdnopuxX (fp, "%a,%d", &a,&d);
+  _fscanf_aAeEfFgGs (fp, "%a,%e,%f,%g,%s", &a,&e,&f,&g,&s);
+  _fscanf_aAeEfFgG (fp, "%a,%e,%f,%g", &a,&e,&f,&g);
+  _fscanf_aAeEfFs (fp, "%a,%e,%f,%s", &a,&e,&f,&s);
+  _fscanf_aAeEfF (fp, "%a,%e,%f", &a,&e,&f);
+  _fscanf_aAeEgGs (fp, "%a,%e,%g,%s", &a,&e,&g,&s);
+  _fscanf_aAeEgG (fp, "%a,%e,%g", &a,&e,&g);
+  _fscanf_aAeEs (fp, "%a,%e,%s", &a,&e,&s);
+  _fscanf_aAeE (fp, "%a,%e", &a,&e);
+  _fscanf_aAfFgGs (fp, "%a,%f,%g,%s", &a,&f,&g,&s);
+  _fscanf_aAfFgG (fp, "%a,%f,%g", &a,&f,&g);
+  _fscanf_aAfFs (fp, "%a,%f,%s", &a,&f,&s);
+  _fscanf_aAfF (fp, "%a,%f", &a,&f);
+  _fscanf_aAgGs (fp, "%a,%g,%s", &a,&g,&s);
+  _fscanf_aAgG (fp, "%a,%g", &a,&g);
+  _fscanf_aAs (fp, "%a,%s", &a,&s);
+  _fscanf_aA (fp, "%a", a);
+  _fscanf_cdeEfFgGnopsuxX (fp, "%d,%e,%f,%g,%s", &d,&e,&f,&g,&s);
+  _fscanf_cdeEfFgGnopuxX (fp, "%d,%e,%f,%g", &d,&e,&f,&g);
+  _fscanf_cdeEfFnopsuxX (fp, "%d,%e,%f,%s", &d,&e,&f,&s);
+  _fscanf_cdeEfFnopuxX (fp, "%d,%e,%f", &d,&e,&f);
+  _fscanf_cdeEgGnopsuxX (fp, "%d,%e,%g,%s", &d,&e,&g,&s);
+  _fscanf_cdeEgGnopuxX (fp, "%d,%e,%g", &d,&e,&g);
+  _fscanf_cdeEnopsuxX (fp, "%d,%e,%s", &d,&e,&s);
+  _fscanf_cdeEnopuxX (fp, "%d,%e", &d,&e);
+  _fscanf_cdfFgGnopsuxX (fp, "%d,%f,%g,%s", &d,&f,&g,&s);
+  _fscanf_cdfFgGnopuxX (fp, "%d,%f,%g", &d,&f,&g);
+  _fscanf_cdfFnopsuxX (fp, "%d,%f,%s", &d,&f,&s);
+  _fscanf_cdfFnopuxX (fp, "%d,%f", &d,&f);
+  _fscanf_cdgGnopsuxX (fp, "%d,%g,%s", &d,&g,&s);
+  _fscanf_cdgGnopuxX (fp, "%d,%g", &d,&g);
+  _fscanf_cdnopsuxX (fp, "%d,%s", &d,&s);
+  _fscanf_cdnopuxX (fp, "%d", &d);
+  _fscanf_eEfFgGs (fp, "%e,%f,%g,%s", &e,&f,&g,&s);
+  _fscanf_eEfFgG (fp, "%e,%f,%g", &e,&f,&g);
+  _fscanf_eEfFs (fp, "%e,%f,%s", &e,&f,&s);
+  _fscanf_eEfF (fp, "%e,%f", &e,&f);
+  _fscanf_eEgGs (fp, "%e,%g,%s", &e,&g,&s);
+  _fscanf_eEgG (fp, "%e,%g", &e,&g);
+  _fscanf_eEs (fp, "%e,%s", &e,&s);
+  _fscanf_eE (fp, "%e", &e);
+  _fscanf_fFgGs (fp, "%f,%g,%s", &f,&g,&s);
+  _fscanf_fFgG (fp, "%f,%g", &f,&g);
+  _fscanf_fFs (fp, "%f,%s", &f,&s);
+  _fscanf_fF (fp, "%f", &f);
+  _fscanf_gGs (fp, "%g,%s", &g,&s);
+  _fscanf_gG (fp, "%g", &g);
+  _fscanf_s (fp, "%s", &s);
+  _fscanf_0 (fp, "%X", &X);
+
+  return 0;
+}
+

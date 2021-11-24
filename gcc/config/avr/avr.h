@@ -78,7 +78,8 @@ enum
 #define AVR_HAVE_RAMPZ (avr_arch->have_elpm             \
                         || avr_arch->have_rampd)
 #define AVR_HAVE_EIJMP_EICALL (avr_arch->have_eijmp_eicall)
-#define AVR_HAVE_PROGMEM_IN_DATA_ADDRESS_SPACE ((AVR_XMEGA3) || (AVR_TINY))
+#define AVR_HAVE_PROGMEM_IN_DATA_ADDRESS_SPACE \
+  ((AVR_XMEGA3) || (AVR_TINY) || avr_const_data_in_config_mapped_progmem)
 #define AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE \
     (avr_const_data_in_progmem && !AVR_HAVE_PROGMEM_IN_DATA_ADDRESS_SPACE)
 
@@ -466,6 +467,13 @@ typedef struct avr_args
       fprintf (STREAM, "\t.p2align\t%d\n", POWER);      \
   } while (0)
 
+  /*
+   This is how to output a reference to a user-level label named NAME.
+  */
+  #undef  ASM_OUTPUT_LABELREF
+  #define ASM_OUTPUT_LABELREF(FILE, NAME)		\
+     avr_asm_output_labelref (FILE, NAME)
+  
 #define CASE_VECTOR_MODE HImode
 
 #undef WORD_REGISTER_OPERATIONS
@@ -527,6 +535,9 @@ extern const char *avr_device_pack (int, const char**);
 extern const char *avr_devicespecs_file (int, const char**);
 extern const char *avr_language_extension (int, const char**);
 
+#undef SELF_SPEC
+#define SELF_SPEC "%(self_spec_const_data_config_mapped_progmem) "
+
 #define EXTRA_SPEC_FUNCTIONS                                   \
   { "device-pack", avr_device_pack },              \
   { "device-specs-file", avr_devicespecs_file },   \
@@ -542,7 +553,7 @@ extern const char *avr_language_extension (int, const char**);
   %:device-specs-file(device-specs%s %{mmcu=*:%*}) \
   %:lang-extn(%{mext=*:%*}) \
   %{mcodecov=*:%{mpa:%e-mpa and -mcodecov options are incompatible}} \
-  %{!mskip-license-check:%{O3|Os:%{!mno-pa:%{!mcodecov=*:-mpa}}}}  \
+  %{!mskip-license-check:%{Os:%{!mno-pa:%{!mcodecov=*:-mpa}}}}  \
   "
 
 /* No libstdc++ for now.  Empty string doesn't work.  */
@@ -604,6 +615,30 @@ struct GTY(()) machine_function
   /* 'true' if the above is_foo predicates are sanity-checked to avoid
      multiple diagnose for the same function.  */
   int attributes_checked_p;
+
+  /* 'true' - if current function shall not use '__gcc_isr' pseudo
+     instructions as specified by the "no_gccisr" attribute.  */
+  int is_no_gccisr;
+
+  /* Used for `__gcc_isr' pseudo instruction handling of
+     non-naked ISR prologue / epilogue(s).  */
+  struct
+  {
+    /* 'true' if this function actually uses "*gasisr" insns. */
+    int yes;
+    /* 'true' if this function is allowed to use "*gasisr" insns. */
+    int maybe;
+    /* The register numer as printed by the Done chunk.  */
+    int regno;
+  } gasisr;
+
+  /* 'true' if this function references .L__stack_usage like with
+     __builtin_return_address.  */
+  int use_L__stack_usage;
+
+  /* 'true' - if current function is an ISR and its prologue is a
+	 call to __isr_prologue_saves. */
+  int is_isr_prologue_called;
 };
 
 /* AVR does not round pushes, but the existence of this macro is

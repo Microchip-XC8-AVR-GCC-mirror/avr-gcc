@@ -1,6 +1,10 @@
 /* Verify that string literal allocated to program memory.  */
+/* Assumes string literals are in __memx address space, which is
+   not true for avrxmega3, avrtiny or for config-mapped-progmem,
+   so skip for those archs. */
 /* { dg-do compile } */
 /* { dg-options "--std=gnu99 -mconst-data-in-progmem" } */
+/* { dg-require-effective-target avr_progmem_insn_for_progmem } */
 
 const char __memx * ptrToMemx = "hello";
 const char __memx * const __memx memxPtrToMemx = "world";

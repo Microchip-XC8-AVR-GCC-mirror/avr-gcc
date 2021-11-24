@@ -242,4 +242,12 @@ typedef long long unsigned int uint_uk_t;
 #include <stdfix-avrlibc.h>
 #endif
 
+/* Hook in stuff from MUSL.  */
+
+#if (defined (__WITH_MUSL__)                 \
+     && defined (__has_include)                 \
+     && __has_include (<stdfix-musl.h>))
+#include <stdfix-musl.h>
+#endif
+
 #endif /* _AVRGCC_STDFIX_H */

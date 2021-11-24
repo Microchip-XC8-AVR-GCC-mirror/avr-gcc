@@ -1,6 +1,10 @@
 /* Verify that string literal used in the local scope allocated to program memory.  */
 /* { dg-do run } */
 /* { dg-options "--std=gnu99 -mconst-data-in-progmem -save-temps" } */
+/* Assumes string literals are in __memx address space, which is
+   not true for avrxmega3, avrtiny or for config-mapped-progmem,
+   so skip for those archs. */
+/* { dg-require-effective-target avr_progmem_insn_for_progmem } */
 
 int test1 (const char __memx * ptrToMemx)
 {

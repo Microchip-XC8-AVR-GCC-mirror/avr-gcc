@@ -159,6 +159,8 @@ const avr_addrspace_t avr_addrspace[ADDR_SPACE_COUNT] =
 
 unsigned long avr_non_bit_addressable_registers_mask;
 avr_lang_extn_t avr_lang_extn = LANG_EXTN_NONE;
+bool avr_smartio_fmt_option = FALSE;
+
 
 /* Holding RAM addresses of some SFRs used by the compiler and that
    are unique over all devices in an architecture like 'avr4'.  */
@@ -282,6 +284,9 @@ bool avr_need_copy_data_p = false;
 /* avr_pragma_nocodecov is != 0 when #pragma nocodecov is in effect */
 int avr_pragma_nocodecov = 0;
 
+static void avr_process_smartio_default_format(const char*);
+static void avr_clear_smartio_process_state(void);
+
 
 /* Transform UP into lowercase and write the result to LO.
    You must provide enough space for LO.  Return LO.  */
@@ -358,6 +363,52 @@ avr_to_int_mode (rtx x)
     : simplify_gen_subreg (int_mode_for_mode (mode), x, mode, 0);
 }
 
+namespace {
+static const pass_data avr_pass_data_pre_proep =
+{
+  RTL_PASS,      // type
+  "",            // name (will be patched)
+  OPTGROUP_NONE, // optinfo_flags
+  TV_DF_SCAN,    // tv_id
+  0,             // properties_required
+  0,             // properties_provided
+  0,             // properties_destroyed
+  0,             // todo_flags_start
+  0              // todo_flags_finish
+};
+
+class avr_pass_pre_proep : public rtl_opt_pass
+{
+public:
+  avr_pass_pre_proep (gcc::context *ctxt, const char *name)
+    : rtl_opt_pass (avr_pass_data_pre_proep, ctxt)
+  {
+    this->name = name;
+  }
+
+  void compute_maybe_gasisr (function*);
+
+  virtual unsigned int execute (function *fun)
+  {
+    if (avr_gasisr_prologues
+        // Whether this function is an ISR worth scanning at all.
+        && !fun->machine->is_no_gccisr
+        && (fun->machine->is_interrupt
+            || fun->machine->is_signal)
+        && !cfun->machine->is_naked
+        // Paranoia: Non-local gotos and labels that might escape.
+        && !cfun->calls_setjmp
+        && !cfun->has_nonlocal_label)
+      {
+        compute_maybe_gasisr (fun);
+      }
+
+    return 0;
+  }
+
+}; // avr_pass_pre_proep
+
+} // anon namespace
 
 static const pass_data avr_pass_data_recompute_notes =
 {
@@ -392,9 +443,14 @@ public:
 }; // avr_pass_recompute_notes
 
 
+
+
 static void
 avr_register_passes (void)
 {
+  register_pass (new avr_pass_pre_proep (g, "avr-pre-proep"),
+                 PASS_POS_INSERT_BEFORE, "pro_and_epilogue", 1);
+
   /* This avr-specific pass (re)computes insn notes, in particular REG_DEAD
      notes which are used by `avr.c::reg_unused_after' and branch offset
      computations.  These notes must be correct, i.e. there must be no
@@ -502,6 +558,10 @@ avr_handle_deferred_options(void) {
 						avr_lang_extn = LANG_EXTN_CCI;
 						break;
 
+					case OPT_msmart_io_format_:
+						avr_process_smartio_default_format(opt->arg);
+						avr_smartio_fmt_option = TRUE;
+						break;
 					default:
 						gcc_unreachable ();
 					}
@@ -604,6 +664,10 @@ avr_option_override (void)
   if (flag_pie == 2)
     warning (OPT_fPIE, "-fPIE is not supported");
 
+#if !defined (HAVE_AS_AVR_MGCCISR_OPTION)
+  avr_gasisr_prologues = 0;
+#endif
+
   if (!avr_set_core_architecture())
     return;
 
@@ -629,6 +693,27 @@ avr_option_override (void)
       avr_const_data_in_progmem = 1;
     }
 */
+
+  /* Disable allocation of const data in mapped progmem if
+     const-data-in-progmem itself is turned off. */
+  if (!avr_const_data_in_progmem && avr_const_data_in_config_mapped_progmem)
+    {
+      warning(0, "-mconst-data-in-progmem is not enabled, "
+                 "disabling -mconst-data-in-config-mapped-progmem");
+      avr_const_data_in_config_mapped_progmem = 0;
+	}
+
+  /* If smart-io is explicitly disabled, make the size value 0 */
+  if (!TARGET_MCHP_SMARTIO)
+    {
+      mchp_io_size_val = 0;
+    }
+  if ((mchp_io_size_val < 0) || (mchp_io_size_val > 2))
+    {
+      warning (0, "Invalid smart-io level %d, assuming 1", mchp_io_size_val);
+      mchp_io_size_val = 1;
+    }
+
 
   /* RAM addresses of some SFRs common to all devices in respective arch. */
 
@@ -901,6 +986,15 @@ avr_nopa_function_p (tree func)
   return avr_lookup_function_attribute1 (func, "nopa");
 }
 
+/* Return nonzero if FUNC is a no_gccisr function as specified
+   by the "no_gccisr" attribute.  */
+
+static int
+avr_no_gccisr_function_p (tree func)
+{
+  return avr_lookup_function_attribute1 (func, "no_gccisr");
+}
+
 /* Implement `TARGET_SET_CURRENT_FUNCTION'.  */
 /* Sanity cheching for above function attributes.  */
 
@@ -925,6 +1019,7 @@ avr_set_current_function (tree decl)
   cfun->machine->is_nmi = avr_nmi_function_p (decl);
   cfun->machine->is_OS_task = avr_OS_task_function_p (decl);
   cfun->machine->is_OS_main = avr_OS_main_function_p (decl);
+  cfun->machine->is_no_gccisr = avr_no_gccisr_function_p (decl);
 
   if (cfun->machine->is_interrupt)
     isr = "interrupt";
@@ -1122,6 +1217,9 @@ avr_initial_elimination_offset (int from, int to)
       int offset = frame_pointer_needed ? 2 : 0;
       int avr_pc_size = AVR_HAVE_EIJMP_EICALL ? 3 : 2;
 
+      // If FROM is ARG_POINTER_REGNUM, we are not in an ISR as ISRs
+      // might not have arguments.  Hence the following is not affected
+      // by gasisr prologues.
       offset += avr_regs_to_save (NULL);
       return (get_frame_size () + avr_outgoing_args_size()
               + avr_pc_size + 1 + offset);
@@ -1216,6 +1314,8 @@ avr_return_addr_rtx (int count, rtx tem)
   else
     r = gen_rtx_SYMBOL_REF (Pmode, ".L__stack_usage+1");
 
+  cfun->machine->use_L__stack_usage = 1;
+
   r = gen_rtx_PLUS (Pmode, tem, r);
   r = gen_frame_mem (Pmode, memory_address (Pmode, r));
   r = gen_rtx_ROTATE (HImode, r, GEN_INT (8));
@@ -1297,6 +1397,48 @@ sequent_regs_live (void)
   return (cur_seq == live_seq) ? live_seq : 0;
 }
 
+rtl_opt_pass*
+make_avr_pass_pre_proep (gcc::context *ctxt)
+{
+  return new avr_pass_pre_proep (ctxt, "avr-pre-proep");
+}
+
+
+/* Set fun->machine->gasisr.maybe provided we don't find anything that
+   prohibits GAS generating parts of ISR prologues / epilogues for us.  */
+
+void
+avr_pass_pre_proep::compute_maybe_gasisr (function *fun)
+{
+  // Don't use BB iterators so that we see JUMP_TABLE_DATA.
+
+  for (rtx_insn *insn = get_insns (); insn; insn = NEXT_INSN (insn))
+    {
+      // Transparent calls always use [R]CALL and are filtered out by GAS.
+      // ISRs don't use -mcall-prologues, hence what remains to be filtered
+      // out are open coded (tail) calls.
+
+      if (CALL_P (insn))
+        return;
+
+      // __tablejump2__ clobbers something and is targeted by JMP so
+      // that GAS won't see its usage.
+
+      if (AVR_HAVE_JMP_CALL
+          && JUMP_TABLE_DATA_P (insn))
+        return;
+
+      // Non-local gotos not seen in *FUN.
+
+      if (JUMP_P (insn)
+          && find_reg_note (insn, REG_NON_LOCAL_GOTO, NULL_RTX))
+        return;
+    }
+
+  fun->machine->gasisr.maybe = 1;
+}
+
+
 /* Obtain the length sequence of insns.  */
 
 int
@@ -1322,6 +1464,46 @@ avr_incoming_return_addr_rtx (void)
   return gen_frame_mem (HImode, plus_constant (Pmode, stack_pointer_rtx, 1));
 }
 
+
+/* Unset a bit in *SET.  If successful, return the respective bit number.
+   Otherwise, return -1 and *SET is unaltered.  */
+
+static int
+avr_hregs_split_reg (HARD_REG_SET *set)
+{
+  for (int regno = 0; regno < 32; regno++)
+    if (TEST_HARD_REG_BIT (*set, regno))
+      {
+        // Don't remove a register from *SET which might indicate that
+        // some RAMP* register might need ISR prologue / epilogue treatment.
+
+        if (AVR_HAVE_RAMPX
+            && (REG_X == regno || REG_X + 1 == regno)
+            && TEST_HARD_REG_BIT (*set, REG_X)
+            && TEST_HARD_REG_BIT (*set, REG_X + 1))
+          continue;
+
+        if (AVR_HAVE_RAMPY
+            && !frame_pointer_needed
+            && (REG_Y == regno || REG_Y + 1 == regno)
+            && TEST_HARD_REG_BIT (*set, REG_Y)
+            && TEST_HARD_REG_BIT (*set, REG_Y + 1))
+          continue;
+
+        if (AVR_HAVE_RAMPZ
+            && (REG_Z == regno || REG_Z + 1 == regno)
+            && TEST_HARD_REG_BIT (*set, REG_Z)
+            && TEST_HARD_REG_BIT (*set, REG_Z + 1))
+          continue;
+
+        CLEAR_HARD_REG_BIT (*set, regno);
+        return regno;
+      }
+
+  return -1;
+}
+
+
 /*  Helper for expand_prologue.  Emit a push of a byte register.  */
 
 static void
@@ -1342,24 +1524,24 @@ emit_push_byte (unsigned regno, bool frame_related_p)
 }
 
 
-/*  Helper for expand_prologue.  Emit a push of a SFR via tmp_reg.
+/*  Helper for expand_prologue.  Emit a push of a SFR via register TREG.
     SFR is a MEM representing the memory location of the SFR.
     If CLR_P then clear the SFR after the push using zero_reg.  */
 
 static void
-emit_push_sfr (rtx sfr, bool frame_related_p, bool clr_p)
+emit_push_sfr (rtx sfr, bool frame_related_p, bool clr_p, int treg)
 {
   rtx_insn *insn;
 
   gcc_assert (MEM_P (sfr));
 
-  /* IN __tmp_reg__, IO(SFR) */
-  insn = emit_move_insn (tmp_reg_rtx, sfr);
+  /* IN treg, IO(SFR) */
+  insn = emit_move_insn (all_regs_rtx[treg], sfr);
   if (frame_related_p)
     RTX_FRAME_RELATED_P (insn) = 1;
 
-  /* PUSH __tmp_reg__ */
-  emit_push_byte (AVR_TMP_REGNO, frame_related_p);
+  /* PUSH treg */
+  emit_push_byte (treg, frame_related_p);
 
   if (clr_p)
     {
@@ -1443,8 +1625,11 @@ avr_prologue_setup_frame (HOST_WIDE_INT size, HARD_REG_SET set)
     {
       int reg;
 
+      /* isr_prologue_saves would have already saved call_used_regs,
+         so only save other regs. */
       for (reg = 0; reg < 32; ++reg)
-        if (TEST_HARD_REG_BIT (set, reg))
+        if (TEST_HARD_REG_BIT (set, reg)
+            && !(cfun->machine->is_isr_prologue_called && call_used_regs[reg]))
           emit_push_byte (reg, true);
 
       if (frame_pointer_needed
@@ -1639,6 +1824,30 @@ avr_prologue_setup_frame (HOST_WIDE_INT size, HARD_REG_SET set)
     } /* !minimize */
 }
 
+/*  Returns true if all call used regs are in SET */
+static bool
+has_all_call_used_regs (HARD_REG_SET set)
+{
+  for (int reg = LAST_CALLEE_SAVED_REG + 1; reg < 32; ++reg)
+    {
+      if (call_used_regs[reg] && !TEST_HARD_REG_BIT (set, reg))
+        return false;
+    }
+  return true;
+}
+
+static int
+isr_prologue_called_num_regs_pushed ()
+{
+  /* All regs from LAST_CALLEE_SAVED_REG, except Y */
+  int num_call_used_regs = 31 - LAST_CALLEE_SAVED_REG - 2;
+  /* Account for pushing of AVR_ZERO_REGNO, AVR_TMP_REGNO, SREG
+     and optionally RAMPD, RAMPX and RAMPZ. */
+  return num_call_used_regs + 3
+    + (AVR_HAVE_RAMPD ? 1 : 0)
+    + (AVR_HAVE_RAMPX ? 1 : 0)
+    + (AVR_HAVE_RAMPZ ? 1 : 0);
+}
 
 /*  Output function prologue.  */
 
@@ -1664,55 +1873,108 @@ avr_expand_prologue (void)
     }
 
   avr_regs_to_save (&set);
+  cfun->machine->is_isr_prologue_called = 0;
 
   if (cfun->machine->is_interrupt || cfun->machine->is_signal)
     {
+      int treg = AVR_TMP_REGNO;
       /* Enable interrupts.  */
       if (cfun->machine->is_interrupt)
         emit_insn (gen_enable_interrupt ());
 
-      /* Push zero reg.  */
-      emit_push_byte (AVR_ZERO_REGNO, true);
+      if (cfun->machine->gasisr.maybe)
+        {
+          /* Let GAS PR21472 emit prologue preamble for us which handles SREG,
+             ZERO_REG and TMP_REG and one additional, optional register for
+             us in an optimal way.  This even scans through inline asm.  */
 
-      /* Push tmp reg.  */
-      emit_push_byte (AVR_TMP_REGNO, true);
+          cfun->machine->gasisr.yes = 1;
 
-      /* Push SREG.  */
-      /* ??? There's no dwarf2 column reserved for SREG.  */
-      emit_push_sfr (sreg_rtx, false, false /* clr */);
+          // The optional reg or TMP_REG if we don't need one.  If we need one,
+          // remove that reg from SET so that it's not puhed / popped twice.
+          // We also use it below instead of TMP_REG in some places.
 
-      /* Clear zero reg.  */
-      emit_move_insn (zero_reg_rtx, const0_rtx);
+          treg = avr_hregs_split_reg (&set);
+          if (treg < 0)
+            treg = AVR_TMP_REGNO;
+          cfun->machine->gasisr.regno = treg;
 
-      /* Prevent any attempt to delete the setting of ZERO_REG!  */
-      emit_use (zero_reg_rtx);
+          // The worst case of pushes.  The exact number can be inferred
+          // at assembly time by magic expression __gcc_isr.n_pushed.
+          cfun->machine->stack_usage += 3 + (treg != AVR_TMP_REGNO);
+
+          // Emit a Prologue chunk.  Epilogue chunk(s) might follow.
+          // The final Done chunk is emit by final postscan.
+          emit_insn (gen_gasisr (GEN_INT (GASISR_Prologue), GEN_INT (treg)));
+        }
+      else if (avr_call_isr_prologues && has_all_call_used_regs (set))
+        {
+          int num_regs_pushed = isr_prologue_called_num_regs_pushed ();
+
+          rtx pattern = gen_call_isr_prologue_saves (GEN_INT (num_regs_pushed));
+          rtx_insn *insn = emit_insn (pattern);
+          RTX_FRAME_RELATED_P (insn) = 1;
+
+          /* Describe the effect of the unspec_volatile call to prologue_saves. */
+
+          add_reg_note (insn, REG_CFA_ADJUST_CFA,
+                        gen_rtx_SET (VOIDmode, stack_pointer_rtx,
+                                     plus_constant (Pmode, stack_pointer_rtx,
+                                                    -num_regs_pushed)));
+          cfun->machine->stack_usage += num_regs_pushed;
+          cfun->machine->is_isr_prologue_called = 1;
+        }
+      else // !TARGET_GASISR_PROLOGUES: Classic, dumb prologue preamble.
+        {
+          /* Push zero reg.  */
+          emit_push_byte (AVR_ZERO_REGNO, true);
+
+          /* Push tmp reg.  */
+          emit_push_byte (AVR_TMP_REGNO, true);
+
+          /* Push SREG.  */
+          /* ??? There's no dwarf2 column reserved for SREG.  */
+          emit_push_sfr (sreg_rtx, false, false /* clr */, AVR_TMP_REGNO);
+
+          /* Clear zero reg.  */
+          emit_move_insn (zero_reg_rtx, const0_rtx);
+
+          /* Prevent any attempt to delete the setting of ZERO_REG!  */
+          emit_use (zero_reg_rtx);
+        }
 
       /* Push and clear RAMPD/X/Y/Z if present and low-part register is used.
-         ??? There are no dwarf2 columns reserved for RAMPD/X/Y/Z.  */
+         ??? There are no dwarf2 columns reserved for RAMPD/X/Y/Z. */
 
-      if (AVR_HAVE_RAMPD)
-        emit_push_sfr (rampd_rtx, false /* frame-related */, true /* clr */);
+      /* Saving RAMPD/X/Z is not necessary if we are going to call
+         __isr_prologue_saves, as the routine does that for us. Unconditional
+         saving without checking for use of X and Z is fine in that case, as
+         the strategy is chosen only if all call_used_regs are saved. */
 
-      if (AVR_HAVE_RAMPX
-          && TEST_HARD_REG_BIT (set, REG_X)
-          && TEST_HARD_REG_BIT (set, REG_X + 1))
-        {
-          emit_push_sfr (rampx_rtx, false /* frame-related */, true /* clr */);
-        }
+      if (AVR_HAVE_RAMPD
+          && !cfun->machine->is_isr_prologue_called)
+        emit_push_sfr (rampd_rtx, false /* frame */, true /* clr */, treg);
 
       if (AVR_HAVE_RAMPY
           && (frame_pointer_needed
               || (TEST_HARD_REG_BIT (set, REG_Y)
                   && TEST_HARD_REG_BIT (set, REG_Y + 1))))
         {
-          emit_push_sfr (rampy_rtx, false /* frame-related */, true /* clr */);
+          emit_push_sfr (rampy_rtx, false /* frame */, true /* clr */, treg);
         }
 
+      if (AVR_HAVE_RAMPX
+          && !cfun->machine->is_isr_prologue_called
+          && TEST_HARD_REG_BIT (set, REG_X)
+          && TEST_HARD_REG_BIT (set, REG_X + 1))
+        emit_push_sfr (rampx_rtx, false /* frame */, true /* clr */, treg);
+
       if (AVR_HAVE_RAMPZ
+          && !cfun->machine->is_isr_prologue_called
           && TEST_HARD_REG_BIT (set, REG_Z)
           && TEST_HARD_REG_BIT (set, REG_Z + 1))
         {
-          emit_push_sfr (rampz_rtx, false /* frame-related */, AVR_HAVE_RAMPD);
+          emit_push_sfr (rampz_rtx, false /* frame */, AVR_HAVE_RAMPD, treg);
         }
     }  /* is_interrupt is_signal */
 
@@ -1757,11 +2019,23 @@ avr_asm_function_end_prologue (FILE *file)
 
   fprintf (file, "/* frame size = " HOST_WIDE_INT_PRINT_DEC " */\n",
                  get_frame_size());
-  fprintf (file, "/* stack size = %d */\n",
-                 cfun->machine->stack_usage);
-  /* Create symbol stack offset here so all functions have it. Add 1 to stack
-     usage for offset so that SP + .L__stack_offset = return address.  */
-  fprintf (file, ".L__stack_usage = %d\n", cfun->machine->stack_usage);
+
+  if (!cfun->machine->gasisr.yes)
+    {
+      fprintf (file, "/* stack size = %d */\n", cfun->machine->stack_usage);
+      // Create symbol stack offset so all functions have it. Add 1 to stack
+      // usage for offset so that SP + .L__stack_offset = return address.
+      fprintf (file, ".L__stack_usage = %d\n", cfun->machine->stack_usage);
+    }
+  else
+    {
+      int used_by_gasisr = 3 + (cfun->machine->gasisr.regno != AVR_TMP_REGNO);
+      int to = cfun->machine->stack_usage;
+      int from = to - used_by_gasisr;
+      // Number of pushed regs is only known at assembly-time.
+      fprintf (file, "/* stack size = %d...%d */\n", from , to);
+      fprintf (file, ".L__stack_usage = %d + __gcc_isr.n_pushed\n", from);
+    }
 }
 
 
@@ -1938,8 +2212,18 @@ avr_expand_epilogue (bool sibcall_p)
 
   /* Restore used registers.  */
 
+  int treg = AVR_TMP_REGNO;
+
+  if (isr_p
+      && cfun->machine->gasisr.yes)
+    {
+      treg = cfun->machine->gasisr.regno;
+      CLEAR_HARD_REG_BIT (set, treg);
+    }
+
   for (reg = 31; reg >= 0; --reg)
-    if (TEST_HARD_REG_BIT (set, reg))
+    if (TEST_HARD_REG_BIT (set, reg)
+        && !(cfun->machine->is_isr_prologue_called && call_used_regs[reg]))
       emit_pop_byte (reg);
 
   if (isr_p)
@@ -1948,11 +2232,12 @@ avr_expand_epilogue (bool sibcall_p)
          The conditions to restore them must be tha same as in prologue.  */
 
       if (AVR_HAVE_RAMPZ
+          && !cfun->machine->is_isr_prologue_called
           && TEST_HARD_REG_BIT (set, REG_Z)
           && TEST_HARD_REG_BIT (set, REG_Z + 1))
         {
-          emit_pop_byte (TMP_REGNO);
-          emit_move_insn (rampz_rtx, tmp_reg_rtx);
+          emit_pop_byte (treg);
+          emit_move_insn (rampz_rtx, all_regs_rtx[treg]);
         }
 
       if (AVR_HAVE_RAMPY
@@ -1960,34 +2245,51 @@ avr_expand_epilogue (bool sibcall_p)
               || (TEST_HARD_REG_BIT (set, REG_Y)
                   && TEST_HARD_REG_BIT (set, REG_Y + 1))))
         {
-          emit_pop_byte (TMP_REGNO);
-          emit_move_insn (rampy_rtx, tmp_reg_rtx);
+          emit_pop_byte (treg);
+          emit_move_insn (rampy_rtx, all_regs_rtx[treg]);
         }
 
       if (AVR_HAVE_RAMPX
+          && !cfun->machine->is_isr_prologue_called
           && TEST_HARD_REG_BIT (set, REG_X)
           && TEST_HARD_REG_BIT (set, REG_X + 1))
         {
-          emit_pop_byte (TMP_REGNO);
-          emit_move_insn (rampx_rtx, tmp_reg_rtx);
+          emit_pop_byte (treg);
+          emit_move_insn (rampx_rtx, all_regs_rtx[treg]);
         }
 
-      if (AVR_HAVE_RAMPD)
+      if (AVR_HAVE_RAMPD
+          && !cfun->machine->is_isr_prologue_called)
         {
-          emit_pop_byte (TMP_REGNO);
-          emit_move_insn (rampd_rtx, tmp_reg_rtx);
+          emit_pop_byte (treg);
+          emit_move_insn (rampd_rtx, all_regs_rtx[treg]);
         }
 
-      /* Restore SREG using tmp_reg as scratch.  */
+      if (cfun->machine->gasisr.yes)
+        {
+          // Emit an Epilogue chunk.
+          emit_insn (gen_gasisr (GEN_INT (GASISR_Epilogue),
+                                 GEN_INT (cfun->machine->gasisr.regno)));
+        }
+      else if (cfun->machine->is_isr_prologue_called)
+        {
+          int nregs_pushed = isr_prologue_called_num_regs_pushed();
+          emit_insn (gen_isr_epilogue_restores (GEN_INT (nregs_pushed)));
+          return;
+        }
+	  else // !TARGET_GASISR_PROLOGUES
+        {
+          /* Restore SREG using tmp_reg as scratch.  */
 
-      emit_pop_byte (AVR_TMP_REGNO);
-      emit_move_insn (sreg_rtx, tmp_reg_rtx);
+          emit_pop_byte (AVR_TMP_REGNO);
+          emit_move_insn (sreg_rtx, tmp_reg_rtx);
 
-      /* Restore tmp REG.  */
-      emit_pop_byte (AVR_TMP_REGNO);
+          /* Restore tmp REG.  */
+          emit_pop_byte (AVR_TMP_REGNO);
 
-      /* Restore zero REG.  */
-      emit_pop_byte (AVR_ZERO_REGNO);
+          /* Restore zero REG.  */
+          emit_pop_byte (AVR_ZERO_REGNO);
+        }
     }
 
   if (!sibcall_p)
@@ -2000,7 +2302,9 @@ avr_expand_epilogue (bool sibcall_p)
 static void
 avr_asm_function_begin_epilogue (FILE *file)
 {
+  app_disable();
   fprintf (file, "/* epilogue start */\n");
+  avr_clear_smartio_process_state();
 }
 
 
@@ -2021,22 +2325,6 @@ avr_cannot_modify_jumps_p (void)
     }
 
   return false;
-}
-
-
-/* Implement `TARGET_MODE_DEPENDENT_ADDRESS_P'.  */
-
-static bool
-avr_mode_dependent_address_p (const_rtx addr ATTRIBUTE_UNUSED, addr_space_t as)
-{
-  /* FIXME:  Non-generic addresses are not mode-dependent in themselves.
-       This hook just serves to hack around PR rtl-optimization/52543 by
-       claiming that non-generic addresses were mode-dependent so that
-       lower-subreg.c will skip these addresses.  lower-subreg.c sets up fake
-       RTXes to probe SET and MEM costs and assumes that MEM is always in the
-       generic address space which is not true.  */
-
-  return !ADDR_SPACE_GENERIC_P (as);
 }
 
 
@@ -3047,6 +3335,25 @@ avr_final_prescan_insn (rtx_insn *insn, rtx *operand ATTRIBUTE_UNUSED,
     }
 }
 
+
+/* Implement `TARGET_ASM_FINAL_POSTSCAN_INSN'.  */
+/* When GAS generates (parts of) ISR prologue / epilogue for us, we must
+   hint GAS about the end of the code to scan.  There migh be code located
+   after the last epilogue.  */
+
+static void
+avr_asm_final_postscan_insn (FILE *stream, rtx_insn *insn, rtx*, int)
+{
+  if (cfun->machine->gasisr.yes
+      && !next_real_insn (insn))
+    {
+      app_disable();
+      fprintf (stream, "\t__gcc_isr %d,r%d\n", GASISR_Done,
+               cfun->machine->gasisr.regno);
+    }
+}
+
+
 /* Return 0 if undefined, 1 if always true or always false.  */
 
 int
@@ -3824,7 +4131,7 @@ out_movqi_r_mr (rtx_insn *insn, rtx op[], int *plen)
   if (CONSTANT_ADDRESS_P (x))
     {
       int n_words = AVR_TINY ? 1 : 2;
-      return optimize > 0 && io_address_operand (x, QImode)
+      return io_address_operand (x, QImode)
         ? avr_asm_len ("in %0,%i1", op, plen, -1)
         : avr_asm_len ("lds %0,%m1", op, plen, -n_words);
     }
@@ -4086,7 +4393,7 @@ out_movhi_r_mr (rtx_insn *insn, rtx op[], int *plen)
   else if (CONSTANT_ADDRESS_P (base))
     {
       int n_words = AVR_TINY ? 2 : 4;
-      return optimize > 0 && io_address_operand (base, HImode)
+      return io_address_operand (base, HImode)
         ? avr_asm_len ("in %A0,%i1" CR_TAB
                        "in %B0,%i1+1", op, plen, -2)
 
@@ -5212,7 +5519,7 @@ out_movqi_mr_r (rtx_insn *insn, rtx op[], int *plen)
   if (CONSTANT_ADDRESS_P (x))
     {
       int n_words = AVR_TINY ? 1 : 2;
-      return optimize > 0 && io_address_operand (x, QImode)
+      return io_address_operand (x, QImode)
         ? avr_asm_len ("out %i0,%1", op, plen, -1)
         : avr_asm_len ("sts %m0,%1", op, plen, -n_words);
     }
@@ -5289,7 +5596,7 @@ avr_out_movhi_mr_r_xmega (rtx_insn *insn, rtx op[], int *plen)
   if (CONSTANT_ADDRESS_P (base))
     {
       int n_words = AVR_TINY ? 2 : 4;
-      return optimize > 0 && io_address_operand (base, HImode)
+      return io_address_operand (base, HImode)
         ? avr_asm_len ("out %i0,%A1" CR_TAB
                        "out %i0+1,%B1", op, plen, -2)
 
@@ -5474,7 +5781,7 @@ out_movhi_mr_r (rtx_insn *insn, rtx op[], int *plen)
   if (CONSTANT_ADDRESS_P (base))
     {
       int n_words = AVR_TINY ? 2 : 4;
-      return optimize > 0 && io_address_operand (base, HImode)
+      return io_address_operand (base, HImode)
         ? avr_asm_len ("out %i0+1,%B1" CR_TAB
                        "out %i0,%A1", op, plen, -2)
 
@@ -8278,7 +8585,7 @@ avr_out_addto_sp (rtx *op, int *plen)
         }
 
       while (addend++ < 0)
-        avr_asm_len ("push __zero_reg__", op, plen, 1);
+        avr_asm_len ("push __tmp_reg__", op, plen, 1);
     }
   else if (addend > 0)
     {
@@ -9399,6 +9706,7 @@ avr_handle_fndecl_attribute (tree *node, tree name,
 	       name);
       *no_add_attrs = true;
     }
+  return NULL_TREE;
 }
 
 static tree
@@ -9709,6 +10017,8 @@ avr_attribute_table[] =
   { "interrupt", 0, 0, true,  false, false,  avr_handle_fndecl_attribute,
     false },
   { "nmi",       0, 0, true,  false, false,  avr_handle_fndecl_attribute,
+    false },
+  { "no_gccisr", 0, 0, true,  false, false,  avr_handle_fndecl_attribute,
     false },
   { "naked",     0, 0, false, true,  true,   avr_handle_fntype_attribute,
     false },
@@ -10196,7 +10506,8 @@ avr_asm_init_sections (void)
      resp. `avr_need_copy_data_p'.  If flash is not mapped to RAM then
      we have also to track .rodata because it is located in RAM then.  */
 
-  if (0 == avr_arch->flash_pm_offset)
+  if (0 == avr_arch->flash_pm_offset
+      && !avr_const_data_in_config_mapped_progmem)
     readonly_data_section->unnamed.callback = avr_output_data_section_asm_op;
   data_section->unnamed.callback = avr_output_data_section_asm_op;
   bss_section->unnamed.callback = avr_output_bss_section_asm_op;
@@ -10419,7 +10730,8 @@ avr_asm_named_section (const char *name, uint64_t flags, tree decl)
                           || STR_PREFIX_P (name, ".gnu.linkonce.d"));
 
   if (!avr_need_copy_data_p
-      && 0 == avr_arch->flash_pm_offset)
+      && 0 == avr_arch->flash_pm_offset
+      && !avr_const_data_in_config_mapped_progmem)
     avr_need_copy_data_p = (STR_PREFIX_P (name, ".rodata")
                             || STR_PREFIX_P (name, ".gnu.linkonce.r"));
 
@@ -12027,8 +12339,7 @@ avr_address_cost (rtx x, machine_mode mode ATTRIBUTE_UNUSED,
       /* LDS/STS are twice as long as LD/ST */
       if (!speed && GET_MODE_SIZE (mode) > GET_MODE_SIZE (QImode))
         cost = 2 * cost;
-      if (optimize > 0
-          && io_address_operand (x, QImode))
+      if (io_address_operand (x, QImode))
         cost = 2;
 
       if (AVR_TINY
@@ -14936,6 +15247,1235 @@ avr_use_anchors_for_symbol_p (const_rtx x)
   return default_use_anchors_for_symbol_p (x);
 }
 
+
+
+/* Smart-IO Processing */
+
+#if defined(SMARTIO) || 1
+
+/* Types of functions based on whether its
+    Input function  - scanf family
+    Output function - printf family
+    Variable functions - vscanf/vprintf family
+*/
+typedef enum mchp_interesting_fn_info_
+{
+  info_invalid,
+  info_I,
+  info_O,
+  info_V
+} mchp_interesting_fn_info;
+
+
+/* Bit value for each of the format specifier thats handled */
+typedef enum mchp_conversion_status_
+{
+  conv_state_unknown,
+  conv_possible,
+  conv_indeterminate,
+  conv_not_possible,
+  conv_c =  0x000080,
+  conv_d =  0x000100,
+  conv_i =  0x000100,
+  conv_e =  0x000200,
+  conv_E =  0x000400,
+  conv_f =  0x000800,
+  conv_g =  0x001000,
+  conv_G =  0x002000,
+  conv_n =  0x004000,
+  conv_o =  0x008000,
+  conv_p =  0x010000,
+  conv_s =  0x020000,
+  conv_u =  0x040000,
+  conv_x =  0x080000,
+  conv_X =  0x100000,
+  conv_a =  0x200000,
+  conv_A =  0x400000,
+  conv_F =  0x800000
+} mchp_conversion_status;
+
+
+typedef struct mchp_intersting_fn_
+{
+  const char *name;
+  const char *map_to;
+  mchp_interesting_fn_info conversion_style;
+  int interesting_arg;       /* Stack pos/ register that holds the format string. */
+  int interesting_arg_const_data_option;  /* Stack pos/ register that holds the format string  for -mconst-data-in-progmem. */
+  unsigned int function_convertable;
+  mchp_conversion_status conv_flags;
+  char *encoded_name;
+} mchp_interesting_fn;
+
+static mchp_interesting_fn *mchp_match_conversion_fn(const char *name);
+
+#define CCS_FLAG_MASK (~(conv_c-1))
+#define CCS_STATE_MASK (conv_c-1)
+#define CCS_FLAG(X) ((X) & CCS_FLAG_MASK)
+#define CCS_STATE(X) ((X) & CCS_STATE_MASK)
+
+/* Easy access check for function beginning */
+#define NOTE_INSN_FUNCTION_BEG_P(INSN) \
+  ((GET_CODE(INSN) == NOTE) && \
+   (NOTE_KIND (INSN) == NOTE_INSN_FUNCTION_BEG))
+
+/* Must be sorted */
+static mchp_interesting_fn mchp_fn_list[] =
+{
+  /*  name         map_to        style       arg1, arg2,  c,  conv_flags                 enc name */
+  { "fprintf",   "_fprintf",   info_O,         2,    2,   0, (mchp_conversion_status)0, NULL },
+  { "fscanf",    "_fscanf",    info_I,         2,    2,   0, (mchp_conversion_status)0, NULL },
+  { "printf",    "_printf",    info_O,         0,    0,   0, (mchp_conversion_status)0, NULL },
+  { "scanf",     "_scanf",     info_I,         0,    0,   0, (mchp_conversion_status)0, NULL },
+  { "snprintf",  "_snprintf",  info_O,         4,    4,   0, (mchp_conversion_status)0, NULL },
+  { "sprintf",   "_sprintf",   info_O,         2,    2,   0, (mchp_conversion_status)0, NULL },
+  { "sscanf",    "_sscanf",    info_I,         2,    3,   0, (mchp_conversion_status)0, NULL },
+  { "vfprintf",  "_vfprintf",  info_V,        22,   20,   0, (mchp_conversion_status)0, NULL },
+  { "vfscanf",   "_vfscanf",   info_V,        22,   20,   0, (mchp_conversion_status)0, NULL },
+  { "vprintf",   "_vprintf",   info_V,        24,   22,   0, (mchp_conversion_status)0, NULL },
+  { "vscanf",    "_vscanf",    info_V,        24,   22,   0, (mchp_conversion_status)0, NULL },
+  { "vsnprintf", "_vsnprintf", info_V,        20,   18,   0, (mchp_conversion_status)0, NULL },
+  { "vsprintf",  "_vsprintf",  info_V,        22,   20,   0, (mchp_conversion_status)0, NULL },
+  { "vsscanf",   "_vsscanf",   info_V,        22,   18,   0, (mchp_conversion_status)0, NULL },
+  { 0,           0,            info_invalid,  -1,   -1,   0, (mchp_conversion_status)0, NULL }
+};
+
+/*
+ strings values are thrown away after they are generated, but the
+ reference to the string will always return the same rtx... keep
+ track of them here and their conversion state
+ */
+
+enum
+{
+  status_output = 0,
+  status_input = 1
+};
+
+typedef struct mchp_conversion_cache_
+{
+  const_rtx rtl;
+  mchp_conversion_status valid[2];
+  struct mchp_conversion_cache_ *l,*r;
+} mchp_conversion_cache;
+
+int mchp_clear_fn_list=1;
+
+static mchp_conversion_cache *mchp_saved_conversion_info;
+
+static tree constant_string(const_rtx x);
+
+static rtx  avr_get_orig_rtx_for_anchored_rtx (rtx a, HOST_WIDE_INT o);
+
+mchp_conversion_status default_conv_status = conv_state_unknown;
+
+/*
+   Given a NOT-decorated name (no name encoding), return the matching smart-io
+   symbol if needed, or the name itself otherwise.
+*/
+static const char *
+maybe_get_smartio_name (const char *var)
+{
+  mchp_interesting_fn *match;
+
+  if (mchp_io_size_val > 0)
+    {
+      match = mchp_match_conversion_fn(var);
+      while (match)
+        {
+          if (match->function_convertable)
+            {
+
+#define CCS_ADD_FLAG(FLAG) \
+        if (match->conv_flags & JOIN(conv_,FLAG)) { \
+          *f++=#FLAG[0]; \
+          added = (mchp_conversion_status) (added | JOIN(conv_,FLAG)); }
+
+#define CCS_ADD_FLAG_ALT(FLAG,ALT) \
+        if ((match->conv_flags & JOIN(conv_,FLAG)) && \
+            ((added & JOIN(conv_,ALT)) == 0)) {\
+          *f++=#ALT[0]; \
+          added =(mchp_conversion_status) (added |  (mchp_conversion_status)JOIN(conv_,ALT)); }
+
+              {
+                char extra_flags[sizeof("_aAcdeEfFgGnopsuxX0")] = "_";
+                char *f = &extra_flags[1];
+                mchp_conversion_status added;
+                /*
+                 * order is important here
+                 *  add new flags alphabetically with lower case preceding uppercase
+                 *    ie _aAcdEfgG not
+                 *       _acdfgAEG
+                 */
+
+                added = (mchp_conversion_status)0;
+                /*
+                 * we don't implement all 131K unique combinations, only
+                 * a subset...
+                */
+
+                /* a | A -> aA */
+                CCS_ADD_FLAG(a);
+                CCS_ADD_FLAG_ALT(A,a);
+                CCS_ADD_FLAG(A);
+                CCS_ADD_FLAG_ALT(a,A);
+
+                /* c | d | n | o | p | u | x | X -> cdnopuxX */
+                CCS_ADD_FLAG(c);
+                CCS_ADD_FLAG_ALT(d,c);
+                CCS_ADD_FLAG_ALT(n,c);
+                CCS_ADD_FLAG_ALT(o,c);
+                CCS_ADD_FLAG_ALT(p,c);
+                CCS_ADD_FLAG_ALT(u,c);
+                CCS_ADD_FLAG_ALT(x,c);
+                CCS_ADD_FLAG_ALT(X,c);
+
+                /* c | d | n | o | p | u | x | X -> cdnopuxX */
+                CCS_ADD_FLAG(d);
+                CCS_ADD_FLAG_ALT(c,d);
+                CCS_ADD_FLAG_ALT(n,d);
+                CCS_ADD_FLAG_ALT(o,d);
+                CCS_ADD_FLAG_ALT(p,d);
+                CCS_ADD_FLAG_ALT(u,d);
+                CCS_ADD_FLAG_ALT(x,d);
+                CCS_ADD_FLAG_ALT(X,d);
+
+                /* e | E -> eE */
+                CCS_ADD_FLAG(e);
+                CCS_ADD_FLAG_ALT(E,e);
+                CCS_ADD_FLAG(E);
+                CCS_ADD_FLAG_ALT(e,E);
+
+                /* f | F -> fF */
+                CCS_ADD_FLAG(f);
+                CCS_ADD_FLAG_ALT(F,f);
+                CCS_ADD_FLAG(F);
+                CCS_ADD_FLAG_ALT(f,F);
+
+                /* g | G -> gG */
+                CCS_ADD_FLAG(g);
+                CCS_ADD_FLAG_ALT(G,g);
+                CCS_ADD_FLAG(G);
+                CCS_ADD_FLAG_ALT(g,G);
+
+                /* c | d | n | o | p | u | x | X -> cdnopuxX */
+                CCS_ADD_FLAG(n);
+                CCS_ADD_FLAG_ALT(c,n);
+                CCS_ADD_FLAG_ALT(d,n);
+                CCS_ADD_FLAG_ALT(n,n);
+                CCS_ADD_FLAG_ALT(o,n);
+                CCS_ADD_FLAG_ALT(p,n);
+                CCS_ADD_FLAG_ALT(u,n);
+                CCS_ADD_FLAG_ALT(x,n);
+                CCS_ADD_FLAG_ALT(X,n);
+
+                /* c | d | n | o | p | u | x | X -> cdnopuxX */
+                CCS_ADD_FLAG(o);
+                CCS_ADD_FLAG_ALT(c,o);
+                CCS_ADD_FLAG_ALT(d,o);
+                CCS_ADD_FLAG_ALT(n,o);
+                CCS_ADD_FLAG_ALT(o,o);
+                CCS_ADD_FLAG_ALT(p,o);
+                CCS_ADD_FLAG_ALT(u,o);
+                CCS_ADD_FLAG_ALT(x,o);
+                CCS_ADD_FLAG_ALT(X,o);
+
+                CCS_ADD_FLAG(p);
+                CCS_ADD_FLAG_ALT(c,p);
+                CCS_ADD_FLAG_ALT(d,p);
+                CCS_ADD_FLAG_ALT(n,p);
+                CCS_ADD_FLAG_ALT(o,p);
+                CCS_ADD_FLAG_ALT(p,p);
+                CCS_ADD_FLAG_ALT(u,p);
+                CCS_ADD_FLAG_ALT(x,p);
+                CCS_ADD_FLAG_ALT(X,p);
+
+                CCS_ADD_FLAG(s);
+
+                CCS_ADD_FLAG(u);
+                CCS_ADD_FLAG_ALT(c,u);
+                CCS_ADD_FLAG_ALT(d,u);
+                CCS_ADD_FLAG_ALT(n,u);
+                CCS_ADD_FLAG_ALT(o,u);
+                CCS_ADD_FLAG_ALT(p,u);
+                CCS_ADD_FLAG_ALT(u,u);
+                CCS_ADD_FLAG_ALT(x,u);
+                CCS_ADD_FLAG_ALT(X,u);
+
+                CCS_ADD_FLAG(x);
+                CCS_ADD_FLAG_ALT(c,x);
+                CCS_ADD_FLAG_ALT(d,x);
+                CCS_ADD_FLAG_ALT(n,x);
+                CCS_ADD_FLAG_ALT(o,x);
+                CCS_ADD_FLAG_ALT(p,x);
+                CCS_ADD_FLAG_ALT(u,x);
+                CCS_ADD_FLAG_ALT(x,x);
+                CCS_ADD_FLAG_ALT(X,x);
+
+                CCS_ADD_FLAG(X);
+                CCS_ADD_FLAG_ALT(c,X);
+                CCS_ADD_FLAG_ALT(d,X);
+                CCS_ADD_FLAG_ALT(n,X);
+                CCS_ADD_FLAG_ALT(o,X);
+                CCS_ADD_FLAG_ALT(p,X);
+                CCS_ADD_FLAG_ALT(u,X);
+                CCS_ADD_FLAG_ALT(x,X);
+                CCS_ADD_FLAG_ALT(X,X);
+                *f++=0;
+
+                if (strlen(extra_flags) > 1)
+                  {
+                    if (match->encoded_name == NULL)
+                      free(match->encoded_name);
+                    match->encoded_name = (char*)xmalloc(strlen(match->map_to) +
+                    strlen(extra_flags) + 1);
+                    sprintf(match->encoded_name,"%s%s", match->map_to, extra_flags);
+                  }
+                else
+                  {
+                    /* we have no flags */
+                    match->encoded_name = (char*)xmalloc(strlen(match->map_to) + 3);
+                    sprintf(match->encoded_name,"%s_0", match->map_to);
+                  }
+              }
+              if (match->encoded_name) return match->encoded_name;
+            }
+          if (match[1].name &&
+              (strcmp(match[1].name,var) == 0)) match++;
+          else match = 0;
+        }
+    }
+  return var;
+}
+
+/* Returns TRUE iff the target attribute indicated by ATTR_ID takes a plain
+   identifier as an argument, so the front end shouldn't look it up.  */
+bool
+mchp_attribute_takes_identifier_p (const_tree attr_id)
+{
+  if (is_attribute_p ("interrupt", attr_id))
+    return true;
+  if (is_attribute_p ("space", attr_id))
+    return true;
+  return false;
+}
+
+static int mchp_bsearch_compare(const void *va, const void *vb)
+{
+  const mchp_interesting_fn *a = (const mchp_interesting_fn *)va;
+  const mchp_interesting_fn *b = (const mchp_interesting_fn *)vb;
+
+  return strcmp(a->name, b->name);
+}
+
+static mchp_interesting_fn *mchp_match_conversion_fn(const char *name)
+{
+  mchp_interesting_fn a,*res;
+  a.name = name;
+
+  res = (mchp_interesting_fn*)
+        bsearch(&a, mchp_fn_list,
+                sizeof(mchp_fn_list)/sizeof(mchp_interesting_fn)-1,
+                sizeof(mchp_interesting_fn), mchp_bsearch_compare);
+  while (res && (res != mchp_fn_list)  && (strcmp(name, res[-1].name) == 0))
+    res--;
+  return res;
+}
+
+/*
+  Validate the conditions to set the default Smart IO format specifier.
+   * When the -msmart-io-format option is specified.
+   * When the -msmart-io option is set.
+   * When the default conversion specifier is valid format specifier.
+   * When the printf/ scanf function conversion state is not known.
+*/
+static bool avr_can_set_default_conversion_format(mchp_conversion_status state)
+{
+  return ( avr_smartio_fmt_option == TRUE &&
+           (mchp_io_size_val >=1) &&
+           (default_conv_status != conv_state_unknown) &&
+           (CCS_STATE(state) != conv_possible));
+}
+
+static void conversion_info(mchp_conversion_status state,
+                            mchp_interesting_fn *fn_id)
+{
+  if (avr_can_set_default_conversion_format(state))
+    {
+      /*
+        Set the default conversion specifier and return.
+        Do not proceed to update the indeterminate state.
+      */
+      fn_id->function_convertable |= 1;
+      fn_id->conv_flags = (mchp_conversion_status)
+            (CCS_FLAG(fn_id->conv_flags) | default_conv_status);
+      return;
+    }
+
+  /* dependant upon the conversion status and the setting of the smart-io
+     option, set up the mchp_fn_list table. */
+
+  fn_id->conv_flags = (mchp_conversion_status) (CCS_FLAG(fn_id->conv_flags) | state);
+  if (mchp_io_size_val== 0)
+    {
+      if (fn_id->encoded_name) free(fn_id->encoded_name);
+      fn_id->encoded_name = 0;
+      fn_id->function_convertable = 0;
+    }
+  else if ((mchp_io_size_val == 1) && (CCS_STATE(state) != conv_possible))
+    {
+      if (fn_id->encoded_name) free(fn_id->encoded_name);
+      fn_id->encoded_name = 0;
+      fn_id->function_convertable = 0;
+    }
+  else if ((mchp_io_size_val == 2) &&
+           (CCS_STATE(state) == conv_not_possible))
+    {
+      if (fn_id->encoded_name) free(fn_id->encoded_name);
+      fn_id->encoded_name = 0;
+      fn_id->function_convertable = 0;
+    }
+}
+
+static mchp_conversion_status
+mchp_convertable_output_format_string(const char *string)
+{
+  const char *c = string;
+  enum mchp_conversion_status_ status = (mchp_conversion_status_)0;
+
+  for ( ; *c; c++)
+    {
+      /* quickly deal with the un-interesting cases */
+      if (*c != '%') continue;
+      if (*(++c) == '%')
+        {
+          continue;
+        }
+      /* zero or more flags */
+      while (1)
+        {
+          switch (*c)
+            {
+            case '-':
+            case '+':
+            case ' ':
+            case '#':
+            case '0':
+              c++;
+              continue;
+            default:
+              break;
+            }
+          break;
+        }
+      /* optional field width or * */
+      if (*c == '*') c++;
+      else
+        while (ISDIGIT(*c)) c++;
+      /* optional precision or * */
+      if (*c == '.')
+        {
+          c++;
+          /* an illegal conversion sequence %.g, for example - give up and
+             start looking from the g onwards */
+          if (*c == '*') c++;
+          else
+            {
+              if (!ISDIGIT(*c))
+                {
+                  c--;
+                }
+              while (ISDIGIT(*c)) c++;
+            }
+        }
+      /* optional conversion modifier */
+      switch (*c)
+        {
+        case 'h':
+        case 'L':
+          c++;
+          break;
+        case 'l':
+          c++;
+          if (*c=='l') c++;
+        default:
+          break;
+        }
+      /* c should point to the conversion character */
+      switch (*c)
+        {
+        case 'a':
+          status = (mchp_conversion_status_) (status | conv_a);
+          break;
+        case 'A':
+          status = (mchp_conversion_status_) (status |conv_A);
+          break;
+        case 'c':
+          status = (mchp_conversion_status_) (status |conv_c);
+          break;
+        case 'd':
+          status = (mchp_conversion_status_) (status |conv_d);
+          break;
+        case 'i':
+          status = (mchp_conversion_status_) (status |conv_d);
+          break;
+        case 'e':
+          status = (mchp_conversion_status_) (status |conv_e);
+          break;
+        case 'E':
+          status = (mchp_conversion_status_) (status |conv_E);
+          break;
+        case 'f':
+          status = (mchp_conversion_status_) (status |conv_f);
+          break;
+        case 'F':
+          status = (mchp_conversion_status_) (status |conv_F);
+          break;
+        case 'g':
+          status = (mchp_conversion_status_) (status |conv_g);
+          break;
+        case 'G':
+          status = (mchp_conversion_status_) (status |conv_G);
+          break;
+        case 'n':
+          status = (mchp_conversion_status_) (status |conv_n);
+          break;
+        case 'o':
+          status = (mchp_conversion_status_) (status |conv_o);
+          break;
+        case 'p':
+          status = (mchp_conversion_status_) (status |conv_p);
+          break;
+        case 's':
+          status = (mchp_conversion_status_) (status |conv_s);
+          break;
+        case 'u':
+          status = (mchp_conversion_status_) (status |conv_u);
+          break;
+        case 'x':
+          status = (mchp_conversion_status_) (status |conv_x);
+          break;
+        case 'X':
+          status = (mchp_conversion_status_) (status |conv_X);
+          break;
+        default:   /* we aren't checking for legal format strings */
+          break;
+        }
+    }
+  return (mchp_conversion_status)(conv_possible | status);
+}
+
+static mchp_conversion_status
+mchp_convertable_input_format_string(const char *string)
+{
+  const char *c = string;
+  enum mchp_conversion_status_ status = (mchp_conversion_status_)0;
+
+  for ( ; *c; c++)
+    {
+      /* quickly deal with the un-interesting cases */
+      if (*c != '%') continue;
+      if (*(++c) == '%')
+        {
+          continue;
+        }
+      /* optional assignment suppression */
+      if (*c == '*') c++;
+      /* optional field width */
+      while (ISDIGIT(*c)) c++;
+      /* optional conversion modifier */
+      switch (*c)
+        {
+        case 'h':
+        case 'l':
+        case 'L':
+          c++;
+          break;
+        default:
+          break;
+        }
+      /* c should point to the conversion character */
+      switch (*c)
+        {
+        case 'a':
+          status = (mchp_conversion_status_)(status | conv_a);
+          break;
+        case 'A':
+          status = (mchp_conversion_status_)(status |conv_A);
+          break;
+        case 'c':
+          status = (mchp_conversion_status_)(status |conv_c);
+          break;
+        case 'd':
+          status = (mchp_conversion_status_)(status |conv_d);
+          break;
+        case 'i':
+          status = (mchp_conversion_status_)(status |conv_d);
+          break;
+        case 'e':
+          status = (mchp_conversion_status_)(status |conv_e);
+          break;
+        case 'E':
+          status = (mchp_conversion_status_)(status |conv_E);
+          break;
+        case 'f':
+          status = (mchp_conversion_status_)(status |conv_f);
+          break;
+        case 'F':
+          status = (mchp_conversion_status_)(status |conv_F);
+          break;
+        case 'g':
+          status = (mchp_conversion_status_)(status |conv_g);
+          break;
+        case 'G':
+          status = (mchp_conversion_status_)(status |conv_G);
+          break;
+        case 'n':
+          status = (mchp_conversion_status_)(status |conv_n);
+          break;
+        case 'o':
+          status = (mchp_conversion_status_)(status |conv_o);
+          break;
+        case 'p':
+          status = (mchp_conversion_status_)(status |conv_p);
+          break;
+        case 's':
+          status = (mchp_conversion_status_)(status |conv_s);
+          break;
+        case 'u':
+          status = (mchp_conversion_status_)(status |conv_u);
+          break;
+        case 'x':
+          status = (mchp_conversion_status_)(status |conv_x);
+          break;
+        case 'X':
+          status = (mchp_conversion_status_)(status |conv_X);
+          break;
+          /* string selection expr */
+        case '[':
+        {
+          /* [^]...] or []...] or [...] ; get to the end of the conversion */
+          c++;
+          if (*c == '^') c++;
+          if (*c == ']') c++;
+          while (*c++ != ']');
+        }
+        default:   /* we aren't checking for legal format strings */
+          break;
+        }
+    }
+  return (mchp_conversion_status)(conv_possible | status);
+}
+
+/*
+ *   Check or set the conversion status for a particular rtl -
+ *     to check the current state pass conv_state_unknown (always 0)
+ *     This will create an entry if it doesn't exist or return the current
+ *     state.
+ */
+static mchp_conversion_status
+cache_conversion_state(const_rtx val, int variant, mchp_conversion_status s)
+{
+  mchp_conversion_cache *parent = 0;
+  mchp_conversion_cache *save;
+
+  save = mchp_saved_conversion_info;
+  while (save && save->rtl != val)
+    {
+      parent = save;
+      if ((HOST_WIDE_INT)val & sizeof(void *)) save = save->l;
+      else save = save->r;
+    }
+  if (save)
+    {
+      /* we can only increase the current status */
+      if (CCS_STATE(s) > CCS_STATE(save->valid[variant]))
+        {
+          save->valid[variant] = (mchp_conversion_status) (save->valid[variant] & CCS_FLAG_MASK);
+          save->valid[variant] = (mchp_conversion_status) (save->valid[variant] | (s & CCS_STATE_MASK));
+        }
+      save->valid[variant] = (mchp_conversion_status) (save->valid[variant] | CCS_FLAG(s));
+      return save->valid[variant];
+    }
+  save = (mchp_conversion_cache *) xcalloc(sizeof(mchp_conversion_cache),1);
+  save->rtl = val;
+  save->valid[variant] = s;
+  if (parent)
+    {
+      if ((HOST_WIDE_INT)val & sizeof(void *)) parent->l = save;
+      else parent->r = save;
+    }
+  else mchp_saved_conversion_info = save;
+  return s;
+}
+
+/* call-back to make sure all constant strings get seen */
+void mchp_cache_conversion_state(const_rtx val, tree sym)
+{
+  mchp_conversion_status s;
+
+  s = cache_conversion_state(val, status_output, conv_state_unknown);
+  if (s == conv_state_unknown)
+    {
+      if (sym && (TREE_CODE(sym)==STRING_CST) && STRING_CST_CHECK(sym))
+        {
+          const char *string = TREE_STRING_POINTER(sym);
+
+          s = mchp_convertable_output_format_string(string);
+          cache_conversion_state(val, status_output, s);
+        }
+    }
+  s = cache_conversion_state(val, status_input, conv_state_unknown);
+  if (s == conv_state_unknown)
+    {
+      if (sym && STRING_CST_CHECK(sym))
+        {
+          const char *string = TREE_STRING_POINTER(sym);
+
+          s = mchp_convertable_input_format_string(string);
+          cache_conversion_state(val, status_input, s);
+        }
+    }
+}
+
+/* return the DECL for a constant string denoted by x, if found */
+/* this function has disappeared from later sources :( */
+static tree constant_string(const_rtx x)
+{
+  if (GET_CODE(x) == SYMBOL_REF)
+    {
+      if (TREE_CONSTANT_POOL_ADDRESS_P (x)) return SYMBOL_REF_DECL (x);
+    }
+  return 0;
+}
+
+static int mem_accesses_stack(rtx mem_access) {
+  rtx x;
+
+  x = XEXP(mem_access,0);
+  switch (GET_CODE(x)) {
+    case POST_DEC:
+       x = XEXP(x,0);
+       if (REGNO(x) == REG_SP) return 1;
+       return 0;
+    default: break;
+  }
+  return 0;
+}
+
+/* given an rtx representing a possible string, validate that the string is
+   convertable */
+static void mchp_handle_conversion(const_rtx val,
+                                   mchp_interesting_fn *matching_fn)
+{
+  tree sym,var_decl;
+  int style;
+
+  if (val == 0)
+    {
+      conversion_info(conv_indeterminate, matching_fn);
+      return;
+    }
+
+  /* If the current state of the function is already marked indeterminate, then
+     don't do the conversion. Output the full variant. If the user specified
+     format specifier is available, then continue the conversion as that
+     specifier will be used anyway.
+  */
+  if (!avr_can_set_default_conversion_format((mchp_conversion_status)CCS_STATE(matching_fn->conv_flags)))
+    {
+      if (CCS_STATE(matching_fn->conv_flags) == conv_indeterminate)
+      return;
+    }
+
+  /* Having seen a call with a format arg, we can now indicate that
+     some 'conversion' may be possible. */
+  matching_fn->function_convertable |= 1;
+
+  sym = var_decl = NULL;
+  /* a constant string will be given a symbol name, and so will a
+     symbol ... */
+  var_decl = constant_string(val);
+  if(var_decl != NULL)
+	sym = DECL_INITIAL (var_decl);
+
+  if (!(sym && (TREE_CODE(sym)==STRING_CST) && STRING_CST_CHECK(sym))) sym = 0;
+  mchp_cache_conversion_state(val, sym);
+  style = matching_fn->conversion_style == info_I ? status_input:status_output;
+  conversion_info(cache_conversion_state(val, style, conv_state_unknown),
+                  matching_fn);
+}
+
+/*
+  find_last_value is no longer available starting with gcc-5, but this is used
+    by smart-io
+  Copy-paste this routine from  gcc/gcc/rtlanal.c file
+ */
+
+static rtx
+mchp_find_last_value (rtx x, rtx_insn *pinsn, rtx_insn *valid_to, int allow_hwreg)
+{
+  rtx_insn *p;
+
+  for (p = PREV_INSN (pinsn); p && !LABEL_P (p);
+       p = PREV_INSN (p))
+    if (INSN_P (p))
+    {
+      rtx set = single_set (p);
+      rtx note = find_reg_note (p, REG_EQUAL, NULL_RTX);
+
+      if (set && rtx_equal_p (x, SET_DEST (set)))
+      {
+        rtx src = SET_SRC (set);
+        if (note && GET_CODE (XEXP (note, 0)) != EXPR_LIST)
+         src = XEXP (note, 0);
+
+        if ((valid_to == NULL_RTX
+           || ! modified_between_p (src, PREV_INSN (p), valid_to))
+           /* Reject hard registers because we don't usually want
+              to use them; we'd rather use a pseudo.  */
+           && (! (REG_P (src)
+               && REGNO (src) < FIRST_PSEUDO_REGISTER) || allow_hwreg))
+        {
+          return src;
+        }
+      }
+
+    /* If set in non-simple way, we don't have a value.  */
+    if (reg_set_p (x, p))
+       break;
+    }
+  return x;
+}
+
+static bool mchp_handle_io_conversion_anchor_rtx
+       (rtx_insn *format_arg, mchp_interesting_fn *matching_fn)
+{
+  rtx base = XEXP(PATTERN(format_arg),1);
+  HOST_WIDE_INT offset = 0;
+
+  if (GET_CODE (base) == CONST
+    && GET_CODE (XEXP (base, 0)) == PLUS
+    && CONST_INT_P (XEXP (XEXP (base, 0), 1)))
+  {
+    offset = INTVAL (XEXP (XEXP (base, 0), 1));
+    base = XEXP (XEXP (base, 0), 0);
+  }
+  else if (GET_CODE (base) == SYMBOL_REF)
+  {
+    rtx_insn *nxt_insn = NEXT_INSN(format_arg);
+
+    if ( (GET_CODE(PATTERN(nxt_insn)) == PARALLEL) &&
+       (GET_CODE(XVECEXP(PATTERN(nxt_insn),0,0)) == SET) &&
+       (CONST_INT_P(XEXP( XEXP(XVECEXP(PATTERN(nxt_insn), 0, 0),1),1)))
+       )
+    {
+      offset = INTVAL(XEXP( XEXP(XVECEXP(PATTERN(nxt_insn), 0, 0),1),1));
+    }
+  }
+  else if (GET_CODE(base) == REG)
+  {
+    rtx_insn *p;
+    rtx set, src;
+
+    for (p = PREV_INSN(format_arg);
+      !(NOTE_INSN_BASIC_BLOCK_P(p)  ||
+        NOTE_INSN_FUNCTION_BEG_P(p) ||
+        (INSN_P(p) && (GET_CODE(p) == CALL_INSN)));
+      p = PREV_INSN(p))
+    {
+      if (INSN_P (p))
+      {
+        set = single_set (p);
+
+        if (set && rtx_equal_p (base, SET_DEST (set)))
+        {
+          src = SET_SRC (set);
+          break;
+        }
+      }
+    }
+
+    if( GET_CODE(src) == SYMBOL_REF)
+    {
+      offset = 0;
+      base = src;
+    }
+    else if ( GET_CODE(src) == PLUS)
+    {
+      offset = INTVAL (XEXP (src,1));
+      p = PREV_INSN(p);
+      if(INSN_P (p))
+      {
+        set = single_set (p);
+        src = SET_SRC (set);
+        if( GET_CODE(src) == SYMBOL_REF)
+          base = src;
+      }
+    }
+	else if ( (GET_CODE(src) == CONST) &&
+              (GET_CODE (XEXP (src, 0)) == PLUS) &&
+              (CONST_INT_P (XEXP (XEXP (src, 0), 1))) )
+    {
+      offset = INTVAL (XEXP (XEXP (src, 0), 1));
+      base = XEXP (XEXP (src, 0), 0);
+    }
+  }
+
+  if (SYMBOL_REF_ANCHOR_P (base))
+  {
+    rtx orig_val = avr_get_orig_rtx_for_anchored_rtx (base, offset);
+    if (orig_val != NULL)
+    {
+      rtx val = XEXP(orig_val,0);
+      if ((GET_CODE(val) == SYMBOL_REF) && constant_string(val))
+      {
+        mchp_handle_conversion(val, matching_fn);
+        return TRUE;
+      }
+    }
+  }
+  return FALSE;
+}
+
+static void mchp_handle_io_conversion_v (rtx_insn *call_insn,
+                                      mchp_interesting_fn *matching_fn)
+{
+  rtx_insn *format_arg;
+  unsigned int format_arg_reg_no =0;
+
+  gcc_assert(matching_fn->conversion_style == info_V);
+
+  format_arg = PREV_INSN(call_insn);
+
+  if (format_arg == NULL)
+    return;
+
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+  {
+    format_arg_reg_no = (unsigned int)matching_fn->interesting_arg_const_data_option;
+  } else {
+    format_arg_reg_no = (unsigned int)matching_fn->interesting_arg;
+  }
+
+  /* the info_V function calls are all normal functions, with the format
+  string stored into a register identified by interesting_arg in the fn_list. */
+
+  for (format_arg = PREV_INSN(call_insn);
+       !(NOTE_INSN_BASIC_BLOCK_P(format_arg) ||
+         NOTE_INSN_FUNCTION_BEG_P(format_arg)  ||
+         (INSN_P(format_arg) && (GET_CODE(format_arg) == CALL_INSN)));
+       format_arg = PREV_INSN(format_arg))
+  {
+    if (INSN_P(format_arg))
+    {
+      if ((GET_CODE(PATTERN(format_arg)) == SET) &&
+          (GET_CODE(XEXP(PATTERN(format_arg),0)) == REG) &&
+          (REGNO(XEXP(PATTERN(format_arg),0)) == format_arg_reg_no))
+      {
+        if (flag_section_anchors && !AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+        {
+          bool status = mchp_handle_io_conversion_anchor_rtx (format_arg, matching_fn);
+          if (status == TRUE) return;
+          else break;
+        }
+        else
+        {
+          /*  set (reg interesting_arg) () */
+          rtx val = XEXP(PATTERN(format_arg),1);
+          rtx_insn *assignment = format_arg;
+
+          if ((GET_CODE(val) == REG) || (GET_CODE(val) == SUBREG)) {
+            val = mchp_find_last_value(val, assignment, 0, /* allow hw reg */ 1);
+          } else if (GET_CODE(val) == MEM) {
+            val = XEXP(val,0);
+          }
+          if ((GET_CODE(val) == SYMBOL_REF) && constant_string(val))
+          {
+            mchp_handle_conversion(val, matching_fn);
+            return;
+          } else break;
+        }
+      }
+    }
+  }
+  conversion_info(conv_indeterminate, matching_fn);
+}
+
+static void mchp_handle_io_conversion  (rtx_insn *call_insn,
+            mchp_interesting_fn *matching_fn, unsigned int tot_stack_used)
+{
+  unsigned int stack_pos_seen = 0;
+  unsigned int skip_push_insn_count = 0;
+  rtx_insn *format_arg;
+
+  gcc_assert((matching_fn->conversion_style == info_I) ||
+             (matching_fn->conversion_style == info_O));
+
+  format_arg = PREV_INSN(call_insn);
+
+  if (format_arg == NULL)
+    return;
+
+  if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+  {
+    skip_push_insn_count = (unsigned int)matching_fn->interesting_arg_const_data_option;
+  } else {
+    skip_push_insn_count = (unsigned int)matching_fn->interesting_arg;
+  }
+
+  /* Update the conversion specifier as conv_s for printf cases
+     where there is only 1 argument. */
+  if (strncmp(matching_fn->name, "printf", 6) == 0)
+  {
+    if ((tot_stack_used == 2) ||
+	    (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE && tot_stack_used == 3))
+    {
+      matching_fn->function_convertable |= 1;
+      conversion_info((mchp_conversion_status)(conv_possible|conv_s), matching_fn);
+      return;
+    }
+  }
+
+  for (format_arg = PREV_INSN(call_insn);
+       !(NOTE_INSN_BASIC_BLOCK_P(format_arg) ||
+         NOTE_INSN_FUNCTION_BEG_P(format_arg) ||
+         (INSN_P(format_arg) && (GET_CODE(format_arg) == CALL_INSN)));
+       format_arg = PREV_INSN(format_arg))
+  {
+    if (INSN_P(format_arg))
+    {
+      if ((GET_CODE(PATTERN(format_arg)) == SET) &&
+          (GET_CODE(XEXP(PATTERN(format_arg),0)) == REG) &&
+          ( stack_pos_seen == (skip_push_insn_count+1) ||
+            stack_pos_seen == (skip_push_insn_count+2))
+         )
+      {
+        if (flag_section_anchors && !AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE)
+        {
+          bool status = mchp_handle_io_conversion_anchor_rtx (format_arg, matching_fn);
+          if (status == TRUE) return;
+        }
+        else
+        {
+          rtx val = XEXP(PATTERN(format_arg),1);
+
+          if ((GET_CODE(val) == SYMBOL_REF) && constant_string(val))
+          {
+              mchp_handle_conversion(val, matching_fn);
+              return;
+          }
+        }
+      }
+      else if ((GET_CODE(PATTERN(format_arg)) == SET) &&
+                   (GET_CODE(XEXP(PATTERN(format_arg),0)) == MEM))
+      {
+        rtx mem = XEXP(PATTERN(format_arg),0);
+        rtx val = XEXP(PATTERN(format_arg),1);
+
+        if (mem_accesses_stack(mem))
+        {
+          if (GET_CODE(val) == REG)
+          {
+            /* Count how many push instructions processed. The format
+               argument will be available only after 'n' locations as
+               noted in the 'matching_fn' array */
+            stack_pos_seen++;
+
+            /* In case, break stop looking after enough arguments
+               are checked. */
+            tot_stack_used--;
+            if (tot_stack_used == 0) break;
+          }
+        }
+      }
+    }
+  }
+
+  conversion_info(conv_indeterminate, matching_fn);
+}
+
+/*
+ *  This function always returns true
+ */
+int mchp_check_for_conversion(rtx_insn *call_insn)
+{
+  const char *name;
+  rtx fn_name;
+  rtx fn_stack_usage;
+  unsigned int stack_use_value=0;
+  mchp_interesting_fn *match;
+
+  if (GET_CODE(call_insn) != CALL_INSN) abort();
+
+  /* (call_insn (set () (call (name) (size)))) for call returning value, and
+     (call_insn (call (name) (size)))          for void call */
+
+  if (GET_CODE(PATTERN(call_insn)) == PARALLEL)
+  {
+    if (GET_CODE(XVECEXP(PATTERN(call_insn),0,0)) == SET)
+    {
+      fn_name = XEXP(XEXP(XVECEXP(PATTERN(call_insn),0,0),1),0);
+      fn_stack_usage = XEXP(XEXP(XVECEXP(PATTERN(call_insn),0,0),1),1);
+    } else {
+      fn_name = XEXP(XVECEXP(PATTERN(call_insn),0,0),0);
+      fn_stack_usage = XEXP(XVECEXP(PATTERN(call_insn),0,0),1);
+    }
+  }
+  else
+  {
+    if (GET_CODE(PATTERN(call_insn)) == SET)
+    {
+      fn_name = XEXP(XEXP(PATTERN(call_insn),1),0);
+      fn_stack_usage = XEXP(XEXP(PATTERN(call_insn),1),1);
+    } else {
+      fn_name = XEXP(PATTERN(call_insn),0);
+      fn_stack_usage = XEXP(PATTERN(call_insn),1);
+    }
+  }
+
+  if (mchp_clear_fn_list)
+    {
+      int i;
+      for (i = 0; mchp_fn_list[i].name; i++)
+        {
+          if (mchp_fn_list[i].encoded_name) free(mchp_fn_list[i].encoded_name);
+          mchp_fn_list[i].encoded_name = 0;
+
+          mchp_fn_list[i].function_convertable = (mchp_io_size_val == 2);
+        }
+      mchp_clear_fn_list = 0;
+    }
+
+  switch (GET_CODE(fn_name))
+    {
+    default:
+      return 1;
+
+    case MEM:
+      if (GET_CODE(XEXP(fn_name,0)) == SYMBOL_REF)
+        {
+          name = XSTR(XEXP(fn_name,0),0);
+          if (GET_CODE(fn_stack_usage) == CONST_INT)
+            stack_use_value =  INTVAL(fn_stack_usage);
+        }
+      else
+        {
+          /* not calling a function directly, fn pointer or other such
+             - give up */
+          return 1;
+        }
+
+      match = mchp_match_conversion_fn(name);
+      break;
+    }
+  /* function name not interesting or it is already proven to
+     be not-convertable */
+  while (match)
+    {
+      switch (match->conversion_style)
+        {
+        default:
+          abort();  /* illegal conversion style */
+
+        case info_I:
+          mchp_handle_io_conversion(call_insn, match, stack_use_value);
+          break;
+
+        case info_O:
+          mchp_handle_io_conversion(call_insn, match, stack_use_value);
+          break;
+
+        case info_V:
+          mchp_handle_io_conversion_v(call_insn, match);
+          break;
+        }
+
+      if (match[1].name &&
+          (strcmp(match[1].name, name) == 0)) match++;
+      else match = 0;
+    }
+  return 1;
+}
+
+void avr_asm_output_labelref (FILE *stream, const char *name)
+{
+  name = maybe_get_smartio_name (name);
+  asm_fprintf (stream, "%U%s", name);
+}
+
+static rtx avr_get_orig_rtx_for_anchored_rtx (rtx base, HOST_WIDE_INT offset)
+{
+  rtx orig_val;
+  if (SYMBOL_REF_HAS_BLOCK_INFO_P (base)
+       && SYMBOL_REF_BLOCK (base) != NULL)
+  {
+    struct object_block *block = SYMBOL_REF_BLOCK (base);
+    rtx symbol; int i;
+	HOST_WIDE_INT global_offset = SYMBOL_REF_BLOCK_OFFSET (base) + offset;
+
+    FOR_EACH_VEC_ELT(*block->objects, i, symbol)
+    {
+      if (SYMBOL_REF_BLOCK_OFFSET (symbol) == global_offset)
+      {
+        /* TODO:Check for other types, as in varasm.c:7396 ??? */
+        if (TREE_CONSTANT_POOL_ADDRESS_P (symbol))
+        {
+          orig_val = DECL_RTL (SYMBOL_REF_DECL (symbol));
+		  return orig_val;
+        }
+        break;
+      }
+    }
+  }
+  return NULL;
+}
+
+/*
+  Process the default format specifier. The same specifier
+  will be used for all printf/ scanf routines when its
+  format specifier is not determined. So, validate it as
+  both input format string and output format string.
+*/
+static void avr_process_smartio_default_format (const char* sio_default_format)
+{
+  mchp_conversion_status s = conv_state_unknown;
+  s = (mchp_conversion_status) (s | mchp_convertable_input_format_string (sio_default_format));
+  s = (mchp_conversion_status) (s | mchp_convertable_output_format_string (sio_default_format));
+
+  /* Set only if its valid format conversion */
+  if ((CCS_FLAG_MASK & s) != conv_state_unknown)
+   default_conv_status = (mchp_conversion_status) (default_conv_status | s);
+  else
+   	warning (OPT_msmart_io_format_, "argument '%s' is not a valid format specifier, ignored", sio_default_format);
+}
+
+/* This function will be invoked at the end of each function during the
+   function epilogue processing. The objective is to clear the indeterminate
+   flag set for the printf/scanf function variants when its identified as not
+   convertable in the current function being processed. Clearing that flag will
+   help smart io processing to continue for the other functions in the file.
+*/
+
+static void avr_clear_smartio_process_state()
+{
+  if (mchp_io_size_val)
+    {
+      int i;
+      for (i = 0; mchp_fn_list[i].name; i++)
+        {
+          if (CCS_STATE(mchp_fn_list[i].conv_flags) == conv_indeterminate)
+          {
+            mchp_fn_list[i].conv_flags = (mchp_conversion_status)0 ;
+          }
+        }
+    }
+}
+
+#endif  /* defined(SMARTIO) */
+
+
+
 /* Initialize the GCC target structure.  */
 
 #undef  TARGET_ASM_ALIGNED_HI_OP
@@ -14981,6 +16521,9 @@ avr_use_anchors_for_symbol_p (const_rtx x)
 #undef  TARGET_ASM_SELECT_SECTION
 #define TARGET_ASM_SELECT_SECTION avr_asm_select_section
 #define USE_SELECT_SECTION_FOR_FUNCTIONS 1
+
+#undef  TARGET_ASM_FINAL_POSTSCAN_INSN
+#define TARGET_ASM_FINAL_POSTSCAN_INSN avr_asm_final_postscan_insn
 
 #undef  TARGET_REGISTER_MOVE_COST
 #define TARGET_REGISTER_MOVE_COST avr_register_move_cost
@@ -15085,9 +16628,6 @@ avr_use_anchors_for_symbol_p (const_rtx x)
 
 #undef  TARGET_ADDR_SPACE_LEGITIMIZE_ADDRESS
 #define TARGET_ADDR_SPACE_LEGITIMIZE_ADDRESS avr_addr_space_legitimize_address
-
-#undef  TARGET_MODE_DEPENDENT_ADDRESS_P
-#define TARGET_MODE_DEPENDENT_ADDRESS_P avr_mode_dependent_address_p
 
 #undef  TARGET_SECONDARY_RELOAD
 #define TARGET_SECONDARY_RELOAD avr_secondary_reload

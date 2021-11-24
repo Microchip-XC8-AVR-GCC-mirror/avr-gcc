@@ -21,9 +21,9 @@
 # along with GCC; see the file COPYING3.  If not see
 # <http://www.gnu.org/licenses/>.
 
-MULTILIB_OPTIONS = mmcu=avr2/mmcu=avr25/mmcu=avr3/mmcu=avr31/mmcu=avr35/mmcu=avr4/mmcu=avr5/mmcu=avr51/mmcu=avr6/mmcu=avrxmega2/mmcu=avrxmega3/mmcu=avrxmega4/mmcu=avrxmega5/mmcu=avrxmega6/mmcu=avrxmega7/mmcu=avrtiny msp8 mshort-calls mconst-data-in-progmem
+MULTILIB_OPTIONS = mmcu=avr2/mmcu=avr25/mmcu=avr3/mmcu=avr31/mmcu=avr35/mmcu=avr4/mmcu=avr5/mmcu=avr51/mmcu=avr6/mmcu=avrxmega2/mmcu=avrxmega3/mmcu=avrxmega4/mmcu=avrxmega5/mmcu=avrxmega6/mmcu=avrxmega7/mmcu=avrtiny msp8 mshort-calls mconst-data-in-progmem mconst-data-in-config-mapped-progmem
 
-MULTILIB_DIRNAMES = avr2 avr25 avr3 avr31 avr35 avr4 avr5 avr51 avr6 avrxmega2 avrxmega3 avrxmega4 avrxmega5 avrxmega6 avrxmega7 avrtiny tiny-stack short-calls memx-const
+MULTILIB_DIRNAMES = avr2 avr25 avr3 avr31 avr35 avr4 avr5 avr51 avr6 avrxmega2 avrxmega3 avrxmega4 avrxmega5 avrxmega6 avrxmega7 avrtiny tiny-stack short-calls memx-const mapped
 
 #
 # default version has mno-const-data-in-progmem
@@ -57,10 +57,12 @@ MULTILIB_REQUIRED = \
 	mmcu=avr6/mconst-data-in-progmem \
 	mmcu=avrxmega2 \
 	mmcu=avrxmega2/mconst-data-in-progmem \
+	mmcu=avrxmega2/mconst-data-in-progmem/mconst-data-in-config-mapped-progmem \
 	mmcu=avrxmega3/mshort-calls \
 	mmcu=avrxmega3 \
 	mmcu=avrxmega4 \
 	mmcu=avrxmega4/mconst-data-in-progmem \
+	mmcu=avrxmega4/mconst-data-in-progmem/mconst-data-in-config-mapped-progmem \
 	mmcu=avrxmega5 \
 	mmcu=avrxmega5/mconst-data-in-progmem \
 	mmcu=avrxmega6 \

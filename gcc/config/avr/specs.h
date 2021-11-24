@@ -21,7 +21,7 @@ along with GCC; see the file COPYING3.  If not see
 
 
 /* Default specs layout.  The actual definitions might be superseeded
-   by device- or OS- specific files, like avrlibc.h, ../rtems.h, etc.
+   by device- or OS- specific files, like musl.h, avrlibc.h, ../rtems.h, etc.
    The specs are repeated in the device specs files.  Subspecs are
    specs known to GCC or specs defined in the device specs files.  */
 
@@ -53,7 +53,9 @@ along with GCC; see the file COPYING3.  If not see
   "%(asm_arch) "                                \
   "%(asm_relax) "                               \
   "%(asm_rmw) "                                 \
-  "%(asm_errata_skip) "
+  "%(asm_errata_skip) "                         \
+  "%{!mno-gas-isr-prologues: -mgcc-isr} "        \
+  "%{mconst-data-in-config-mapped-progmem:-mconst-data-in-config-mapped-progmem} "
 
 #define LINK_ARCH_SPEC                          \
   "%{mmcu=*:-m%*} "
@@ -78,6 +80,8 @@ along with GCC; see the file COPYING3.  If not see
   "%{mchp-stack-usage:--mchp-stack-usage        \
        %{mmcu=avr6 | mmcu=avrxmega6 |           \
          mmcu=avrxmega7 : --pc-size=3; :--pc-size=2}}"        \
+  "%{mconst-data-in-config-mapped-progmem:--const-data-in-config-mapped-progmem} " \
+  "%{mafrlcsj:--mafrlcsj}" \
   "%{shared:%eshared is not supported} "
 
 #undef  LIB_SPEC

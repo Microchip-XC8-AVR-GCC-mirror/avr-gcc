@@ -193,7 +193,7 @@ avr_devicespecs_file (int argc, const char **argv)
 
   return concat (PackOptions, " -specs=device-specs", dir_separator_str, "specs-",
                  mmcu, "%s"
-#if defined (WITH_AVRLIBC)
+#if defined (WITH_AVRLIBC) || defined (WITH_MUSL)
                  " %{mmcu=avr*:" X_NODEVLIB "} %{!mmcu=*:" X_NODEVLIB "}",
 #else
                  " " X_NODEVLIB,

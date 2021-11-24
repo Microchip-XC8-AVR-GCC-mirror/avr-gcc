@@ -3,6 +3,7 @@
 
 /* { dg-do compile } */
 /* { dg-options "-save-temps -mext=cci -mconst-data-in-progmem" } */
+/* { dg-require-effective-target avr_progmem_insn_for_progmem } */
 
 #include <xc.h>
 

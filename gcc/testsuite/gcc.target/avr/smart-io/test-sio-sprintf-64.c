@@ -1,0 +1,142 @@
+/* Test smart-io 64 variants of printf for compilation or link errors. */
+
+/* { dg-do link } */
+/* { dg-options "-mno-smart-io" } */
+
+#include "sio_test.h"
+
+int _sprintf_aAcdeEfFgGnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdeEfFgGnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdeEfFnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdeEfFnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdeEgGnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdeEgGnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdeEnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdeEnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdfFgGnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdfFgGnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdfFnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdfFnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdgGnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdgGnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAcdnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAeEfFgGs (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAeEfFgG (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAeEfFs (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAeEfF (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAeEgGs (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAeEgG (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAeEs (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAeE (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAfFgGs (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAfFgG (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAfFs (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAfF (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAgGs (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAgG (char *__restrict, const char *__restrict, ...);
+int _sprintf_aAs (char *__restrict, const char *__restrict, ...);
+int _sprintf_aA (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdeEfFgGnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdeEfFgGnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdeEfFnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdeEfFnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdeEgGnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdeEgGnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdeEnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdeEnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdfFgGnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdfFgGnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdfFnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdfFnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdgGnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdgGnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdnopsuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_cdnopuxX (char *__restrict, const char *__restrict, ...);
+int _sprintf_eEfFgGs (char *__restrict, const char *__restrict, ...);
+int _sprintf_eEfFgG (char *__restrict, const char *__restrict, ...);
+int _sprintf_eEfFs (char *__restrict, const char *__restrict, ...);
+int _sprintf_eEfF (char *__restrict, const char *__restrict, ...);
+int _sprintf_eEgGs (char *__restrict, const char *__restrict, ...);
+int _sprintf_eEgG (char *__restrict, const char *__restrict, ...);
+int _sprintf_eEs (char *__restrict, const char *__restrict, ...);
+int _sprintf_eE (char *__restrict, const char *__restrict, ...);
+int _sprintf_fFgGs (char *__restrict, const char *__restrict, ...);
+int _sprintf_fFgG (char *__restrict, const char *__restrict, ...);
+int _sprintf_fFs (char *__restrict, const char *__restrict, ...);
+int _sprintf_fF (char *__restrict, const char *__restrict, ...);
+int _sprintf_gGs (char *__restrict, const char *__restrict, ...);
+int _sprintf_gG (char *__restrict, const char *__restrict, ...);
+int _sprintf_s (char *__restrict, const char *__restrict, ...);
+int _sprintf_0 (char *__restrict, const char *__restrict, ...);
+
+int main()
+{
+  _sprintf_aAcdeEfFgGnopsuxX (buf, "%a,%d,%e,%f,%g,%s", a,d,e,f,g,s);
+  _sprintf_aAcdeEfFgGnopuxX (buf, "%a,%d,%e,%f,%g", a,d,e,f,g);
+  _sprintf_aAcdeEfFnopsuxX (buf, "%a,%d,%e,%f,%s", a,d,e,f,s);
+  _sprintf_aAcdeEfFnopuxX (buf, "%a,%d,%e,%f", a,d,e,f);
+  _sprintf_aAcdeEgGnopsuxX (buf, "%a,%d,%e,%g,%s", a,d,e,g,s);
+  _sprintf_aAcdeEgGnopuxX (buf, "%a,%d,%e,%g", a,d,e,g);
+  _sprintf_aAcdeEnopsuxX (buf, "%a,%d,%e,%s", a,d,e,s);
+  _sprintf_aAcdeEnopuxX (buf, "%a,%d,%e", a,d,e);
+  _sprintf_aAcdfFgGnopsuxX (buf, "%a,%d,%f,%g,%s", a,d,f,g,s);
+  _sprintf_aAcdfFgGnopuxX (buf, "%a,%d,%f,%g", a,d,f,g);
+  _sprintf_aAcdfFnopsuxX (buf, "%a,%d,%f,%s", a,d,f,s);
+  _sprintf_aAcdfFnopuxX (buf, "%a,%d,%f", a,d,f);
+  _sprintf_aAcdgGnopsuxX (buf, "%a,%d,%g,%s", a,d,g,s);
+  _sprintf_aAcdgGnopuxX (buf, "%a,%d,%g", a,d,g);
+  _sprintf_aAcdnopsuxX (buf, "%a,%d,%s", a,d,s);
+  _sprintf_aAcdnopuxX (buf, "%a,%d", a,d);
+  _sprintf_aAeEfFgGs (buf, "%a,%e,%f,%g,%s", a,e,f,g,s);
+  _sprintf_aAeEfFgG (buf, "%a,%e,%f,%g", a,e,f,g);
+  _sprintf_aAeEfFs (buf, "%a,%e,%f,%s", a,e,f,s);
+  _sprintf_aAeEfF (buf, "%a,%e,%f", a,e,f);
+  _sprintf_aAeEgGs (buf, "%a,%e,%g,%s", a,e,g,s);
+  _sprintf_aAeEgG (buf, "%a,%e,%g", a,e,g);
+  _sprintf_aAeEs (buf, "%a,%e,%s", a,e,s);
+  _sprintf_aAeE (buf, "%a,%e", a,e);
+  _sprintf_aAfFgGs (buf, "%a,%f,%g,%s", a,f,g,s);
+  _sprintf_aAfFgG (buf, "%a,%f,%g", a,f,g);
+  _sprintf_aAfFs (buf, "%a,%f,%s", a,f,s);
+  _sprintf_aAfF (buf, "%a,%f", a,f);
+  _sprintf_aAgGs (buf, "%a,%g,%s", a,g,s);
+  _sprintf_aAgG (buf, "%a,%g", a,g);
+  _sprintf_aAs (buf, "%a,%s", a,s);
+  _sprintf_aA (buf, "%a", a);
+  _sprintf_cdeEfFgGnopsuxX (buf, "%d,%e,%f,%g,%s", d,e,f,g,s);
+  _sprintf_cdeEfFgGnopuxX (buf, "%d,%e,%f,%g", d,e,f,g);
+  _sprintf_cdeEfFnopsuxX (buf, "%d,%e,%f,%s", d,e,f,s);
+  _sprintf_cdeEfFnopuxX (buf, "%d,%e,%f", d,e,f);
+  _sprintf_cdeEgGnopsuxX (buf, "%d,%e,%g,%s", d,e,g,s);
+  _sprintf_cdeEgGnopuxX (buf, "%d,%e,%g", d,e,g);
+  _sprintf_cdeEnopsuxX (buf, "%d,%e,%s", d,e,s);
+  _sprintf_cdeEnopuxX (buf, "%d,%e", d,e);
+  _sprintf_cdfFgGnopsuxX (buf, "%d,%f,%g,%s", d,f,g,s);
+  _sprintf_cdfFgGnopuxX (buf, "%d,%f,%g", d,f,g);
+  _sprintf_cdfFnopsuxX (buf, "%d,%f,%s", d,f,s);
+  _sprintf_cdfFnopuxX (buf, "%d,%f", d,f);
+  _sprintf_cdgGnopsuxX (buf, "%d,%g,%s", d,g,s);
+  _sprintf_cdgGnopuxX (buf, "%d,%g", d,g);
+  _sprintf_cdnopsuxX (buf, "%d,%s", d,s);
+  _sprintf_cdnopuxX (buf, "%d", d);
+  _sprintf_eEfFgGs (buf, "%e,%f,%g,%s", e,f,g,s);
+  _sprintf_eEfFgG (buf, "%e,%f,%g", e,f,g);
+  _sprintf_eEfFs (buf, "%e,%f,%s", e,f,s);
+  _sprintf_eEfF (buf, "%e,%f", e,f);
+  _sprintf_eEgGs (buf, "%e,%g,%s", e,g,s);
+  _sprintf_eEgG (buf, "%e,%g", e,g);
+  _sprintf_eEs (buf, "%e,%s", e,s);
+  _sprintf_eE (buf, "%e", e);
+  _sprintf_fFgGs (buf, "%f,%g,%s", f,g,s);
+  _sprintf_fFgG (buf, "%f,%g", f,g);
+  _sprintf_fFs (buf, "%f,%s", f,s);
+  _sprintf_fF (buf, "%f", f);
+  _sprintf_gGs (buf, "%g,%s", g,s);
+  _sprintf_gG (buf, "%g", g);
+  _sprintf_s (buf, "%s", s);
+  _sprintf_0 (buf, "%X", X);
+
+  return 0;
+}
+

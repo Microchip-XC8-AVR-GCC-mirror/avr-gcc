@@ -334,7 +334,8 @@ simple_move_operand (rtx x)
 
   if (MEM_P (x)
       && (MEM_VOLATILE_P (x)
-	  || mode_dependent_address_p (XEXP (x, 0), MEM_ADDR_SPACE (x))))
+	  || mode_dependent_address_p (XEXP (x, 0), MEM_ADDR_SPACE (x))
+	  || !ADDR_SPACE_GENERIC_P (MEM_ADDR_SPACE (x))))
     return false;
 
   return true;

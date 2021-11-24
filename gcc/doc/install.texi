@@ -2058,6 +2058,12 @@ This option is only supported for the AVR target.  It is not supported for
 RTEMS configurations, which currently use newlib.  The option is
 supported since version 4.7.2 and is the default in 4.8.0 and newer.
 
+@item --with-musl
+Specifies that @samp{MUSL} is
+being used as the target C library.  This causes float support
+functions like @code{__addsf3} to be omitted from @file{libgcc.a} on
+the assumption that it will be provided by @file{AVR-Libc}.
+
 @item --with-nds32-lib=@var{library}
 Specifies that @var{library} setting is used for building @file{libgcc.a}.
 Currently, the valid @var{library} is @samp{newlib} or @samp{mculib}.

@@ -310,27 +310,6 @@ get_license_manager_path (void)
 
 #endif /* SKIP_LICENSE_MANAGER */
 
-
-
-static int
-avr_get_license (bool xccov)
-{
-  /* If license type already determined for the corresponding product, 
-     just return it */
-  HOST_WIDE_INT license_type = xccov ? mchp_xccov_license_valid
-                           : mchp_avr_license_valid ;
-  if (license_type != MCHP_LICENSE_TBD)
-  {
-    return license_type;
-  }
-
-  /* assume free/no license for now */
-  license_type = xccov ? MCHP_XCLM_NO_CCOV_LICENSE : MCHP_XCLM_FREE_LICENSE;
-
-  /*
-   *  On systems where we have a licence manager, call it
-   */
-
 /* Misc. Return Codes */
 #ifndef MCHP_XCLM_EXPIRED_DEMO
 #define MCHP_XCLM_EXPIRED_DEMO 0x10
@@ -348,17 +327,39 @@ avr_get_license (bool xccov)
 #define AVR_VALID_PRO_LICENSE      2
 #endif /* MCHP_XCLM_VALID_PRO_LICENSE */
 
+static int
+avr_get_license (bool xccov)
+{
+  /* If license type already determined for the corresponding product, 
+     just return it */
+  HOST_WIDE_INT license_type = xccov ? mchp_xccov_license_valid
+                           : mchp_avr_license_valid ;
+  if (license_type != MCHP_LICENSE_TBD)
+  {
+    return license_type;
+  }
+
+  if (!xccov && avr_mafrlcsj)
+    return AVR_VALID_PRO_LICENSE;
+
+  /* assume free/no license for now */
+  license_type = xccov ? MCHP_XCLM_NO_CCOV_LICENSE : MCHP_XCLM_FREE_LICENSE;
+
+  /*
+   *  On systems where we have a licence manager, call it
+   */
 
 #ifndef SKIP_LICENSE_MANAGER
   {
     char *exec;
 #if XCLM_FULL_CHECKOUT
     char kopt[] = "-fcfc";
+    char kopt_analysis[] = "-fc";
 #else
     char kopt[] = "-checkout";
 #endif /* XCLM_FULL_CHECKOUT */
     char productc[] = "swxc8";
-    char xccov_product[] = "swxc-cov";
+    char xccov_product[] = "swanaly";
     char version[9] = "1.0"; /* 1.0 works for xccov; for xc8, the version is determined below */
     char date[] = __DATE__;
 
@@ -406,12 +407,13 @@ avr_get_license (bool xccov)
       }
 
     /* Arguments to pass to xclm */
-    args[1] = kopt;
+    args[1] = xccov ? kopt_analysis : kopt;
     args[2] = xccov ? xccov_product : productc;
     args[3] = version;
     
 #if XCLM_FULL_CHECKOUT
-    args[4] = date;
+	if (!xccov)
+      args[4] = date;
 #endif /* XCLM_FULL_CHECKOUT */
 
     /* Get a path to the license manager to try */
@@ -497,18 +499,24 @@ avr_get_license (bool xccov)
 }
 
 
-/* xc-coverage.c uses this to check for a valid codecov license */
+/* xc-coverage.c uses this to check for a valid codecov license.
+   XCLM 3.02 introduces an analysis license (MCHP_XCLM_VALID_ANATS_LICENSE),
+   and does the heavy lifting of checking for either that or a ccov license
+   internally. Just extend check to allow ccov if analysis license is valid. */
 int
 avr_licensed_xccov_p ()
 {
 #ifdef SKIP_LICENSE_MANAGER
 #if defined(MCHP_XCLM_VALID_CCOV_LICENSE)
-  return mchp_xccov_license_valid == MCHP_XCLM_VALID_CCOV_LICENSE;
+  return mchp_xccov_license_valid == MCHP_XCLM_VALID_CCOV_LICENSE
+	|| mchp_xccov_license_valid == MCHP_XCLM_VALID_ANATS_LICENSE;
 #else
-  return mchp_xccov_license_valid == 0x9;
+  return mchp_xccov_license_valid == 0x9
+	|| mchp_xccov_license_valid == 0xB;
 #endif
 #else
-  return mchp_xccov_license_valid == MCHP_XCLM_VALID_CCOV_LICENSE;
+  return mchp_xccov_license_valid == MCHP_XCLM_VALID_CCOV_LICENSE
+	|| mchp_xccov_license_valid == MCHP_XCLM_VALID_ANATS_LICENSE;
 #endif
 }
 
@@ -645,18 +653,51 @@ void avr_override_licensed_options (void)
       }
       
       NULLIFY(optimize_size, "Optimize for size") = 0;
+      NULLIFY(optimize_fast, "Optimize fast") = 0;
+      /* Disable everything enabled at OPT_LEVELS_3_PLUS in
+         opts.c:default_options_table. */
+      NULLIFY(flag_tree_loop_distribution, "tree loop distribution") = 0;
       NULLIFY(flag_predictive_commoning, "predictive commoning") = 0;
       NULLIFY(flag_inline_functions, "inline functions") = 0;
       NULLIFY(flag_unswitch_loops, "unswitch loops") = 0;
       NULLIFY(flag_gcse_after_reload, "gcse after reload") = 0;
       NULLIFY(flag_tree_vectorize, "tree vectorize") = 0;
+      NULLIFY(flag_tree_loop_vectorize, "tree loop vectorize") = 0;
+      NULLIFY(flag_tree_slp_vectorize, "tree slp vectorize") = 0;
+      /* Not using NULLIFY for flags set to non-zero values because NULLIFY
+         emits a "Pro compiler option xxx ignored" message if passed in flag
+         is non-zero. */
+      flag_vect_cost_model = VECT_COST_MODEL_CHEAP;
       NULLIFY(flag_ipa_cp_clone, "ipa cp clone") = 0;
+      NULLIFY(flag_tree_partial_pre, "tree partial pre") = 0;
+
+      /* Disable all -ffast-math optimizations enabled automatically at -O3.
+         Negate everything set in opts.c:set_fast_math_flags. */
+      NULLIFY(flag_unsafe_math_optimizations, "unsafe math optimizations") = 0;
+      flag_trapping_math = 1;
+      flag_signed_zeros = 1;
+      NULLIFY(flag_associative_math, "associative math") = 0;
+      NULLIFY(flag_reciprocal_math, "reciprocal math") = 0;
+      NULLIFY(flag_finite_math_only, "finite math only") = 0;
+      flag_errno_math = 1;
+      flag_signaling_nans = 1;
+      flag_rounding_math = 1;
+      NULLIFY(flag_cx_limited_range, "cx limited range") = 0;
 
       flag_ipa_cp = 0;
 
       NULLIFY(flag_lto, "Link-time optimization") = 0;
       NULLIFY(flag_whole_program, "Whole-program optimizations") = 0;
       NULLIFY(flag_generate_lto, "Link-time optimization") = 0;
+
+      /* Resets maybe_set_param_value (PARAM_MIN_CROSSJUMP_INSNS) to what
+         it would have been if opts->x_optimize_size was false in
+         opts.c:default_options_optimization. */
+
+      set_param_value ("min-crossjump-insns",
+		      default_param_value (PARAM_MIN_CROSSJUMP_INSNS),
+		      global_options.x_param_values,
+		      global_options_set.x_param_values);
     }
     
     if (message_displayed && TARGET_LICENSE_WARNING)

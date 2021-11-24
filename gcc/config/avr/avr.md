@@ -85,6 +85,7 @@
   [UNSPECV_PROLOGUE_SAVES
    UNSPECV_EPILOGUE_RESTORES
    UNSPECV_WRITE_SP
+   UNSPECV_GASISR
    UNSPECV_GOTO_RECEIVER
    UNSPECV_ENABLE_IRQS
    UNSPECV_MEMORY_BARRIER
@@ -94,6 +95,12 @@
    UNSPECV_DELAY_CYCLES
    ])
 
+;; Chunk numbers for __gcc_isr are hard-coded in GAS.
+(define_constants
+  [(GASISR_Prologue 1)
+   (GASISR_Epilogue 2)
+   (GASISR_Done     0)
+   ])
 
 (include "predicates.md")
 (include "constraints.md")
@@ -5063,7 +5070,7 @@
              (use (match_operand:HI 2 "const_int_operand"          "L,L,P,P"))])]
   ;; Operand 1 not used on the AVR.
   ;; Operand 2 is 1 for tail-call, 0 otherwise.
-  ""
+  "(mchp_check_for_conversion(insn))"
   "@
     %!icall
     %~call %x0
@@ -5080,7 +5087,7 @@
              (use (match_operand:HI 3 "const_int_operand"                "L,L,P,P"))])]
   ;; Operand 2 not used on the AVR.
   ;; Operand 3 is 1 for tail-call, 0 otherwise.
-  ""
+  "(mchp_check_for_conversion(insn))"
   "@
     %!icall
     %~call %x1
@@ -5702,6 +5709,65 @@
   "ldi r30, lo8(%0)
 	%~jmp __epilogue_restores__ + ((18 - %0) * 2)"
   [(set_attr "length" "2,3")
+   (set_attr "cc" "clobber")
+   (set_attr "isa" "rjmp,jmp")])
+
+
+;; $0 = Chunk: 1 = Prologue,  2 = Epilogue
+;; $1 = Register as printed by chunk 0 (Done) in final postscan.
+(define_expand "gasisr"
+  [(parallel [(unspec_volatile [(match_operand:QI 0 "const_int_operand")
+                                (match_operand:QI 1 "const_int_operand")]
+                               UNSPECV_GASISR)
+              (set (reg:HI REG_SP)
+                   (unspec_volatile:HI [(reg:HI REG_SP)] UNSPECV_GASISR))
+              (set (match_dup 2)
+                   (unspec_volatile:BLK [(match_dup 2)]
+                                        UNSPECV_MEMORY_BARRIER))])]
+  "avr_gasisr_prologues"
+  {
+    operands[2] = gen_rtx_MEM (BLKmode, gen_rtx_SCRATCH (Pmode));
+    MEM_VOLATILE_P (operands[2]) = 1;
+  })
+
+(define_insn "*gasisr"
+  [(unspec_volatile [(match_operand:QI 0 "const_int_operand" "P,K")
+                     (match_operand:QI 1 "const_int_operand" "n,n")]
+                    UNSPECV_GASISR)
+   (set (reg:HI REG_SP)
+        (unspec_volatile:HI [(reg:HI REG_SP)] UNSPECV_GASISR))
+   (set (match_operand:BLK 2)
+        (unspec_volatile:BLK [(match_dup 2)] UNSPECV_MEMORY_BARRIER))]
+  "avr_gasisr_prologues"
+  "__gcc_isr %0"
+  [(set_attr "length" "6,5")
+   (set_attr "cc" "clobber")])
+
+(define_insn "call_isr_prologue_saves"
+  [(unspec_volatile:HI [(const_int 0)] UNSPECV_PROLOGUE_SAVES)
+   (set (reg:HI REG_SP)
+        (minus:HI (reg:HI REG_SP)
+                  (match_operand:HI 0 "immediate_operand" "i,i")))
+   (clobber (reg:HI REG_Z))]
+  "avr_call_isr_prologues"
+  "push r30
+	push r31
+	ldi r30,lo8(gs(1f))
+	ldi r31,hi8(gs(1f))
+	%~jmp __isr_prologue_saves__
+1:"
+  [(set_attr "length" "5,6")
+   (set_attr "cc" "clobber")
+   (set_attr "isa" "rjmp,jmp")])
+
+(define_insn "isr_epilogue_restores"
+  [(unspec_volatile:QI [(const_int 0)] UNSPECV_EPILOGUE_RESTORES)
+   (set (reg:HI REG_SP)
+        (plus:HI (reg:HI REG_SP)
+                  (match_operand:HI 0 "immediate_operand" "i,i")))]
+  ""
+  "%~jmp __isr_epilogue_restores__"
+  [(set_attr "length" "1,2")
    (set_attr "cc" "clobber")
    (set_attr "isa" "rjmp,jmp")])
 

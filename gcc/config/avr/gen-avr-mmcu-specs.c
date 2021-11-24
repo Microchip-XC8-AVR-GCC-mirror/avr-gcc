@@ -41,6 +41,10 @@
 #include "avrlibc.h"
 #endif
 
+#if defined (WITH_MUSL)
+#include "musl.h"
+#endif
+
 #if defined (WITH_RTEMS)
 #include "../rtems.h"
 #include "rtems.h"
@@ -74,6 +78,9 @@ static const char header[] =
 #if defined (WITH_AVRLIBC)
   "#                  ./gcc/config/avr/avrlibc.h\n"
 #endif
+#if defined (WITH_MUSL)
+  "#                  ./gcc/config/avr/musl.h\n"
+#endif
   "# Used by        : avr-gcc compiler driver\n"
   "# Used for       : building command options for sub-processes\n"
   "#\n"
@@ -88,7 +95,7 @@ static const char help_copy_paste[] =
   "# See <" SPECFILE_USAGE_URL "> for a description\n"
   "# of how to use such own spec files.\n";
 
-#if defined (WITH_AVRLIBC)
+#if defined (WITH_AVRLIBC) || defined (WITH_MUSL)
 static const char help_dev_lib_name[] =
   "# AVR-LibC's avr/io.h uses the device specifying macro to determine\n"
   "# the name of the device header.  For example, -mmcu=atmega8a triggers\n"
@@ -116,7 +123,7 @@ static const char help_dev_lib_name[] =
   "#\n"
   "#     -D__AVR_DEV_LIB_NAME__=m8a\n"
   "\n";
-#endif // WITH_AVRLIBC
+#endif // WITH_AVRLIBC || WITH_MUSL
 
 static void
 print_mcu (const avr_mcu_t *mcu)
@@ -195,8 +202,9 @@ print_mcu (const avr_mcu_t *mcu)
   if (is_device)
     fprintf (f, "%s\n", help_copy_paste);
 
-#if defined (WITH_AVRLIBC)
-  // AVR-LibC specific.  See avrlibc.h for the specs using them as subspecs.
+#if defined (WITH_AVRLIBC) || defined (WITH_MUSL)
+  // AVR devices specific.
+  // See avrlibc.h/ musl.h for the specs using them as subspecs.
 
   if (is_device)
     {
@@ -208,7 +216,7 @@ print_mcu (const avr_mcu_t *mcu)
       fprintf (f, "\t%%{!nodevicelib:-l%s}", mcu->name);
       fprintf (f, "\n\n");
     }
-#endif  // WITH_AVRLIBC
+#endif  // WITH_AVRLIBC || WITH_MUSL
 
   // avr-gcc specific specs for the compilation / the compiler proper.
 
@@ -297,9 +305,9 @@ print_mcu (const avr_mcu_t *mcu)
       fprintf (f, "%s ", rcall_spec);
       fprintf (f, "%s\n\n", sp8_spec);
 
-#if defined (WITH_AVRLIBC)
+#if defined (WITH_AVRLIBC) || defined (WITH_MUSL)
       fprintf (f, "%s\n", help_dev_lib_name);
-#endif // WITH_AVRLIBC
+#endif // WITH_AVRLIBC || WITH_MUSL
 
       fprintf (f, "*cpp:\n");
       fprintf (f, "\t-D%s -D__AVR_DEVICE_NAME__=%s", mcu->macro, mcu->name);

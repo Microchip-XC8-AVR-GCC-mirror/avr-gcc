@@ -205,3 +205,6 @@ extern void avr_emit_cc_section (const char *name);
 /* MCHP stack usage */
 extern void avr_emit_su_section (const char *name);
 
+/* Smart-IO Handling*/
+extern int mchp_check_for_conversion(rtx_insn *);
+extern void avr_asm_output_labelref (FILE *stream, const char *name);

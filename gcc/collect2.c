@@ -847,6 +847,7 @@ main (int argc, char **argv)
   int8_t avr_pa_iterations_count = 0;
   bool avr_pa_shortcall = false;
   bool avr_pa_callcost_shortcall = false;
+  bool mafrlcsj = false;
   const char* avr_pa_file_name = NULL;
   const char * avr_ignore_file_option = "-mno-pa-on-file=";
   const char * avr_ignore_function_option = "-mno-pa-on-function=";
@@ -989,6 +990,7 @@ main (int argc, char **argv)
   avr_pa_ignored_functions_count = 0;
   avr_pa_shortcall = false;
   avr_pa_callcost_shortcall = false;
+  mafrlcsj = false;
   avr_pa_iterations_count = 0;
   while (p && *p)
     {
@@ -1008,6 +1010,8 @@ main (int argc, char **argv)
       else if (strncmp(q, avr_pa_iterations_option,
                        strlen(avr_pa_iterations_option)) == 0)
         avr_pa_iterations_count += 1;
+      else if (strcmp(q, "-mafrlcsj") == 0)
+        mafrlcsj = true;
 
     }
   obstack_free (&temporary_obstack, temporary_firstobj);
@@ -1040,6 +1044,7 @@ main (int argc, char **argv)
 		    (avr_pa_shortcall ? 1 : 0) +
 		    (avr_pa_callcost_shortcall ? 1 : 0) +
 		    avr_pa_iterations_count +
+			(mafrlcsj ? 1 : 0) +
 		    + 1 + 2); /* 2 for -x <xclmpath> */
   else
     ld1_argv = XCNEWVEC (char *, argc + 4);
@@ -1363,6 +1368,10 @@ main (int argc, char **argv)
           sprintf (a_option, "%s %s", "-a", arch_option);
           *ld1++ = a_option;
         }
+
+     if (mafrlcsj)
+       *ld1++ = "-m";
+
       p = getenv ("COLLECT_GCC_OPTIONS");
       while (p && *p)
         {

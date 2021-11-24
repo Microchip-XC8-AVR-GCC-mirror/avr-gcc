@@ -1,0 +1,142 @@
+/* Test smart-io 64 variants of vscanf for compilation or link errors. */
+
+/* { dg-do link } */
+/* { dg-options "-msmart-io" } */
+
+#include "sio_test.h"
+
+int _vscanf_aAcdeEfFgGnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdeEfFgGnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdeEfFnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdeEfFnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdeEgGnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdeEgGnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdeEnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdeEnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdfFgGnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdfFgGnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdfFnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdfFnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdgGnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdgGnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAcdnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_aAeEfFgGs (const char *__restrict, __isoc_va_list);
+int _vscanf_aAeEfFgG (const char *__restrict, __isoc_va_list);
+int _vscanf_aAeEfFs (const char *__restrict, __isoc_va_list);
+int _vscanf_aAeEfF (const char *__restrict, __isoc_va_list);
+int _vscanf_aAeEgGs (const char *__restrict, __isoc_va_list);
+int _vscanf_aAeEgG (const char *__restrict, __isoc_va_list);
+int _vscanf_aAeEs (const char *__restrict, __isoc_va_list);
+int _vscanf_aAeE (const char *__restrict, __isoc_va_list);
+int _vscanf_aAfFgGs (const char *__restrict, __isoc_va_list);
+int _vscanf_aAfFgG (const char *__restrict, __isoc_va_list);
+int _vscanf_aAfFs (const char *__restrict, __isoc_va_list);
+int _vscanf_aAfF (const char *__restrict, __isoc_va_list);
+int _vscanf_aAgGs (const char *__restrict, __isoc_va_list);
+int _vscanf_aAgG (const char *__restrict, __isoc_va_list);
+int _vscanf_aAs (const char *__restrict, __isoc_va_list);
+int _vscanf_aA (const char *__restrict, __isoc_va_list);
+int _vscanf_cdeEfFgGnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdeEfFgGnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdeEfFnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdeEfFnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdeEgGnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdeEgGnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdeEnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdeEnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdfFgGnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdfFgGnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdfFnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdfFnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdgGnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdgGnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdnopsuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_cdnopuxX (const char *__restrict, __isoc_va_list);
+int _vscanf_eEfFgGs (const char *__restrict, __isoc_va_list);
+int _vscanf_eEfFgG (const char *__restrict, __isoc_va_list);
+int _vscanf_eEfFs (const char *__restrict, __isoc_va_list);
+int _vscanf_eEfF (const char *__restrict, __isoc_va_list);
+int _vscanf_eEgGs (const char *__restrict, __isoc_va_list);
+int _vscanf_eEgG (const char *__restrict, __isoc_va_list);
+int _vscanf_eEs (const char *__restrict, __isoc_va_list);
+int _vscanf_eE (const char *__restrict, __isoc_va_list);
+int _vscanf_fFgGs (const char *__restrict, __isoc_va_list);
+int _vscanf_fFgG (const char *__restrict, __isoc_va_list);
+int _vscanf_fFs (const char *__restrict, __isoc_va_list);
+int _vscanf_fF (const char *__restrict, __isoc_va_list);
+int _vscanf_gGs (const char *__restrict, __isoc_va_list);
+int _vscanf_gG (const char *__restrict, __isoc_va_list);
+int _vscanf_s (const char *__restrict, __isoc_va_list);
+int _vscanf_0 (const char *__restrict, __isoc_va_list);
+
+int main()
+{
+  _vscanf_aAcdeEfFgGnopsuxX ("%a,%d,%e,%f,%g,%s", _va);
+  _vscanf_aAcdeEfFgGnopuxX ("%a,%d,%e,%f,%g", _va);
+  _vscanf_aAcdeEfFnopsuxX ("%a,%d,%e,%f,%s", _va);
+  _vscanf_aAcdeEfFnopuxX ("%a,%d,%e,%f", _va);
+  _vscanf_aAcdeEgGnopsuxX ("%a,%d,%e,%g,%s", _va);
+  _vscanf_aAcdeEgGnopuxX ("%a,%d,%e,%g", _va);
+  _vscanf_aAcdeEnopsuxX ("%a,%d,%e,%s", _va);
+  _vscanf_aAcdeEnopuxX ("%a,%d,%e", _va);
+  _vscanf_aAcdfFgGnopsuxX ("%a,%d,%f,%g,%s", _va);
+  _vscanf_aAcdfFgGnopuxX ("%a,%d,%f,%g", _va);
+  _vscanf_aAcdfFnopsuxX ("%a,%d,%f,%s", _va);
+  _vscanf_aAcdfFnopuxX ("%a,%d,%f", _va);
+  _vscanf_aAcdgGnopsuxX ("%a,%d,%g,%s", _va);
+  _vscanf_aAcdgGnopuxX ("%a,%d,%g", _va);
+  _vscanf_aAcdnopsuxX ("%a,%d,%s", _va);
+  _vscanf_aAcdnopuxX ("%a,%d", _va);
+  _vscanf_aAeEfFgGs ("%a,%e,%f,%g,%s", _va);
+  _vscanf_aAeEfFgG ("%a,%e,%f,%g", _va);
+  _vscanf_aAeEfFs ("%a,%e,%f,%s", _va);
+  _vscanf_aAeEfF ("%a,%e,%f", _va);
+  _vscanf_aAeEgGs ("%a,%e,%g,%s", _va);
+  _vscanf_aAeEgG ("%a,%e,%g", _va);
+  _vscanf_aAeEs ("%a,%e,%s", _va);
+  _vscanf_aAeE ("%a,%e", _va);
+  _vscanf_aAfFgGs ("%a,%f,%g,%s", _va);
+  _vscanf_aAfFgG ("%a,%f,%g", _va);
+  _vscanf_aAfFs ("%a,%f,%s", _va);
+  _vscanf_aAfF ("%a,%f", _va);
+  _vscanf_aAgGs ("%a,%g,%s", _va);
+  _vscanf_aAgG ("%a,%g", _va);
+  _vscanf_aAs ("%a,%s", _va);
+  _vscanf_aA ("%a", _va);
+  _vscanf_cdeEfFgGnopsuxX ("%d,%e,%f,%g,%s", _va);
+  _vscanf_cdeEfFgGnopuxX ("%d,%e,%f,%g", _va);
+  _vscanf_cdeEfFnopsuxX ("%d,%e,%f,%s", _va);
+  _vscanf_cdeEfFnopuxX ("%d,%e,%f", _va);
+  _vscanf_cdeEgGnopsuxX ("%d,%e,%g,%s", _va);
+  _vscanf_cdeEgGnopuxX ("%d,%e,%g", _va);
+  _vscanf_cdeEnopsuxX ("%d,%e,%s", _va);
+  _vscanf_cdeEnopuxX ("%d,%e", _va);
+  _vscanf_cdfFgGnopsuxX ("%d,%f,%g,%s", _va);
+  _vscanf_cdfFgGnopuxX ("%d,%f,%g", _va);
+  _vscanf_cdfFnopsuxX ("%d,%f,%s", _va);
+  _vscanf_cdfFnopuxX ("%d,%f", _va);
+  _vscanf_cdgGnopsuxX ("%d,%g,%s", _va);
+  _vscanf_cdgGnopuxX ("%d,%g", _va);
+  _vscanf_cdnopsuxX ("%d,%s", _va);
+  _vscanf_cdnopuxX ("%d", _va);
+  _vscanf_eEfFgGs ("%e,%f,%g,%s", _va);
+  _vscanf_eEfFgG ("%e,%f,%g", _va);
+  _vscanf_eEfFs ("%e,%f,%s", _va);
+  _vscanf_eEfF ("%e,%f", _va);
+  _vscanf_eEgGs ("%e,%g,%s", _va);
+  _vscanf_eEgG ("%e,%g", _va);
+  _vscanf_eEs ("%e,%s", _va);
+  _vscanf_eE ("%e", _va);
+  _vscanf_fFgGs ("%f,%g,%s", _va);
+  _vscanf_fFgG ("%f,%g", _va);
+  _vscanf_fFs ("%f,%s", _va);
+  _vscanf_fF ("%f", _va);
+  _vscanf_gGs ("%g,%s", _va);
+  _vscanf_gG ("%g", _va);
+  _vscanf_s ("%s", _va);
+  _vscanf_0 ("%X", _va);
+
+  return 0;
+}
+

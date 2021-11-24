@@ -1,0 +1,142 @@
+/* Test smart-io 64 variants of vfscanf for compilation or link errors. */
+
+/* { dg-do link } */
+/* { dg-options "-msmart-io" } */
+
+#include "sio_test.h"
+
+int _vfscanf_aAcdeEfFgGnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdeEfFgGnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdeEfFnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdeEfFnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdeEgGnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdeEgGnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdeEnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdeEnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdfFgGnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdfFgGnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdfFnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdfFnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdgGnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdgGnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAcdnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAeEfFgGs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAeEfFgG (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAeEfFs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAeEfF (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAeEgGs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAeEgG (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAeEs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAeE (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAfFgGs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAfFgG (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAfFs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAfF (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAgGs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAgG (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aAs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_aA (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdeEfFgGnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdeEfFgGnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdeEfFnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdeEfFnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdeEgGnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdeEgGnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdeEnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdeEnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdfFgGnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdfFgGnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdfFnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdfFnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdgGnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdgGnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdnopsuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_cdnopuxX (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_eEfFgGs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_eEfFgG (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_eEfFs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_eEfF (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_eEgGs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_eEgG (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_eEs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_eE (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_fFgGs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_fFgG (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_fFs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_fF (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_gGs (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_gG (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_s (FILE *__restrict, const char *__restrict, __isoc_va_list);
+int _vfscanf_0 (FILE *__restrict, const char *__restrict, __isoc_va_list);
+
+int main()
+{
+  _vfscanf_aAcdeEfFgGnopsuxX (fp, "%a,%d,%e,%f,%g,%s", _va);
+  _vfscanf_aAcdeEfFgGnopuxX (fp, "%a,%d,%e,%f,%g", _va);
+  _vfscanf_aAcdeEfFnopsuxX (fp, "%a,%d,%e,%f,%s", _va);
+  _vfscanf_aAcdeEfFnopuxX (fp, "%a,%d,%e,%f", _va);
+  _vfscanf_aAcdeEgGnopsuxX (fp, "%a,%d,%e,%g,%s", _va);
+  _vfscanf_aAcdeEgGnopuxX (fp, "%a,%d,%e,%g", _va);
+  _vfscanf_aAcdeEnopsuxX (fp, "%a,%d,%e,%s", _va);
+  _vfscanf_aAcdeEnopuxX (fp, "%a,%d,%e", _va);
+  _vfscanf_aAcdfFgGnopsuxX (fp, "%a,%d,%f,%g,%s", _va);
+  _vfscanf_aAcdfFgGnopuxX (fp, "%a,%d,%f,%g", _va);
+  _vfscanf_aAcdfFnopsuxX (fp, "%a,%d,%f,%s", _va);
+  _vfscanf_aAcdfFnopuxX (fp, "%a,%d,%f", _va);
+  _vfscanf_aAcdgGnopsuxX (fp, "%a,%d,%g,%s", _va);
+  _vfscanf_aAcdgGnopuxX (fp, "%a,%d,%g", _va);
+  _vfscanf_aAcdnopsuxX (fp, "%a,%d,%s", _va);
+  _vfscanf_aAcdnopuxX (fp, "%a,%d", _va);
+  _vfscanf_aAeEfFgGs (fp, "%a,%e,%f,%g,%s", _va);
+  _vfscanf_aAeEfFgG (fp, "%a,%e,%f,%g", _va);
+  _vfscanf_aAeEfFs (fp, "%a,%e,%f,%s", _va);
+  _vfscanf_aAeEfF (fp, "%a,%e,%f", _va);
+  _vfscanf_aAeEgGs (fp, "%a,%e,%g,%s", _va);
+  _vfscanf_aAeEgG (fp, "%a,%e,%g", _va);
+  _vfscanf_aAeEs (fp, "%a,%e,%s", _va);
+  _vfscanf_aAeE (fp, "%a,%e", _va);
+  _vfscanf_aAfFgGs (fp, "%a,%f,%g,%s", _va);
+  _vfscanf_aAfFgG (fp, "%a,%f,%g", _va);
+  _vfscanf_aAfFs (fp, "%a,%f,%s", _va);
+  _vfscanf_aAfF (fp, "%a,%f", _va);
+  _vfscanf_aAgGs (fp, "%a,%g,%s", _va);
+  _vfscanf_aAgG (fp, "%a,%g", _va);
+  _vfscanf_aAs (fp, "%a,%s", _va);
+  _vfscanf_aA (fp, "%a", _va);
+  _vfscanf_cdeEfFgGnopsuxX (fp, "%d,%e,%f,%g,%s", _va);
+  _vfscanf_cdeEfFgGnopuxX (fp, "%d,%e,%f,%g", _va);
+  _vfscanf_cdeEfFnopsuxX (fp, "%d,%e,%f,%s", _va);
+  _vfscanf_cdeEfFnopuxX (fp, "%d,%e,%f", _va);
+  _vfscanf_cdeEgGnopsuxX (fp, "%d,%e,%g,%s", _va);
+  _vfscanf_cdeEgGnopuxX (fp, "%d,%e,%g", _va);
+  _vfscanf_cdeEnopsuxX (fp, "%d,%e,%s", _va);
+  _vfscanf_cdeEnopuxX (fp, "%d,%e", _va);
+  _vfscanf_cdfFgGnopsuxX (fp, "%d,%f,%g,%s", _va);
+  _vfscanf_cdfFgGnopuxX (fp, "%d,%f,%g", _va);
+  _vfscanf_cdfFnopsuxX (fp, "%d,%f,%s", _va);
+  _vfscanf_cdfFnopuxX (fp, "%d,%f", _va);
+  _vfscanf_cdgGnopsuxX (fp, "%d,%g,%s", _va);
+  _vfscanf_cdgGnopuxX (fp, "%d,%g", _va);
+  _vfscanf_cdnopsuxX (fp, "%d,%s", _va);
+  _vfscanf_cdnopuxX (fp, "%d", _va);
+  _vfscanf_eEfFgGs (fp, "%e,%f,%g,%s", _va);
+  _vfscanf_eEfFgG (fp, "%e,%f,%g", _va);
+  _vfscanf_eEfFs (fp, "%e,%f,%s", _va);
+  _vfscanf_eEfF (fp, "%e,%f", _va);
+  _vfscanf_eEgGs (fp, "%e,%g,%s", _va);
+  _vfscanf_eEgG (fp, "%e,%g", _va);
+  _vfscanf_eEs (fp, "%e,%s", _va);
+  _vfscanf_eE (fp, "%e", _va);
+  _vfscanf_fFgGs (fp, "%f,%g,%s", _va);
+  _vfscanf_fFgG (fp, "%f,%g", _va);
+  _vfscanf_fFs (fp, "%f,%s", _va);
+  _vfscanf_fF (fp, "%f", _va);
+  _vfscanf_gGs (fp, "%g,%s", _va);
+  _vfscanf_gG (fp, "%g", _va);
+  _vfscanf_s (fp, "%s", _va);
+  _vfscanf_0 (fp, "%X", _va);
+
+  return 0;
+}
+

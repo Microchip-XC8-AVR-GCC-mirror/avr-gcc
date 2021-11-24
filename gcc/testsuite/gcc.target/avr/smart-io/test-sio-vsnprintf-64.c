@@ -1,0 +1,142 @@
+/* Test smart-io 64 variants of vsnprintf for compilation or link errors. */
+
+/* { dg-do link } */
+/* { dg-options "-mno-smart-io" } */
+
+#include "sio_test.h"
+
+int _vsnprintf_aAcdeEfFgGnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdeEfFgGnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdeEfFnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdeEfFnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdeEgGnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdeEgGnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdeEnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdeEnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdfFgGnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdfFgGnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdfFnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdfFnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdgGnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdgGnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAcdnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAeEfFgGs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAeEfFgG (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAeEfFs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAeEfF (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAeEgGs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAeEgG (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAeEs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAeE (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAfFgGs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAfFgG (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAfFs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAfF (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAgGs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAgG (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aAs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_aA (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdeEfFgGnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdeEfFgGnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdeEfFnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdeEfFnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdeEgGnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdeEgGnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdeEnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdeEnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdfFgGnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdfFgGnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdfFnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdfFnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdgGnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdgGnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdnopsuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_cdnopuxX (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_eEfFgGs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_eEfFgG (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_eEfFs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_eEfF (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_eEgGs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_eEgG (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_eEs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_eE (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_fFgGs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_fFgG (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_fFs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_fF (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_gGs (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_gG (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_s (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+int _vsnprintf_0 (char *__restrict, size_t, const char *__restrict, __isoc_va_list);
+
+int main()
+{
+  _vsnprintf_aAcdeEfFgGnopsuxX (buf, len, "%a,%d,%e,%f,%g,%s", _va);
+  _vsnprintf_aAcdeEfFgGnopuxX (buf, len, "%a,%d,%e,%f,%g", _va);
+  _vsnprintf_aAcdeEfFnopsuxX (buf, len, "%a,%d,%e,%f,%s", _va);
+  _vsnprintf_aAcdeEfFnopuxX (buf, len, "%a,%d,%e,%f", _va);
+  _vsnprintf_aAcdeEgGnopsuxX (buf, len, "%a,%d,%e,%g,%s", _va);
+  _vsnprintf_aAcdeEgGnopuxX (buf, len, "%a,%d,%e,%g", _va);
+  _vsnprintf_aAcdeEnopsuxX (buf, len, "%a,%d,%e,%s", _va);
+  _vsnprintf_aAcdeEnopuxX (buf, len, "%a,%d,%e", _va);
+  _vsnprintf_aAcdfFgGnopsuxX (buf, len, "%a,%d,%f,%g,%s", _va);
+  _vsnprintf_aAcdfFgGnopuxX (buf, len, "%a,%d,%f,%g", _va);
+  _vsnprintf_aAcdfFnopsuxX (buf, len, "%a,%d,%f,%s", _va);
+  _vsnprintf_aAcdfFnopuxX (buf, len, "%a,%d,%f", _va);
+  _vsnprintf_aAcdgGnopsuxX (buf, len, "%a,%d,%g,%s", _va);
+  _vsnprintf_aAcdgGnopuxX (buf, len, "%a,%d,%g", _va);
+  _vsnprintf_aAcdnopsuxX (buf, len, "%a,%d,%s", _va);
+  _vsnprintf_aAcdnopuxX (buf, len, "%a,%d", _va);
+  _vsnprintf_aAeEfFgGs (buf, len, "%a,%e,%f,%g,%s", _va);
+  _vsnprintf_aAeEfFgG (buf, len, "%a,%e,%f,%g", _va);
+  _vsnprintf_aAeEfFs (buf, len, "%a,%e,%f,%s", _va);
+  _vsnprintf_aAeEfF (buf, len, "%a,%e,%f", _va);
+  _vsnprintf_aAeEgGs (buf, len, "%a,%e,%g,%s", _va);
+  _vsnprintf_aAeEgG (buf, len, "%a,%e,%g", _va);
+  _vsnprintf_aAeEs (buf, len, "%a,%e,%s", _va);
+  _vsnprintf_aAeE (buf, len, "%a,%e", _va);
+  _vsnprintf_aAfFgGs (buf, len, "%a,%f,%g,%s", _va);
+  _vsnprintf_aAfFgG (buf, len, "%a,%f,%g", _va);
+  _vsnprintf_aAfFs (buf, len, "%a,%f,%s", _va);
+  _vsnprintf_aAfF (buf, len, "%a,%f", _va);
+  _vsnprintf_aAgGs (buf, len, "%a,%g,%s", _va);
+  _vsnprintf_aAgG (buf, len, "%a,%g", _va);
+  _vsnprintf_aAs (buf, len, "%a,%s", _va);
+  _vsnprintf_aA (buf, len, "%a", _va);
+  _vsnprintf_cdeEfFgGnopsuxX (buf, len, "%d,%e,%f,%g,%s", _va);
+  _vsnprintf_cdeEfFgGnopuxX (buf, len, "%d,%e,%f,%g", _va);
+  _vsnprintf_cdeEfFnopsuxX (buf, len, "%d,%e,%f,%s", _va);
+  _vsnprintf_cdeEfFnopuxX (buf, len, "%d,%e,%f", _va);
+  _vsnprintf_cdeEgGnopsuxX (buf, len, "%d,%e,%g,%s", _va);
+  _vsnprintf_cdeEgGnopuxX (buf, len, "%d,%e,%g", _va);
+  _vsnprintf_cdeEnopsuxX (buf, len, "%d,%e,%s", _va);
+  _vsnprintf_cdeEnopuxX (buf, len, "%d,%e", _va);
+  _vsnprintf_cdfFgGnopsuxX (buf, len, "%d,%f,%g,%s", _va);
+  _vsnprintf_cdfFgGnopuxX (buf, len, "%d,%f,%g", _va);
+  _vsnprintf_cdfFnopsuxX (buf, len, "%d,%f,%s", _va);
+  _vsnprintf_cdfFnopuxX (buf, len, "%d,%f", _va);
+  _vsnprintf_cdgGnopsuxX (buf, len, "%d,%g,%s", _va);
+  _vsnprintf_cdgGnopuxX (buf, len, "%d,%g", _va);
+  _vsnprintf_cdnopsuxX (buf, len, "%d,%s", _va);
+  _vsnprintf_cdnopuxX (buf, len, "%d", _va);
+  _vsnprintf_eEfFgGs (buf, len, "%e,%f,%g,%s", _va);
+  _vsnprintf_eEfFgG (buf, len, "%e,%f,%g", _va);
+  _vsnprintf_eEfFs (buf, len, "%e,%f,%s", _va);
+  _vsnprintf_eEfF (buf, len, "%e,%f", _va);
+  _vsnprintf_eEgGs (buf, len, "%e,%g,%s", _va);
+  _vsnprintf_eEgG (buf, len, "%e,%g", _va);
+  _vsnprintf_eEs (buf, len, "%e,%s", _va);
+  _vsnprintf_eE (buf, len, "%e", _va);
+  _vsnprintf_fFgGs (buf, len, "%f,%g,%s", _va);
+  _vsnprintf_fFgG (buf, len, "%f,%g", _va);
+  _vsnprintf_fFs (buf, len, "%f,%s", _va);
+  _vsnprintf_fF (buf, len, "%f", _va);
+  _vsnprintf_gGs (buf, len, "%g,%s", _va);
+  _vsnprintf_gG (buf, len, "%g", _va);
+  _vsnprintf_s (buf, len, "%s", _va);
+  _vsnprintf_0 (buf, len, "%X", _va);
+
+  return 0;
+}
+

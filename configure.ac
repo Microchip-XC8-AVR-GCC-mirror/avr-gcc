@@ -1078,9 +1078,21 @@ case "${target}" in
   avr-*-rtems*)
     ;;
   avr-*-*)
-    if test x${with_avrlibc} != xno; then
-      noconfigdirs="$noconfigdirs target-newlib target-libgloss"
+    if test x${with_avrlibc} = x && test x${with_musl} = x; then
+      with_musl="yes"
+      AC_MSG_NOTICE([No C library is specified for AVR, musl is considered by default])
     fi
+    if test x${with_musl} = xno; then
+      if test x${with_avrlibc} = xno || test x${with_avrlibc} = x; then
+        AC_MSG_ERROR([cannot build avr target without musl and avrlibc. Configure either musl or avrlibc])
+      fi
+    fi
+    if test x${with_avrlibc} = xyes && test x${with_musl} = xyes; then
+      AC_MSG_ERROR([cannot build AVR with both musl and avrlibc. Configure either musl or avrlibc])
+    fi
+    # XC8 AVR build without any of musl or avrlibc is not supported
+    # Now musl is default C library for XC8 AVR if there is no libc selection
+    noconfigdirs="$noconfigdirs target-newlib target-libgloss"
     ;;
   c4x-*-* | tic4x-*-*)
     noconfigdirs="$noconfigdirs target-libgloss"
