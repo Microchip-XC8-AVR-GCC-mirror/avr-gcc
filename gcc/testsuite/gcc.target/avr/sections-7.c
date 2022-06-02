@@ -1,8 +1,11 @@
-/* Verify that const volatile data are allocated correctly.  */
+/* Verify that const volatile data are allocated correctly. Run test only
+   on archs where const-data-in-progmem uses progmem insns to read from flash.
+   For devices with flash mapped into data memory, we always allocate and read
+   const data from flash. */
 
 /* { dg-do compile } */
 /* { dg-options "-save-temps -mext=cci " } */
-/* { dg-skip-if "skip if global option is to enable const data in progmem" { *-*-* } { "-mconst-data-in-progmem" } { "" } } */
+/* { dg-skip-if "skip if global option is to enable const data in progmem" { { ! avr_progmem_insn_for_progmem } || { avr_const_data_in_progmem } } } */
 
 #include <xc.h>
 

@@ -2,7 +2,7 @@
    when -fdata-sections enabled.  */
 /* { dg-do compile } */
 /* { dg-options "-fdata-sections" } */
-/* { dg-skip-if "Not for AVRTINY" { "avr-*-*" } { "-mmcu=attiny40" } { "" } } */
+/* { dg-skip-if "Not for devices with flash mapped to data memory" { ! avr_progmem_insn_for_progmem } } */
 
 volatile const int __memx X = 10;
 const int __memx Y = 12;

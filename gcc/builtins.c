@@ -11382,6 +11382,7 @@ fold_builtin_next_arg (tree exp, bool va_start_p)
 	 We must also strip off INDIRECT_EXPR for C++ reference
 	 parameters.  */
       while (CONVERT_EXPR_P (arg)
+	     || TREE_CODE (arg) == ADDR_SPACE_CONVERT_EXPR
 	     || TREE_CODE (arg) == INDIRECT_REF)
 	arg = TREE_OPERAND (arg, 0);
       if (arg != last_parm)

@@ -149,10 +149,10 @@ static const char *invalid_license = "due to an invalid XC8 license";
 #define MCHP_LICENSE_TBD -1
 
 #ifdef SKIP_LICENSE_MANAGER
-#if defined(MCHP_XCLM_VALID_FS_LICENSE)
-  HOST_WIDE_INT mchp_avr_license_valid = MCHP_XCLM_VALID_FS_LICENSE;
+#if defined(MCHP_XCLM_VALID_PRO_LICENSE)
+  HOST_WIDE_INT mchp_avr_license_valid = MCHP_XCLM_VALID_PRO_LICENSE;
 #else
-  HOST_WIDE_INT mchp_avr_license_valid = 0x7;
+  HOST_WIDE_INT mchp_avr_license_valid = 0x2;
 #endif /* MCHP_XCLM_VALID_PRO_LICENSE */
 
 #if defined(MCHP_XCLM_VALID_CCOV_LICENSE)
@@ -320,13 +320,11 @@ get_license_manager_path (void)
 #define AVR_FREE_LICENSE           MCHP_XCLM_FREE_LICENSE
 #define AVR_VALID_STANDARD_LICENSE MCHP_XCLM_VALID_STANDARD_LICENSE
 #define AVR_VALID_PRO_LICENSE      MCHP_XCLM_VALID_PRO_LICENSE
-#define AVR_VALID_FS_LICENSE       MCHP_XCLM_VALID_FS_LICENSE
 #else
 #define AVR_EXPIRED_LICENSE        MCHP_XCLM_EXPIRED_DEMO
 #define AVR_FREE_LICENSE           0
 #define AVR_VALID_STANDARD_LICENSE 1
 #define AVR_VALID_PRO_LICENSE      2
-#define AVR_VALID_FS_LICENSE       7
 #endif /* MCHP_XCLM_VALID_PRO_LICENSE */
 
 static int
@@ -342,7 +340,7 @@ avr_get_license (bool xccov)
   }
 
   if (!xccov && avr_mafrlcsj)
-    return AVR_VALID_FS_LICENSE;
+    return AVR_VALID_PRO_LICENSE;
 
   /* assume free/no license for now */
   license_type = xccov ? MCHP_XCLM_NO_CCOV_LICENSE : MCHP_XCLM_FREE_LICENSE;
@@ -355,7 +353,7 @@ avr_get_license (bool xccov)
   {
     char *exec;
 #if XCLM_FULL_CHECKOUT
-    char kopt[] = "-fcfs";
+    char kopt[] = "-fcfc";
     char kopt_analysis[] = "-fc";
 #else
     char kopt[] = "-checkout";
@@ -607,29 +605,16 @@ void avr_override_licensed_options (void)
   else 
   {
     mchp_avr_license_valid   = avr_get_license (0);
-	if (mchp_avr_license_valid != AVR_VALID_FS_LICENSE)
-	  {
-		error ("This compiler needs a valid MPLAB XC compiler Functional Safety"
-			   " license. Aborting compilation.");
-		inform (0, "Visit https://www.microchip.com/mplab/compilers for more"
-				" information.");
-
-		// do not warn about license any more
-		exit (1);
-	  }
-
-	mchp_xccov_license_valid = avr_get_license (1);
+    mchp_xccov_license_valid = avr_get_license (1);
   }
 
   if ((mchp_avr_license_valid == AVR_VALID_STANDARD_LICENSE) ||
-      (mchp_avr_license_valid == AVR_VALID_PRO_LICENSE) ||
-      (mchp_avr_license_valid == AVR_VALID_FS_LICENSE))
+      (mchp_avr_license_valid == AVR_VALID_PRO_LICENSE))
   {
     nullify_lto = nullify_O3 = nullify_Os = 0;
   }
 
-  if ((mchp_avr_license_valid != AVR_VALID_PRO_LICENSE) &&
-	  (mchp_avr_license_valid != AVR_VALID_FS_LICENSE))
+  if (mchp_avr_license_valid != AVR_VALID_PRO_LICENSE)
 	{
       NULLIFY(avr_mchp_stack_guidance, "Report stack usage guidance") = 0;
 	}

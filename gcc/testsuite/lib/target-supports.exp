@@ -6242,6 +6242,24 @@ proc check_effective_target_avr_rampz { } {
     }
 }
 
+# Return 1 if this an AVR core that has config-mapped-progmem enabled
+# This uses tool_opts flags and baseboard config flags.
+# It does *not* use dg-options flags
+
+proc check_effective_target_avr_config_mapped_progmem { } {
+    if { [istarget avr*-*-*] } {
+        return [check_no_compiler_messages avr_config_mapped_progmem object {
+            #ifdef __AVR_CONST_DATA_IN_CONFIG_MAPPED_PROGMEM__
+            int dummy;
+            #else
+            #error target does not have program memory mapped into data
+            #endif
+        } ]
+    } else {
+        return 0
+    }
+}
+
 # Return 1 if this an AVR core that requires program memory specific
 # instructions (lpm etc.) to read from program memory. Return 0 if
 # the usual data address space insns (ld/lds etc..) can be used - for

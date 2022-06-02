@@ -12,8 +12,8 @@
 #undef  PRINT_FMT
 #undef  PRINT_ARG
 
-#define PRINT_FMT %a,%d,%e,%f,%g,%u,%x
-#define PRINT_ARG a,d,e,f,g,u,x
+#define PRINT_FMT %a,%d,%e,%f,%g,%n,%u,%x
+#define PRINT_ARG a,d,e,f,g,n,u,x
 
 #include "test-template-printf.t"
 

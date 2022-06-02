@@ -847,6 +847,7 @@ main (int argc, char **argv)
   int8_t avr_pa_iterations_count = 0;
   bool avr_pa_shortcall = false;
   bool avr_pa_callcost_shortcall = false;
+  bool avr_pa_outline_calls = true;
   bool mafrlcsj = false;
   const char* avr_pa_file_name = NULL;
   const char * avr_ignore_file_option = "-mno-pa-on-file=";
@@ -854,6 +855,7 @@ main (int argc, char **argv)
   const char * avr_pa_shortcall_option = "-mpa-short-call";
   const char * avr_pa_callcost_shortcall_option = "-mpa-callcost-shortcall";
   const char * avr_pa_iterations_option = "-mpa-iterations=";
+  const char * avr_pa_disable_outline_calls_option = "-mno-pa-outline-calls";
   static const char *const real_ld_suffix = "real-ld";
   static const char *const collect_ld_suffix = "collect-ld";
   static const char *const nm_suffix	= "nm";
@@ -990,6 +992,7 @@ main (int argc, char **argv)
   avr_pa_ignored_functions_count = 0;
   avr_pa_shortcall = false;
   avr_pa_callcost_shortcall = false;
+  avr_pa_outline_calls = true;
   mafrlcsj = false;
   avr_pa_iterations_count = 0;
   while (p && *p)
@@ -1007,6 +1010,8 @@ main (int argc, char **argv)
         avr_pa_ignored_functions_count += 1;
       else if (strcmp (q, avr_pa_callcost_shortcall_option) == 0)
         avr_pa_callcost_shortcall = true;
+      else if (strcmp (q, avr_pa_disable_outline_calls_option) == 0)
+        avr_pa_outline_calls = false;
       else if (strncmp(q, avr_pa_iterations_option,
                        strlen(avr_pa_iterations_option)) == 0)
         avr_pa_iterations_count += 1;
@@ -1043,6 +1048,7 @@ main (int argc, char **argv)
 		    avr_pa_ignored_functions_count +
 		    (avr_pa_shortcall ? 1 : 0) +
 		    (avr_pa_callcost_shortcall ? 1 : 0) +
+		    (avr_pa_outline_calls ? 1 : 0) +
 		    avr_pa_iterations_count +
 			(mafrlcsj ? 1 : 0) +
 		    + 1 + 2); /* 2 for -x <xclmpath> */
@@ -1364,6 +1370,14 @@ main (int argc, char **argv)
       if (avr_pa_callcost_shortcall)
         {
           const char *arch_option = "callcost-shortcall";
+          char *a_option = XNEWVEC (char, 4 + strlen(arch_option));
+          sprintf (a_option, "%s %s", "-a", arch_option);
+          *ld1++ = a_option;
+        }
+
+      if (avr_pa_outline_calls)
+        {
+          const char *arch_option = "outline-calls";
           char *a_option = XNEWVEC (char, 4 + strlen(arch_option));
           sprintf (a_option, "%s %s", "-a", arch_option);
           *ld1++ = a_option;

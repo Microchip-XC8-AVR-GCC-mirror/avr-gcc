@@ -93,9 +93,9 @@ int s1_3()
 
 /* ------------------ */
 
-/* { dg-final { scan-assembler-times "call _printf_cdfFnopuxX"  4 } } */
+/* { dg-final { scan-assembler-times "call _printf_cdfFopuxX"  4 } } */
 /* { dg-final { scan-assembler-times "call printf"  2 } } */
-/* { dg-final { scan-assembler-times "call _vprintf_cdfFnopuxX"  4 } } */
+/* { dg-final { scan-assembler-times "call _vprintf_cdfFopuxX"  4 } } */
 /* { dg-final { scan-assembler-times "call vprintf"  2 } } */
 /* { dg-final { scan-assembler-times "call _scanf_cdfFnopuxX"  4 } } */
 /* { dg-final { scan-assembler-times "call scanf"  2 } } */

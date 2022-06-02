@@ -37,4 +37,4 @@ int main()
 }
 
 /* { dg-final { scan-assembler-times "call _printf_s"  3 } } */
-/* { dg-final { scan-assembler-times "call _printf_cdnopsuxX"  1 } } */
+/* { dg-final { scan-assembler-times "call _printf_cdopsuxX"  1 } } */

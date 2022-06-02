@@ -12,4 +12,4 @@ int main ()
   return 0;
 }
 
-/* { dg-warning "-mconst-data-in-progmem is not enabled, disabling -mconst-data-in-config-mapped-progmem" "" { target *-*-* } 1 } */
+/* { dg-message "-mconst-data-in-progmem is not enabled, disabling -mconst-data-in-config-mapped-progmem" "warning text" { target *-*-* } 0 } */

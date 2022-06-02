@@ -465,6 +465,11 @@ avr_cpu_cpp_builtins (struct cpp_reader *pfile)
       cpp_define (pfile, "__AVR_CONST_DATA_IN_CONFIG_MAPPED_PROGMEM__");
     }
 
+  if (mchp_codecov)
+    {
+      cpp_define (pfile, "__CODECOV");
+    }
+
   /* Define builtin macros so that the user can easily query whether or
      not a specific builtin is available. */
 

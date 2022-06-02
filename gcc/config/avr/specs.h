@@ -82,7 +82,9 @@ along with GCC; see the file COPYING3.  If not see
          mmcu=avrxmega7 : --pc-size=3; :--pc-size=2}}"        \
   "%{mconst-data-in-config-mapped-progmem:--const-data-in-config-mapped-progmem} " \
   "%{mafrlcsj:--mafrlcsj}" \
-  "%{shared:%eshared is not supported} "
+  "%{shared:%eshared is not supported} " \
+  "%{mreserve=*:--mreserve=%* } "
+
 
 #undef  LIB_SPEC
 #define LIB_SPEC " %{!mmcu=avr1:-lc} "

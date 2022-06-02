@@ -210,3 +210,12 @@ Target Var RejectNegative Joined UInteger Var(mchp_io_size_val) Init(1)
 msmart-io-format=
 Target RejectNegative Joined Var(avr_deferred_options) Defer
 -msmart-io-format=fmt	Specify the Smart-IO format string to use if it cannot be determined
+
+mno-pa-outline-calls
+Target RejectNegative Var(avr_pa_disable_outline_calls) Init(0) Undocumented
+Do not outline code containing a function call instruction
+
+mreserve=
+Target Report RejectNegative Joined
+-mreserve=MEM	Reserve memory area specified by the user
+ 

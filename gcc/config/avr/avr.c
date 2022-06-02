@@ -694,15 +694,6 @@ avr_option_override (void)
     }
 */
 
-  /* Disable allocation of const data in mapped progmem if
-     const-data-in-progmem itself is turned off. */
-  if (!avr_const_data_in_progmem && avr_const_data_in_config_mapped_progmem)
-    {
-      warning(0, "-mconst-data-in-progmem is not enabled, "
-                 "disabling -mconst-data-in-config-mapped-progmem");
-      avr_const_data_in_config_mapped_progmem = 0;
-	}
-
   /* If smart-io is explicitly disabled, make the size value 0 */
   if (!TARGET_MCHP_SMARTIO)
     {
@@ -1020,6 +1011,7 @@ avr_set_current_function (tree decl)
   cfun->machine->is_OS_task = avr_OS_task_function_p (decl);
   cfun->machine->is_OS_main = avr_OS_main_function_p (decl);
   cfun->machine->is_no_gccisr = avr_no_gccisr_function_p (decl);
+  cfun->machine->is_safe_to_outline_calls = TRUE;
 
   if (cfun->machine->is_interrupt)
     isr = "interrupt";
@@ -3438,6 +3430,11 @@ avr_function_arg (cumulative_args_t cum_v, machine_mode mode,
   if (cum->nregs && bytes <= cum->nregs)
     return gen_rtx_REG (mode, cum->regno - bytes);
 
+  /* This arg is NOT going in a reg, therefore it is being passed on the stack.
+     The callee is going to rely on args being on the stack at
+     current SP + PC size, and outlining will introduce additional PC size
+     push(es), so mark this function as not safe for outlining CALLs. */
+  cfun->machine->is_safe_to_outline_calls = FALSE;
   return NULL_RTX;
 }
 
@@ -10310,6 +10307,14 @@ avr_insert_attributes (tree node, tree *attributes)
     }
 }
 
+static int
+avr_can_pa_outline_calls_in_decl (tree decl)
+{
+  return !avr_pa_disable_outline_calls
+    && cfun->machine->is_safe_to_outline_calls
+    && cfun->decl == decl;
+}
+
 /* Implement `ASM_OUTPUT_FUNCTION_LABEL'.
    if it is a interrupt handler function, then emit __vector_vecnum
    also as label.
@@ -10319,8 +10324,12 @@ avr_asm_output_function_label (FILE *stream,
 							   const char *name,
 							   tree decl)
 {
+  const char *stripped_name = default_strip_name_encoding (name);
   if (avr_nopa_function_p(decl))
-    fprintf(stream, "\t.%s\t%s\n", "nopafunc", name);
+    fprintf(stream, "\t.%s\t%s\n", "nopafunc", stripped_name);
+
+  if (avr_can_pa_outline_calls_in_decl (decl))
+    fprintf(stream, "\t.%s\t%s\n", "paoutlinecallsinfunc", stripped_name);
 
   tree attr = lookup_attribute ("handler", DECL_ATTRIBUTES (decl));
   if (attr)
@@ -10335,6 +10344,9 @@ avr_asm_output_function_label (FILE *stream,
 
       if (avr_nopa_function_p(decl))
         fprintf(stream, "\t.%s\t%s\n", "nopafunc", vector_label);
+
+      if (avr_can_pa_outline_calls_in_decl (decl))
+				fprintf(stream, "\t.%s\t%s\n", "paoutlinecallsinfunc", vector_label);
 
       ASM_OUTPUT_LABEL (stream, vector_label);
     }
@@ -11198,6 +11210,10 @@ avr_output_configurations (void)
     }
 }
 
+/* Does any format specifier have 'll' or 'j' length modifers, which
+   require printf with 64-bit arg support? */
+static bool avr_seen_64bit_length_modifier = false;
+
 /* Implement `TARGET_ASM_FILE_END'.  */
 /* Outputs to the stdio stream FILE some
    appropriate text to go at the end of an assembler file.  */
@@ -11216,6 +11232,9 @@ avr_file_end (void)
 
   if (avr_need_clear_bss_p && !avr_no_data_init)
     fputs (".global __do_clear_bss\n", asm_out_file);
+
+  if (avr_seen_64bit_length_modifier)
+    fputs (".global __need_printf_64bit_arg_support\n", asm_out_file);
 
   /*  Output Stack Description Headers section */
   if (avr_mchp_stack_guidance)
@@ -15263,7 +15282,8 @@ typedef enum mchp_interesting_fn_info_
   info_invalid,
   info_I,
   info_O,
-  info_V
+  info_V_I,
+  info_V_O
 } mchp_interesting_fn_info;
 
 
@@ -15308,6 +15328,8 @@ typedef struct mchp_intersting_fn_
 } mchp_interesting_fn;
 
 static mchp_interesting_fn *mchp_match_conversion_fn(const char *name);
+static bool mchp_is_smartio_input_fn(const char *name);
+
 
 #define CCS_FLAG_MASK (~(conv_c-1))
 #define CCS_STATE_MASK (conv_c-1)
@@ -15330,13 +15352,13 @@ static mchp_interesting_fn mchp_fn_list[] =
   { "snprintf",  "_snprintf",  info_O,         4,    4,   0, (mchp_conversion_status)0, NULL },
   { "sprintf",   "_sprintf",   info_O,         2,    2,   0, (mchp_conversion_status)0, NULL },
   { "sscanf",    "_sscanf",    info_I,         2,    3,   0, (mchp_conversion_status)0, NULL },
-  { "vfprintf",  "_vfprintf",  info_V,        22,   20,   0, (mchp_conversion_status)0, NULL },
-  { "vfscanf",   "_vfscanf",   info_V,        22,   20,   0, (mchp_conversion_status)0, NULL },
-  { "vprintf",   "_vprintf",   info_V,        24,   22,   0, (mchp_conversion_status)0, NULL },
-  { "vscanf",    "_vscanf",    info_V,        24,   22,   0, (mchp_conversion_status)0, NULL },
-  { "vsnprintf", "_vsnprintf", info_V,        20,   18,   0, (mchp_conversion_status)0, NULL },
-  { "vsprintf",  "_vsprintf",  info_V,        22,   20,   0, (mchp_conversion_status)0, NULL },
-  { "vsscanf",   "_vsscanf",   info_V,        22,   18,   0, (mchp_conversion_status)0, NULL },
+  { "vfprintf",  "_vfprintf",  info_V_O,      22,   20,   0, (mchp_conversion_status)0, NULL },
+  { "vfscanf",   "_vfscanf",   info_V_I,      22,   20,   0, (mchp_conversion_status)0, NULL },
+  { "vprintf",   "_vprintf",   info_V_O,      24,   22,   0, (mchp_conversion_status)0, NULL },
+  { "vscanf",    "_vscanf",    info_V_I,      24,   22,   0, (mchp_conversion_status)0, NULL },
+  { "vsnprintf", "_vsnprintf", info_V_O,      20,   18,   0, (mchp_conversion_status)0, NULL },
+  { "vsprintf",  "_vsprintf",  info_V_O,      22,   20,   0, (mchp_conversion_status)0, NULL },
+  { "vsscanf",   "_vsscanf",   info_V_I,      22,   18,   0, (mchp_conversion_status)0, NULL },
   { 0,           0,            info_invalid,  -1,   -1,   0, (mchp_conversion_status)0, NULL }
 };
 
@@ -15377,6 +15399,7 @@ static const char *
 maybe_get_smartio_name (const char *var)
 {
   mchp_interesting_fn *match;
+  bool is_smartio_input_fn = false;
 
   if (mchp_io_size_val > 0)
     {
@@ -15409,6 +15432,9 @@ maybe_get_smartio_name (const char *var)
                  */
 
                 added = (mchp_conversion_status)0;
+
+                is_smartio_input_fn = mchp_is_smartio_input_fn (var);
+
                 /*
                  * we don't implement all 131K unique combinations, only
                  * a subset...
@@ -15423,7 +15449,7 @@ maybe_get_smartio_name (const char *var)
                 /* c | d | n | o | p | u | x | X -> cdnopuxX */
                 CCS_ADD_FLAG(c);
                 CCS_ADD_FLAG_ALT(d,c);
-                CCS_ADD_FLAG_ALT(n,c);
+                if (is_smartio_input_fn) CCS_ADD_FLAG_ALT(n,c);
                 CCS_ADD_FLAG_ALT(o,c);
                 CCS_ADD_FLAG_ALT(p,c);
                 CCS_ADD_FLAG_ALT(u,c);
@@ -15433,7 +15459,7 @@ maybe_get_smartio_name (const char *var)
                 /* c | d | n | o | p | u | x | X -> cdnopuxX */
                 CCS_ADD_FLAG(d);
                 CCS_ADD_FLAG_ALT(c,d);
-                CCS_ADD_FLAG_ALT(n,d);
+                if (is_smartio_input_fn) CCS_ADD_FLAG_ALT(n,d);
                 CCS_ADD_FLAG_ALT(o,d);
                 CCS_ADD_FLAG_ALT(p,d);
                 CCS_ADD_FLAG_ALT(u,d);
@@ -15458,8 +15484,9 @@ maybe_get_smartio_name (const char *var)
                 CCS_ADD_FLAG(G);
                 CCS_ADD_FLAG_ALT(g,G);
 
-                /* c | d | n | o | p | u | x | X -> cdnopuxX */
+                /* n -> n */
                 CCS_ADD_FLAG(n);
+                if (is_smartio_input_fn) {
                 CCS_ADD_FLAG_ALT(c,n);
                 CCS_ADD_FLAG_ALT(d,n);
                 CCS_ADD_FLAG_ALT(n,n);
@@ -15468,54 +15495,60 @@ maybe_get_smartio_name (const char *var)
                 CCS_ADD_FLAG_ALT(u,n);
                 CCS_ADD_FLAG_ALT(x,n);
                 CCS_ADD_FLAG_ALT(X,n);
+                }
 
                 /* c | d | n | o | p | u | x | X -> cdnopuxX */
                 CCS_ADD_FLAG(o);
                 CCS_ADD_FLAG_ALT(c,o);
                 CCS_ADD_FLAG_ALT(d,o);
-                CCS_ADD_FLAG_ALT(n,o);
+                if (is_smartio_input_fn) CCS_ADD_FLAG_ALT(n,o);
                 CCS_ADD_FLAG_ALT(o,o);
                 CCS_ADD_FLAG_ALT(p,o);
                 CCS_ADD_FLAG_ALT(u,o);
                 CCS_ADD_FLAG_ALT(x,o);
                 CCS_ADD_FLAG_ALT(X,o);
 
+                /* c | d | n | o | p | u | x | X -> cdnopuxX */
                 CCS_ADD_FLAG(p);
                 CCS_ADD_FLAG_ALT(c,p);
                 CCS_ADD_FLAG_ALT(d,p);
-                CCS_ADD_FLAG_ALT(n,p);
+                if (is_smartio_input_fn) CCS_ADD_FLAG_ALT(n,p);
                 CCS_ADD_FLAG_ALT(o,p);
                 CCS_ADD_FLAG_ALT(p,p);
                 CCS_ADD_FLAG_ALT(u,p);
                 CCS_ADD_FLAG_ALT(x,p);
                 CCS_ADD_FLAG_ALT(X,p);
 
+                /* s -> s */
                 CCS_ADD_FLAG(s);
 
+                /* c | d | n | o | p | u | x | X -> cdnopuxX */
                 CCS_ADD_FLAG(u);
                 CCS_ADD_FLAG_ALT(c,u);
                 CCS_ADD_FLAG_ALT(d,u);
-                CCS_ADD_FLAG_ALT(n,u);
+                if (is_smartio_input_fn) CCS_ADD_FLAG_ALT(n,u);
                 CCS_ADD_FLAG_ALT(o,u);
                 CCS_ADD_FLAG_ALT(p,u);
                 CCS_ADD_FLAG_ALT(u,u);
                 CCS_ADD_FLAG_ALT(x,u);
                 CCS_ADD_FLAG_ALT(X,u);
 
+                /* c | d | n | o | p | u | x | X -> cdnopuxX */
                 CCS_ADD_FLAG(x);
                 CCS_ADD_FLAG_ALT(c,x);
                 CCS_ADD_FLAG_ALT(d,x);
-                CCS_ADD_FLAG_ALT(n,x);
+                if (is_smartio_input_fn) CCS_ADD_FLAG_ALT(n,x);
                 CCS_ADD_FLAG_ALT(o,x);
                 CCS_ADD_FLAG_ALT(p,x);
                 CCS_ADD_FLAG_ALT(u,x);
                 CCS_ADD_FLAG_ALT(x,x);
                 CCS_ADD_FLAG_ALT(X,x);
 
+                /* c | d | n | o | p | u | x | X -> cdnopuxX */
                 CCS_ADD_FLAG(X);
                 CCS_ADD_FLAG_ALT(c,X);
                 CCS_ADD_FLAG_ALT(d,X);
-                CCS_ADD_FLAG_ALT(n,X);
+                if (is_smartio_input_fn) CCS_ADD_FLAG_ALT(n,X);
                 CCS_ADD_FLAG_ALT(o,X);
                 CCS_ADD_FLAG_ALT(p,X);
                 CCS_ADD_FLAG_ALT(u,X);
@@ -15581,6 +15614,23 @@ static mchp_interesting_fn *mchp_match_conversion_fn(const char *name)
     res--;
   return res;
 }
+
+
+static bool mchp_is_smartio_input_fn (const char *name)
+{
+  mchp_interesting_fn a, *res;
+  a.name = name;
+
+  res = (mchp_interesting_fn*)
+        bsearch(&a, mchp_fn_list,
+                sizeof(mchp_fn_list)/sizeof(mchp_interesting_fn)-1,
+                sizeof(mchp_interesting_fn), mchp_bsearch_compare);
+  while (res && (res != mchp_fn_list)  && (strcmp(name, res[-1].name) == 0))
+    res--;
+
+  return (res && (res->conversion_style == info_I || res->conversion_style == info_V_I));
+}
+
 
 /*
   Validate the conditions to set the default Smart IO format specifier.
@@ -15697,7 +15747,14 @@ mchp_convertable_output_format_string(const char *string)
           break;
         case 'l':
           c++;
-          if (*c=='l') c++;
+          if (*c=='l') {
+            c++;
+            avr_seen_64bit_length_modifier = true;
+          };
+          break;
+        case 'j':
+          avr_seen_64bit_length_modifier = true;
+          break;
         default:
           break;
         }
@@ -16144,7 +16201,7 @@ static void mchp_handle_io_conversion_v (rtx_insn *call_insn,
   rtx_insn *format_arg;
   unsigned int format_arg_reg_no =0;
 
-  gcc_assert(matching_fn->conversion_style == info_V);
+  gcc_assert(matching_fn->conversion_style == info_V_I || matching_fn->conversion_style == info_V_O);
 
   format_arg = PREV_INSN(call_insn);
 
@@ -16158,7 +16215,7 @@ static void mchp_handle_io_conversion_v (rtx_insn *call_insn,
     format_arg_reg_no = (unsigned int)matching_fn->interesting_arg;
   }
 
-  /* the info_V function calls are all normal functions, with the format
+  /* the info_V_X function calls are all normal functions, with the format
   string stored into a register identified by interesting_arg in the fn_list. */
 
   for (format_arg = PREV_INSN(call_insn);
@@ -16386,7 +16443,8 @@ int mchp_check_for_conversion(rtx_insn *call_insn)
           mchp_handle_io_conversion(call_insn, match, stack_use_value);
           break;
 
-        case info_V:
+        case info_V_I:
+        case info_V_O:
           mchp_handle_io_conversion_v(call_insn, match);
           break;
         }
@@ -16576,6 +16634,9 @@ static void avr_clear_smartio_process_state()
 
 #undef  TARGET_OPTION_OVERRIDE
 #define TARGET_OPTION_OVERRIDE avr_option_override
+
+#undef  TARGET_OVERRIDE_OPTIONS_AFTER_CHANGE
+#define TARGET_OVERRIDE_OPTIONS_AFTER_CHANGE avr_override_licensed_options
 
 #undef  TARGET_CANNOT_MODIFY_JUMPS_P
 #define TARGET_CANNOT_MODIFY_JUMPS_P avr_cannot_modify_jumps_p

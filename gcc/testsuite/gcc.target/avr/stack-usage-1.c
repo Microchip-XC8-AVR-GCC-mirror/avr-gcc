@@ -54,7 +54,7 @@ void bar(void) {
 /*  Function calling var arg function */
 void bat(void) {
   extern void vararg(int, ...);
-  extern char *var;
+  extern int var;
   vararg (2, var, 1.314);
 }
 

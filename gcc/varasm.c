@@ -1165,7 +1165,8 @@ get_variable_section (tree decl, bool prefer_noswitch_p)
       if (DECL_THREAD_LOCAL_P (decl))
 	return tls_comm_section;
       else if (TREE_PUBLIC (decl) && bss_initializer_p (decl))
-	return comm_section;
+	return AVR_HAVE_PROGMEM_IN_DATA_ADDRESS_SPACE && TREE_READONLY(decl)
+		? readonly_data_section : comm_section;
     }
 
   if (DECL_INITIAL (decl) == error_mark_node)
@@ -1189,7 +1190,8 @@ get_variable_section (tree decl, bool prefer_noswitch_p)
 	       && asan_protect_global (decl)))
 	return lcomm_section;
       if (bss_noswitch_section)
-	return bss_noswitch_section;
+	return AVR_HAVE_PROGMEM_IN_DATA_ADDRESS_SPACE && TREE_READONLY (decl)
+		? readonly_data_section : bss_noswitch_section;
     }
 
   return targetm.asm_out.select_section (decl, reloc,
@@ -6429,9 +6431,11 @@ categorize_decl_for_section (const_tree decl, int reloc)
   else if (TREE_CODE (decl) == VAR_DECL)
     {
       if (bss_initializer_p (decl))
-	ret = SECCAT_BSS;
+	ret = AVR_HAVE_PROGMEM_IN_DATA_ADDRESS_SPACE && TREE_READONLY (decl)
+		? SECCAT_RODATA : SECCAT_BSS;
       else if (! TREE_READONLY (decl)
-	       || TREE_SIDE_EFFECTS (decl)
+	       || (! AVR_HAVE_PROGMEM_IN_DATA_ADDRESS_SPACE
+	             && TREE_SIDE_EFFECTS (decl))
 	       || ! TREE_CONSTANT (DECL_INITIAL (decl)))
 	{
 	  /* Here the reloc_rw_mask is not testing whether the section should

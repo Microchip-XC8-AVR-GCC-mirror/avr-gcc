@@ -553,6 +553,10 @@ extern const char *avr_language_extension (int, const char**);
   %:device-specs-file(device-specs%s %{mmcu=*:%*}) \
   %:lang-extn(%{mext=*:%*}) \
   %{mcodecov=*:%{mpa:%e-mpa and -mcodecov options are incompatible}} \
+  %{mconst-data-in-config-mapped-progmem: \
+    %{!mconst-data-in-progmem: \
+      %<mconst-data-in-config-mapped-progmem \
+      %n-mconst-data-in-progmem is not enabled, disabling -mconst-data-in-config-mapped-progmem}} \
   %{!mskip-license-check:%{Os:%{!mno-pa:%{!mcodecov=*:-mpa}}}}  \
   "
 
@@ -639,6 +643,11 @@ struct GTY(()) machine_function
   /* 'true' - if current function is an ISR and its prologue is a
 	 call to __isr_prologue_saves. */
   int is_isr_prologue_called;
+
+	/* 'true' if functions calls from this function can be outlined
+		 by procedural abstraction. Set if callee doesn't depend on
+		 SP relative data from this function (no args passed on stack) */
+	int is_safe_to_outline_calls;
 };
 
 /* AVR does not round pushes, but the existence of this macro is

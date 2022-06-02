@@ -3049,6 +3049,23 @@ c_build_function_call_vec (location_t loc, vec<location_t> arg_loc,
   return build_function_call_vec (loc, arg_loc, function, params, origtypes);
 }
 
+
+/* Lifted from tree-ssa-structalias.c:count_num_arguments
+   The type list of non-vararg functions ends with a void type value. */
+static bool
+is_vararg_fun(tree typelist)
+{
+  tree t;
+  /* If function has empty arg type list, ignore */
+  if (!typelist)
+    return false;
+
+  /* Check if the function has variadic arguments.  */
+  for (t = typelist; t; t = TREE_CHAIN (t))
+    if (TREE_VALUE (t) == void_type_node)
+      break;
+  return !t;
+}
 /* Convert the argument expressions in the vector VALUES
    to the types in the list TYPELIST.
 
@@ -3118,6 +3135,8 @@ convert_arguments (location_t loc, vec<location_t> arg_loc, tree typelist,
   if (flag_cilkplus && fundecl && is_cilkplus_reduce_builtin (fundecl))
     return vec_safe_length (values);
 
+  bool is_callee_vararg_fun = is_vararg_fun (typelist);
+
   /* Scan the given expressions and types, producing individual
      converted arguments.  */
 
@@ -3148,6 +3167,31 @@ convert_arguments (location_t loc, vec<location_t> arg_loc, tree typelist,
 	    error_at (loc, "too many arguments to function %qE", function);
 	  inform_declaration (fundecl);
 	  return error_args ? -1 : (int) parmnum;
+	}
+
+	/* If type is NULL, the vararg function prototype doesn't have a
+	 corresponding type, so this must be a vararg. Convert
+	 generic address space pointer arg to __memx. That is, for code like
+
+	 extern void foo(int *, ...);
+	 extern char *p, extern char *q
+	 foo(p, q);
+
+	 change call to foo as
+
+	 foo(p, (__memx char*)q);
+	 */
+    if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE
+	  && is_callee_vararg_fun
+	  && type == NULL
+	  && POINTER_TYPE_P (valtype)
+	  && (ADDR_SPACE_GENERIC_P (TYPE_ADDR_SPACE (TREE_TYPE (valtype)))))
+	{
+	  tree pointee_type =
+		  build_qualified_type (TREE_TYPE (valtype),
+		                        ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX));
+	  tree type = build_pointer_type_for_mode(pointee_type, PSImode, false);
+	  val = fold_convert (type, val);
 	}
 
       if (selector && argnum > 2)
@@ -5183,6 +5227,29 @@ build_c_cast (location_t loc, tree type, tree expr)
 	  && !null_pointer_constant_p (value))
 	pedwarn (loc, OPT_Wpedantic, "ISO C forbids "
 		 "conversion of object pointer to function pointer type");
+
+
+      if (AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE &&
+      TREE_CODE (type) == POINTER_TYPE
+      && TREE_CODE (otype) == POINTER_TYPE
+      && !null_pointer_constant_p (value))
+      {
+        addr_space_t as_to = TYPE_ADDR_SPACE (TREE_TYPE (type));
+        addr_space_t as_from = TYPE_ADDR_SPACE (TREE_TYPE (otype));
+
+        if (as_from != ADDR_SPACE_GENERIC && as_to == ADDR_SPACE_GENERIC)
+        {
+          if (EXPR_P(value) && TREE_CODE(TREE_OPERAND(value,0)) == ADDR_EXPR &&
+              TREE_CODE(TREE_OPERAND(TREE_OPERAND(value,0),0)) == STRING_CST)
+          {
+            error_at (loc, "invalid conversion of string literal address in program memory to data memory pointer");
+            return error_mark_node;
+          } else {
+            warning_at (loc, OPT_Wincompatible_pointer_types,
+                   "incompatible conversion between pointer types from potential program memory to data memory");
+          }
+        }
+      }
 
       ovalue = value;
       value = convert (type, value);
@@ -12706,7 +12773,30 @@ c_build_va_arg (location_t loc, tree expr, tree type)
   if (warn_cxx_compat && TREE_CODE (type) == ENUMERAL_TYPE)
     warning_at (loc, OPT_Wc___compat,
 		"C++ requires promoted type, not enum type, in %<va_arg%>");
-  return build_va_arg (loc, expr, type);
+
+  /* If the type parameter of the va_arg is a pointer, make it a
+     __memx * to match the addr space conversion done at the call-site.
+     That is, convert
+
+     char *p = va_arg(ap, char*);
+
+     to
+
+     char *p = (char*)va_arg(ap, (__memx char*));
+  */
+  tree origtype = type;
+  bool treat_as_memx_ptr = AVR_CONST_DATA_IN_MEMX_ADDRESS_SPACE
+    && POINTER_TYPE_P (type)
+    && (ADDR_SPACE_GENERIC_P (TYPE_ADDR_SPACE (TREE_TYPE (type))));
+  if (treat_as_memx_ptr)
+    {
+      tree pointee_type =
+        build_qualified_type (TREE_TYPE (type),
+                              ENCODE_QUAL_ADDR_SPACE (ADDR_SPACE_MEMX));
+      type = build_pointer_type_for_mode(pointee_type, PSImode, false);
+    }
+  tree va_expr = build_va_arg (loc, expr, type);
+  return treat_as_memx_ptr ? fold_convert(origtype, va_expr) : va_expr;
 }
 
 /* Return truthvalue of whether T1 is the same tree structure as T2.
