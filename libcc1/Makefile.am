@@ -23,6 +23,9 @@ AM_CPPFLAGS = -I $(srcdir)/../include -I $(srcdir)/../libgcc \
 	-I $(srcdir)/../gcc/c -I $(srcdir)/../gcc/c-family \
 	-I $(srcdir)/../libcpp/include $(GMPINC)
 AM_CXXFLAGS = $(WARN_FLAGS) $(WERROR) $(visibility)
+if DARWIN_DYNAMIC_LOOKUP
+AM_CXXFLAGS += -Wl,-undefined,dynamic_lookup
+endif
 override CXXFLAGS := $(filter-out -fsanitize=address,$(CXXFLAGS))
 override LDFLAGS := $(filter-out -fsanitize=address,$(LDFLAGS))
 # Can be simplified when libiberty becomes a normal convenience library.

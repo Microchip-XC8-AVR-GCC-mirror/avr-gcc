@@ -81,6 +81,7 @@ along with GCC; see the file COPYING3.  If not see
        %{mmcu=avr6 | mmcu=avrxmega6 |           \
          mmcu=avrxmega7 : --pc-size=3; :--pc-size=2}}"        \
   "%{mconst-data-in-config-mapped-progmem:--const-data-in-config-mapped-progmem} " \
+  "%{msafety-device-features:--append-nop} " \
   "%{mafrlcsj:--mafrlcsj}" \
   "%{shared:%eshared is not supported} " \
   "%{mreserve=*:--mreserve=%* } "

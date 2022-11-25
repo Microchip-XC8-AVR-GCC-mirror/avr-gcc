@@ -16133,7 +16133,7 @@ static bool mchp_handle_io_conversion_anchor_rtx
   else if (GET_CODE(base) == REG)
   {
     rtx_insn *p;
-    rtx set, src;
+    rtx set = NULL, src = NULL;
 
     for (p = PREV_INSN(format_arg);
       !(NOTE_INSN_BASIC_BLOCK_P(p)  ||
@@ -16153,6 +16153,9 @@ static bool mchp_handle_io_conversion_anchor_rtx
       }
     }
 
+    /* Continue only if we have a valid source RTX of SET Insn. */
+    if (src == NULL) return FALSE;
+
     if( GET_CODE(src) == SYMBOL_REF)
     {
       offset = 0;
@@ -16170,7 +16173,7 @@ static bool mchp_handle_io_conversion_anchor_rtx
           base = src;
       }
     }
-	else if ( (GET_CODE(src) == CONST) &&
+    else if ( (GET_CODE(src) == CONST) &&
               (GET_CODE (XEXP (src, 0)) == PLUS) &&
               (CONST_INT_P (XEXP (XEXP (src, 0), 1))) )
     {
@@ -16364,6 +16367,9 @@ int mchp_check_for_conversion(rtx_insn *call_insn)
   mchp_interesting_fn *match;
 
   if (GET_CODE(call_insn) != CALL_INSN) abort();
+
+  /* Dont do any smart-io processing if -msmart-io option is not enabled. */
+  if (!TARGET_MCHP_SMARTIO) return 1;
 
   /* (call_insn (set () (call (name) (size)))) for call returning value, and
      (call_insn (call (name) (size)))          for void call */

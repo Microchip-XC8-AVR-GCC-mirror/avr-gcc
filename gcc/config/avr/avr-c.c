@@ -470,6 +470,11 @@ avr_cpu_cpp_builtins (struct cpp_reader *pfile)
       cpp_define (pfile, "__CODECOV");
     }
 
+  if (avr_safety_device_features)
+	{
+      cpp_define (pfile, "__AVR_SAFETY_DEVICE_FEATURES__");
+	}
+
   /* Define builtin macros so that the user can easily query whether or
      not a specific builtin is available. */
 

@@ -604,6 +604,8 @@ LTLIBOBJS
 LIBOBJS
 ENABLE_PLUGIN_FALSE
 ENABLE_PLUGIN_TRUE
+DARWIN_DYNAMIC_LOOKUP_FALSE
+DARWIN_DYNAMIC_LOOKUP_TRUE
 libsuffix
 GMPINC
 WERROR
@@ -14487,6 +14489,19 @@ fi
 $as_echo "$libcc1_cv_lib_sockets" >&6; }
 LIBS="$LIBS $libcc1_cv_lib_sockets"
 
+case "$host" in
+  *-*-darwin*) darwin_dynamic_lookup=yes ;;
+  *) darwin_dynamic_lookup= ;;
+esac
+ if test $darwin_dynamic_lookup = yes; then
+  DARWIN_DYNAMIC_LOOKUP_TRUE=
+  DARWIN_DYNAMIC_LOOKUP_FALSE='#'
+else
+  DARWIN_DYNAMIC_LOOKUP_TRUE='#'
+  DARWIN_DYNAMIC_LOOKUP_FALSE=
+fi
+
+
 # If any of these functions are missing, simply don't bother building
 # this plugin.
 # Check for plugin support
@@ -14820,6 +14835,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCXX_TRUE}" && test -z "${am__fastdepCXX_FALSE}"; then
   as_fn_error "conditional \"am__fastdepCXX\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${DARWIN_DYNAMIC_LOOKUP_TRUE}" && test -z "${DARWIN_DYNAMIC_LOOKUP_FALSE}"; then
+  as_fn_error "conditional \"DARWIN_DYNAMIC_LOOKUP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_PLUGIN_TRUE}" && test -z "${ENABLE_PLUGIN_FALSE}"; then

@@ -219,3 +219,6 @@ mreserve=
 Target Report RejectNegative Joined
 -mreserve=MEM	Reserve memory area specified by the user
  
+msafety-device-features
+Target Report RejectNegative Var(avr_safety_device_features) UInteger Init(0) Undocumented
+Enables features required for safety devices (AVR SD)
